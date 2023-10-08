@@ -1,1 +1,0 @@
-const OpenAi = require('openai');
