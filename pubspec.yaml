@@ -44,6 +44,8 @@ dependencies:
   floating_bottom_navigation_bar: ^1.5.2
   sweet_nav_bar: ^1.0.5
   flutter_floating_bottom_bar: ^1.2.0
+  stability_image_generation: ^0.0.4
+  chat_gpt_sdk: ^2.2.5
 
 dev_dependencies:
   flutter_test:

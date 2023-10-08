@@ -2,6 +2,9 @@ const express = require('express');
 const { MongoClient } = require('mongodb');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const openai = require('openai');
+const axios = require('axios');
+
 const app = express();
 const port = 5000;
 
@@ -11,6 +14,86 @@ app.use(bodyParser.json());
 const uri = 'mongodb+srv://vedant:vedant@cluster0.fmdoczv.mongodb.net/?retryWrites=true&w=majority';
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 client.connect();
+
+app.post('/generate-image', async (req, res) => {
+    try {
+      const { text } = req.body;
+  
+      const baseUrl = 'https://api.stability.ai';
+      const url = `${baseUrl}/v1alpha/generation/stable-diffusion-512-v2-0/text-to-image`;
+  
+      const response = await axios.post(
+        url,
+        {
+          cfg_scale: 7,
+          clip_guidance_preset: 'FAST_BLUE',
+          height: 512,
+          width: 512,
+          samples: 1,
+          steps: 50,
+          text_prompts: [
+            {
+              text: text || '',
+              weight: 1,
+            },
+          ],
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer sk-ZzE8IbH045hfVl7A544zsCJCk45NNKNcD9igmkswpc6F45MD',
+            'Accept': 'image/png',
+          },
+        }
+      );
+  
+      res.json({ imageUrl: response.data.imageUrl });
+    } catch (error) {
+      console.error('Error generating image:', error.message);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
+app.post('/chat', async (req, res) => {
+    try {
+      const { model, message } = req.body;
+  
+      // You can customize this function to interact with your GPT model or any other processing
+      const gptResponse = await getGptResponse(message, model);
+  
+      res.json({ response: gptResponse });
+    } catch (error) {
+      console.error('Error processing request:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+  // Example function to interact with the GPT model (you should replace this with your actual logic)
+  async function getGptResponse(message, model) {
+    const gptApiKey = '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'; // Replace with your OpenAI API key
+  
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model,
+        messages: [{ role: 'system', content: 'You are a helpful assistant.' }, { role: 'user', content: message }],
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${gptApiKey}`,
+        },
+      }
+    );
+  
+    if (response.status === 200) {
+      const gptMessage = response.data.choices[0]?.message?.content;
+      return gptMessage || 'No response from GPT model';
+    } else {
+      console.error('Failed to get response from GPT model. Status code:', response.status);
+      return 'Error processing request';
+    }
+  }
 
 app.post('/register', async (req, res) => {
     const { username, password } = req.body;
@@ -41,30 +124,6 @@ app.post('/login', async (req, res) => {
     }
 });
 
-// app.post('/get_categories', async (req, res) => {
-//     const { username } = req.body;
-//     try {
-//         const db = client.db('packurbag');
-//         const usersCollection = db.collection('users');
-//         const user = await usersCollection.findOne({ username });
-//         if (user && user.categories) {
-//             res.json({
-//                 success: true,
-//                 categories: user.categories,
-//                 message: 'Categories found for the user',
-//             });
-//         } else {
-//             res.json({
-//                 success: false,
-//                 message: 'Categories not found for the user',
-//             });
-//         }
-//     } catch (error) {
-//         console.error('Error fetching categories:', error);
-//         res.json({ success: false, message: 'Error fetching categories' });
-//     }
-// });
-
 app.post('/get_categories', async (req, res) => {
     const { username } = req.body;
     try {
@@ -89,7 +148,7 @@ app.post('/get_categories', async (req, res) => {
             res.json({
                 success: true,
                 categories: user.categories,
-                categorywithcount : categoriesWithCount,
+                categorywithcount: categoriesWithCount,
                 message: 'Categories found for the user',
             });
         } else {

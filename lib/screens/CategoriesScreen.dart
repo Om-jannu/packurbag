@@ -368,16 +368,14 @@ class CategoriesScreen extends StatefulWidget {
 class _CategoriesScreenState extends State<CategoriesScreen> {
   List<CategoryWithTodoCount> categories = [];
   bool isLoading = true;
-  late DateTime _selectedDay;
 
   @override
   void initState() {
     super.initState();
-    _selectedDay = DateTime.now();
-    _loadCategories(_selectedDay);
+    _loadCategories();
   }
 
-  Future<void> _loadCategories(DateTime selectedDate) async {
+  Future<void> _loadCategories() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final username = prefs.getString('username') ?? '';
@@ -387,7 +385,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': username,
-          'selectedDate': selectedDate.toIso8601String(),
         }),
       );
 
@@ -415,7 +412,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             categories = updatedCategories;
           });
         } else {
-          print('No categories found for this user on $selectedDate');
+          print('No categories found for this user');
         }
       } else {
         print(
@@ -432,11 +429,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   Future<void> _refreshCategories() async {
     await Future.delayed(Duration(seconds: 1));
-    await _loadCategories(_selectedDay);
+    await _loadCategories();
   }
 
-  Future<void> addCategoryToDatabase(
-      String category, DateTime selectedDate) async {
+  Future<void> addCategoryToDatabase(String category) async {
     final prefs = await SharedPreferences.getInstance();
     final username = prefs.getString('username') ?? '';
 
@@ -446,13 +442,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       body: jsonEncode({
         'username': username,
         'category': category,
-        'selectedDate': selectedDate.toIso8601String(),
       }),
     );
 
     if (response.statusCode == 200) {
       print('Category added to the database');
-      _loadCategories(selectedDate);
+      _loadCategories();
     } else {
       print('Failed to add category to the database');
     }
@@ -474,7 +469,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
       if (response.statusCode == 200) {
         print('Category deleted from the database');
-        _loadCategories(_selectedDay);
+        _loadCategories();
       } else {
         print('Failed to delete category from the database');
       }
@@ -483,8 +478,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     }
   }
 
-  Future<void> editCategoryInDatabase(
-      String oldCategory, String newCategory) async {
+  Future<void> editCategoryInDatabase(String oldCategory, String newCategory) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final username = prefs.getString('username') ?? '';
@@ -501,7 +495,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
       if (response.statusCode == 200) {
         print('Category edited in the database');
-        _loadCategories(_selectedDay);
+        _loadCategories();
       } else {
         print('Failed to edit category in the database');
       }
@@ -510,8 +504,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     }
   }
 
-  Future<void> showAddCategoryDialog(
-      BuildContext context, DateTime selectedDate) async {
+  Future<void> showAddCategoryDialog(BuildContext context) async {
     TextEditingController categoryController = TextEditingController();
 
     return showDialog<void>(
@@ -532,7 +525,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ),
             TextButton(
               onPressed: () {
-                addCategoryToDatabase(categoryController.text, selectedDate);
+                addCategoryToDatabase(categoryController.text);
                 Navigator.of(context).pop();
               },
               child: Text('Add'),
@@ -543,8 +536,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  Future<void> showEditCategoryDialog(
-      BuildContext context, String category) async {
+  Future<void> showEditCategoryDialog(BuildContext context, String category) async {
     TextEditingController categoryController =
         TextEditingController(text: category);
 
@@ -578,8 +570,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  Future<void> showDeleteConfirmationDialog(
-      BuildContext context, String category) async {
+  Future<void> showDeleteConfirmationDialog(BuildContext context, String category) async {
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
@@ -615,7 +606,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           IconButton(
             icon: Icon(Icons.add),
             onPressed: () {
-              showAddCategoryDialog(context, _selectedDay);
+              showAddCategoryDialog(context);
             },
           ),
         ],

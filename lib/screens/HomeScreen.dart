@@ -552,8 +552,8 @@ Widget _buildCalendar() {
 
   Widget _buildShimmer() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: Colors.grey[600]!,
+      highlightColor: Colors.grey[400]!,
       child: ListView.builder(
         itemCount: 5, // Adjust the count based on your design
         itemBuilder: (context, index) {
@@ -600,3 +600,4 @@ class ListTileShimmer extends StatelessWidget {
     );
   }
 }
+
