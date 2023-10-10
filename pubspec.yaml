@@ -37,15 +37,15 @@ dependencies:
   cupertino_icons: ^1.0.2
   shared_preferences: ^2.2.1
   http: ^1.1.0
-  fluttertoast: ^8.2.2
   shimmer: ^3.0.0
   table_calendar: ^3.0.9
-  dot_navigation_bar: ^1.0.2
-  floating_bottom_navigation_bar: ^1.5.2
-  sweet_nav_bar: ^1.0.5
-  flutter_floating_bottom_bar: ^1.2.0
   stability_image_generation: ^0.0.4
   chat_gpt_sdk: ^2.2.5
+  flutter_blue: ^0.8.0
+  flutter_blue_plus: ^1.16.10
+  provider: ^6.0.5
+  permission_handler: ^11.0.1
+  device_info: ^2.0.3
 
 dev_dependencies:
   flutter_test:

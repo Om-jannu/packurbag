@@ -309,8 +309,10 @@
 //   }
 // }
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
@@ -327,16 +329,18 @@ class _HomeScreenState extends State<HomeScreen> {
   late DateTime _selectedDay;
   late DateTime focusedDay;
   List<Map<String, dynamic>> todos = [];
-  bool isLoading = true;
+  bool isLoading = false;
   String? _selectedCategory;
   List<String> categories = [];
 
   @override
   void initState() {
     super.initState();
-    _selectedDay = DateTime.now(); // Set the initial selected day
-    _loadCategories(); // Fetch categories when the screen is loaded
+    _selectedDay = DateTime.now();
+    focusedDay = DateTime.now();
+    _loadCategories();
     _loadTodos(_selectedDay);
+
   }
 
   Future<void> _loadCategories() async {
@@ -400,10 +404,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       print('Error while fetching todos: $e');
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
     }
   }
 
@@ -474,59 +474,56 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-Widget _buildCalendar() {
-  return TableCalendar(
-    focusedDay: _selectedDay,
-    firstDay: DateTime(2022, 1, 1),
-    lastDay: DateTime(2030, 12, 31),
-    calendarFormat: CalendarFormat.month,
-    rowHeight: 40,
-    onDaySelected: (selectedDay, focusedDay) {
-      print('$selectedDay');
-      setState(() {
-        _selectedDay = selectedDay;
-      });
-      _loadTodos(selectedDay);
-    },
-    headerStyle: HeaderStyle(
-      formatButtonVisible: false,
-      titleCentered: true,
-    ),
-    calendarStyle: CalendarStyle(
-      todayDecoration: BoxDecoration(
-        color: Colors.blue,
-        shape: BoxShape.circle,
-      ),
-      selectedDecoration: BoxDecoration(
-        color: Theme.of(context).primaryColor,
-        shape: BoxShape.circle,
-      ),
-    ),
-    calendarBuilders: CalendarBuilders(
-      selectedBuilder: (context, date, _) {
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Theme.of(context).primaryColor,
-          ),
-          child: Text(
-            date.day.toString(),
-            style: TextStyle(color: Colors.white),
-          ),
-        );
+  Widget _buildCalendar() {
+    return TableCalendar(
+      focusedDay: focusedDay,
+      firstDay: DateTime(2022, 1, 1),
+      lastDay: DateTime(2030, 12, 31),
+      calendarFormat: CalendarFormat.month,
+      rowHeight: 40,
+      onDaySelected: (selectedDay, focusedDay) {
+        print('$selectedDay');
+        setState(() {
+          _selectedDay = selectedDay;
+        });
+        _loadTodos(selectedDay);
       },
-    ),
-    onPageChanged: (focusedDay) {
-      _selectedDay = focusedDay;
-      _loadTodos(_selectedDay);
-    },
-  );
-}
-
-
-
+      headerStyle: HeaderStyle(
+        formatButtonVisible: false,
+        titleCentered: true,
+      ),
+      calendarStyle: CalendarStyle(
+        todayDecoration: BoxDecoration(
+          color: Colors.blue,
+          shape: BoxShape.circle,
+        ),
+        selectedDecoration: BoxDecoration(
+          color: Theme.of(context).primaryColor,
+          shape: BoxShape.circle,
+        ),
+      ),
+      calendarBuilders: CalendarBuilders(
+        selectedBuilder: (context, date, _) {
+          return Container(
+            margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Theme.of(context).primaryColor,
+            ),
+            child: Text(
+              date.day.toString(),
+              style: TextStyle(color: Colors.white),
+            ),
+          );
+        },
+      ),
+      onPageChanged: (focusedDay) {
+        _selectedDay = focusedDay;
+        _loadTodos(_selectedDay);
+      },
+    );
+  }
 
   String _formattedDate(DateTime date) {
     return "${_getMonthName(date.month)} ${date.day}";
