@@ -17,7 +17,7 @@ class _AiImageGeneratorScreenState extends State<AiImageGeneratorScreen> {
   Future<Uint8List> _generate(String query, ImageAIStyle style) async {
     try {
       Uint8List image = await _ai.generateImage(
-        apiKey: 'sk-DrsLBV9XL1yMvjUbVNFhHJamLwQZcTmJ8dEPIkOKIvMYM5MD',
+        apiKey: 'sk-TgPGvp48x49MTTRvW7GnEnsmMwjHihUozsAvZTQuCx1aDxg0',
         imageAIStyle: style,
         prompt: query,
       );

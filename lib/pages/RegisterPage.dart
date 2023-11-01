@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:pub/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../components/GlobalSnackbar.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({Key? key}) : super(key: key);
+  const RegisterPage({Key? key, var serverIp}) : super(key: key);
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -29,7 +30,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     final response = await http.post(
-      Uri.parse('http://192.168.0.115:5000/register'),
+      Uri.parse('http://$serverIp:5000/register'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'username': usernameController.text,

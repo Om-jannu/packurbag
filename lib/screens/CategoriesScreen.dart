@@ -33,7 +33,7 @@
 //       final username = prefs.getString('username') ?? '';
 
 //       final response = await http.post(
-//         Uri.parse('http://192.168.0.115:5000/get_categories'),
+//         Uri.parse('http://$serverIp:5000/get_categories'),
 //         headers: {'Content-Type': 'application/json'},
 //         body: jsonEncode({
 //           'username': username,
@@ -75,7 +75,7 @@
 //     final username = prefs.getString('username') ?? '';
 
 //     final response = await http.post(
-//       Uri.parse('http://192.168.0.115:5000/add_category'),
+//       Uri.parse('http://$serverIp:5000/add_category'),
 //       headers: {'Content-Type': 'application/json'},
 //       body: jsonEncode({
 //         'username': username,
@@ -98,7 +98,7 @@
 //       final username = prefs.getString('username') ?? '';
 
 //       final response = await http.post(
-//         Uri.parse('http://192.168.0.115:5000/delete_category'),
+//         Uri.parse('http://$serverIp:5000/delete_category'),
 //         headers: {'Content-Type': 'application/json'},
 //         body: jsonEncode({
 //           'username': username,
@@ -124,7 +124,7 @@
 //       final username = prefs.getString('username') ?? '';
 
 //       final response = await http.put(
-//         Uri.parse('http://192.168.0.115:5000/edit_category'),
+//         Uri.parse('http://$serverIp:5000/edit_category'),
 //         headers: {'Content-Type': 'application/json'},
 //         body: jsonEncode({
 //           'username': username,
@@ -341,6 +341,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:pub/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -359,7 +360,7 @@ class CategoryWithTodoCount {
 }
 
 class CategoriesScreen extends StatefulWidget {
-  const CategoriesScreen({Key? key}) : super(key: key);
+  const CategoriesScreen({Key? key, var serverIp}) : super(key: key);
 
   @override
   State<CategoriesScreen> createState() => _CategoriesScreenState();
@@ -381,7 +382,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       final username = prefs.getString('username') ?? '';
 
       final response = await http.post(
-        Uri.parse('http://192.168.0.115:5000/get_categories'),
+        Uri.parse('http://$serverIp:5000/get_categories'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': username,
@@ -437,7 +438,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     final username = prefs.getString('username') ?? '';
 
     final response = await http.post(
-      Uri.parse('http://192.168.0.115:5000/add_category'),
+      Uri.parse('http://$serverIp:5000/add_category'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'username': username,
@@ -459,7 +460,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       final username = prefs.getString('username') ?? '';
 
       final response = await http.post(
-        Uri.parse('http://192.168.0.115:5000/delete_category'),
+        Uri.parse('http://$serverIp:5000/delete_category'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': username,
@@ -484,7 +485,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       final username = prefs.getString('username') ?? '';
 
       final response = await http.put(
-        Uri.parse('http://192.168.0.115:5000/edit_category'),
+        Uri.parse('http://$serverIp:5000/edit_category'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': username,
@@ -691,6 +692,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       MaterialPageRoute(
         builder: (context) => TodoListScreen(
           category: category,
+          serverIp: serverIp,
         ),
       ),
     );

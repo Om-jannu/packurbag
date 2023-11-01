@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:pub/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GlobalAddTodoScreen extends StatefulWidget {
-  const GlobalAddTodoScreen({Key? key}) : super(key: key);
+  const GlobalAddTodoScreen({Key? key, var serverIp}) : super(key: key);
 
   @override
   State<GlobalAddTodoScreen> createState() => _GlobalAddTodoScreenState();
@@ -30,7 +31,7 @@ class _GlobalAddTodoScreenState extends State<GlobalAddTodoScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.0.115:5000/get_categories'),
+        Uri.parse('http://$serverIp:5000/get_categories'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': currentUser,
@@ -61,7 +62,7 @@ class _GlobalAddTodoScreenState extends State<GlobalAddTodoScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.0.115:5000/add_todo'),
+        Uri.parse('http://$serverIp:5000/add_todo'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': currentUser,

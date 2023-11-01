@@ -30,7 +30,7 @@
 //       final username = prefs.getString('username') ?? '';
 
 //       final response = await http.post(
-//         Uri.parse('http://192.168.0.115:5000/get_categories'),
+//         Uri.parse('http://$serverIp:5000/get_categories'),
 //         headers: {'Content-Type': 'application/json'},
 //         body: jsonEncode({
 //           'username': username,
@@ -68,7 +68,7 @@
 //     final username = prefs.getString('username') ?? '';
 
 //     final response = await http.post(
-//       Uri.parse('http://192.168.0.115:5000/add_category'),
+//       Uri.parse('http://$serverIp:5000/add_category'),
 //       headers: {'Content-Type': 'application/json'},
 //       body: jsonEncode({
 //         'username': username,
@@ -92,7 +92,7 @@
 //       final username = prefs.getString('username') ?? '';
 
 //       final response = await http.post(
-//         Uri.parse('http://192.168.0.115:5000/delete_category'),
+//         Uri.parse('http://$serverIp:5000/delete_category'),
 //         headers: {'Content-Type': 'application/json'},
 //         body: jsonEncode({
 //           'username': username,
@@ -120,7 +120,7 @@
 //       final username = prefs.getString('username') ?? '';
 
 //       final response = await http.put(
-//         Uri.parse('http://192.168.0.115:5000/edit_category'),
+//         Uri.parse('http://$serverIp:5000/edit_category'),
 //         headers: {'Content-Type': 'application/json'},
 //         body: jsonEncode({
 //           'username': username,
@@ -314,12 +314,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:http/http.dart' as http;
+import 'package:pub/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({Key? key, var serverIp}) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -349,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final username = prefs.getString('username') ?? '';
 
       final response = await http.post(
-        Uri.parse('http://192.168.0.115:5000/get_categories'),
+        Uri.parse('http://$serverIp:5000/get_categories'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': username,
@@ -380,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final prefs = await SharedPreferences.getInstance();
       final username = prefs.getString('username') ?? '';
       final response = await http.post(
-        Uri.parse('http://192.168.0.115:5000/get_todos_by_date'),
+        Uri.parse('http://$serverIp:5000/get_todos_by_date'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': username,

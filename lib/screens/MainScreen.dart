@@ -93,6 +93,7 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:pub/main.dart';
 import 'package:pub/screens/BluetoothChatScreen.dart';
 import 'package:pub/screens/GptScreen.dart';
 import 'CategoriesScreen.dart';
@@ -100,7 +101,7 @@ import 'GlobalAddTodoScreen.dart';
 import 'HomeScreen.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+  const MainScreen({Key? key,var serverIp}) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -111,8 +112,8 @@ class _MainScreenState extends State<MainScreen> {
 
   // Define the screens for the bottom navigation bar
   final List<Widget> _screens = [
-    HomeScreen(),
-    CategoriesScreen(),
+    HomeScreen(serverIp: serverIp,),
+    CategoriesScreen(serverIp: serverIp,),
     GptScreen(),
     BluetoothChatScreen(),
   ];
@@ -198,7 +199,7 @@ class _MainScreenState extends State<MainScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GlobalAddTodoScreen(),
+        builder: (context) => GlobalAddTodoScreen(serverIp: serverIp,),
       ),
     );
   }

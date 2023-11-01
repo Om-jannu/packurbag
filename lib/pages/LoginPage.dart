@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:pub/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../components/GlobalSnackbar.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, var serverIp});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -23,7 +24,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> signIn(BuildContext context) async {
     final response = await http.post(
-      Uri.parse('http://192.168.0.115:5000/login'),
+      Uri.parse('http://$serverIp:5000/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'username': usernameController.text,
