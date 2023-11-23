@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:pub/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shimmer/shimmer.dart';
-
 import '../components/CategoryItem.dart';
 import '../components/CategoryItemShimmer.dart';
 import 'TodoListScreen.dart';
@@ -33,6 +31,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   @override
   void initState() {
     super.initState();
+    addCategoryToDatabase("premade-Birthday");
+    addCategoryToDatabase("premade-Shopping");
+    addCategoryToDatabase("premade-Exercise");
+    addCategoryToDatabase("premade-Events");
+    addCategoryToDatabase("premade-Meetings");
+    addCategoryToDatabase("premade-Exams");
+    addCategoryToDatabase("premade-Reading");
+    addCategoryToDatabase("premade-Savings");
+    addCategoryToDatabase("premade-Bills");
+    addCategoryToDatabase("premade-Trips");
     _loadCategories();
   }
 
@@ -53,50 +61,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         final data = jsonDecode(response.body);
 
         if (data['categories'] != null && data['categories'] is List) {
-          List<CategoryWithTodoCount> updatedCategories = [];
-
-          // Add premade categories
-          List<String> premadeCategories = [
-            'Work',
-            'Personal',
-            // Add more premade categories as needed
-          ];
-
-          for (String premadeCategory in premadeCategories) {
+          List<CategoryWithTodoCount> updatedCategories =
+              List<String>.from(data['categories']).map((category) {
             int todoCount = 0;
 
             // Find the corresponding todoCount in the response
             var categoryWithCount = (data['categorywithcount'] as List)
-                .firstWhere((item) => item['categories'] == premadeCategory,
+                .firstWhere((item) => item['categories'] == category,
                     orElse: () => null);
 
             if (categoryWithCount != null) {
               todoCount = categoryWithCount['todoCount'];
             }
 
-            updatedCategories.add(CategoryWithTodoCount(
-              name: premadeCategory,
-              todoCount: todoCount,
-            ));
-          }
-
-          // Add custom categories
-          updatedCategories.addAll(
-            List<String>.from(data['categories']).map((category) {
-              int todoCount = 0;
-
-              // Find the corresponding todoCount in the response
-              var categoryWithCount = (data['categorywithcount'] as List)
-                  .firstWhere((item) => item['categories'] == category,
-                      orElse: () => null);
-
-              if (categoryWithCount != null) {
-                todoCount = categoryWithCount['todoCount'];
-              }
-
-              return CategoryWithTodoCount(name: category, todoCount: todoCount);
-            }),
-          );
+            return CategoryWithTodoCount(name: category, todoCount: todoCount);
+          }).toList();
 
           setState(() {
             categories = updatedCategories;
@@ -118,7 +97,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   Future<void> _refreshCategories() async {
-    await Future.delayed(Duration(seconds: 1));
+    await Future.delayed(const Duration(seconds: 1));
     await _loadCategories();
   }
 
@@ -168,7 +147,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     }
   }
 
-  Future<void> editCategoryInDatabase(String oldCategory, String newCategory) async {
+  Future<void> editCategoryInDatabase(
+      String oldCategory, String newCategory) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final username = prefs.getString('username') ?? '';
@@ -201,24 +181,24 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Add New Category'),
+          title: const Text('Add New Category'),
           content: TextField(
             controller: categoryController,
-            decoration: InputDecoration(hintText: 'Enter category name'),
+            decoration: const InputDecoration(hintText: 'Enter category name'),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
                 addCategoryToDatabase(categoryController.text);
                 Navigator.of(context).pop();
               },
-              child: Text('Add'),
+              child: const Text('Add'),
             ),
           ],
         );
@@ -226,7 +206,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  Future<void> showEditCategoryDialog(BuildContext context, String category) async {
+  Future<void> showEditCategoryDialog(
+      BuildContext context, String category) async {
     TextEditingController categoryController =
         TextEditingController(text: category);
 
@@ -234,25 +215,25 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Edit Category'),
+          title: const Text('Edit Category'),
           content: TextField(
             controller: categoryController,
-            decoration: InputDecoration(hintText: 'Enter new category name'),
+            decoration: const InputDecoration(hintText: 'Enter new category name'),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () async {
+              onPressed: () {
                 String newCategory = categoryController.text;
-                await editCategoryInDatabase(category, newCategory);
+                editCategoryInDatabase(category, newCategory);
                 Navigator.of(context).pop();
               },
-              child: Text('Edit'),
+              child: const Text('Edit'),
             ),
           ],
         );
@@ -260,26 +241,27 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 
-  Future<void> showDeleteConfirmationDialog(BuildContext context, String category) async {
+  Future<void> showDeleteConfirmationDialog(
+      BuildContext context, String category) async {
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Delete Category'),
-          content: Text('Are you sure you want to delete this category?'),
+          title: const Text('Delete Category'),
+          content: const Text('Are you sure you want to delete this category?'),
           actions: <Widget>[
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () async {
-                await deleteCategory(category);
+              onPressed: () {
+                 deleteCategory(category);
                 Navigator.of(context).pop();
               },
-              child: Text('Delete'),
+              child: const Text('Delete'),
             ),
           ],
         );
@@ -291,10 +273,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Categories'),
+        backgroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        title: const Text('Categories'),
         actions: [
           IconButton(
-            icon: Icon(Icons.add),
+            icon: const Icon(Icons.add),
             onPressed: () {
               showAddCategoryDialog(context);
             },
@@ -312,65 +296,79 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ? _buildShimmer()
           : categories.isEmpty
               ? _buildNoCategories()
-              : Column(
-                  children: [
-                    Expanded(
-                      child: GridView.builder(
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 8.0,
-                          mainAxisSpacing: 8.0,
-                        ),
-                        itemCount: categories.length,
-                        itemBuilder: (context, index) {
-                          return CategoryItem(
-                            category: categories[index].name,
-                            todoCount: categories[index].todoCount,
-                            onDelete: () => showDeleteConfirmationDialog(
-                                context, categories[index].name),
-                            onEdit: () => showEditCategoryDialog(
-                                context, categories[index].name),
-                            onTap: () =>
-                                _navigateToTodoList(categories[index].name),
-                          );
-                        },
-                      ),
+              : Container(
+                  padding: const EdgeInsets.all(10),
+                  child: GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
                     ),
-                  ],
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      return CategoryItem(
+                        category: categories[index].name,
+                        todoCount: categories[index].todoCount,
+                        onLongPress: () =>
+                            _showBottomSheet(context, categories[index].name),
+                        onTap: () =>
+                            _navigateToTodoList(categories[index].name),
+                      );
+                    },
+                  ),
                 ),
     );
   }
 
-  Widget _buildBody() {
-    return Column(
-      children: [
-        Expanded(
-          child: _buildCategoryList(),
-        ),
-      ],
+  void _showBottomSheet(BuildContext context, String category) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit Category'),
+              onTap: () {
+                Navigator.pop(context);
+                showEditCategoryDialog(context, category);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete),
+              title: const Text('Delete Category'),
+              onTap: () {
+                Navigator.pop(context);
+                showDeleteConfirmationDialog(context, category);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildShimmer() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: GridView.builder(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 8.0,
-          mainAxisSpacing: 8.0,
+    return Container(
+      padding: const EdgeInsets.all(10),
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
+          itemCount: 8,
+          itemBuilder: (context, index) {
+            return const CategoryItemShimmer();
+          },
         ),
-        itemCount: 8,
-        itemBuilder: (context, index) {
-          return CategoryItemShimmer();
-        },
-      ),
-    );
+      );
   }
 
   Widget _buildNoCategories() {
-    return Center(
+    return const Center(
       child: Text('No categories added.'),
     );
   }

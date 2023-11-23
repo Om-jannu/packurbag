@@ -31,10 +31,13 @@ class _MainScreenState extends State<MainScreen> {
       floatingActionButtonLocation: _getFabLocation(),
       floatingActionButton: _buildFab(),
       bottomNavigationBar: BottomAppBar(
+        color: Colors.transparent,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        height: 60,
         shape: CircularNotchedRectangle(),
-        notchMargin: 8.0,
+        notchMargin: 8,
         child: Container(
-          height: 60.0,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -77,6 +80,7 @@ class _MainScreenState extends State<MainScreen> {
     }else {
       // Default FAB for other screens
       return FloatingActionButton(
+        shape: CircleBorder(),
         onPressed: () {
           _onFabPressed(context);
         },

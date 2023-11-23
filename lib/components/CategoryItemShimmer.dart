@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 class CategoryItemShimmer extends StatelessWidget {
+  const CategoryItemShimmer({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
-        child: Container(
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[800]!,
+      highlightColor: Colors.grey[700]!,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
           color: Colors.white,
         ),
       ),

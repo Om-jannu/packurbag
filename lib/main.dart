@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pub/screens/MonthlyTodoScreen.dart';
 import 'pages/LoginPage.dart';
 import 'pages/RegisterPage.dart';
 import 'screens/MainScreen.dart';
@@ -17,17 +18,18 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.dark,
         primaryColor: Colors.purple,
         scaffoldBackgroundColor: Colors.grey[900], // Adjust as needed
+        useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
-      routes: {
-        '/': (context) => LoginPage(serverIp: serverIp,),
-        '/home': (context) => MainScreen(serverIp: serverIp,),
-        '/register': (context) => RegisterPage(serverIp: serverIp,),
-      },
       // routes: {
-      //   '/': (context) => MainScreen(),
+      //   '/': (context) => LoginPage(serverIp: serverIp,),
+      //   '/home': (context) => MainScreen(serverIp: serverIp,),
+      //   '/register': (context) => RegisterPage(serverIp: serverIp,),
       // },
+      routes: {
+        '/': (context) => DailyScreen(),
+      },
     );
   }
 }
