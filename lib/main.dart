@@ -6,7 +6,7 @@ import 'screens/MainScreen.dart';
 void main() {
   runApp(MyApp());
 }
-var serverIp = "192.168.194.36";
+var serverIp = "192.168.0.115";
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -18,6 +18,7 @@ class MyApp extends StatelessWidget {
         primaryColor: Colors.purple,
         scaffoldBackgroundColor: Colors.grey[900], // Adjust as needed
       ),
+      debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
         '/': (context) => LoginPage(serverIp: serverIp,),

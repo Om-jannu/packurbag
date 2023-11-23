@@ -239,6 +239,48 @@ app.post('/get_todos', async (req, res) => {
     }
 });
 
+// app.post('/get_todos_by_date', async (req, res) => {
+//     const { username, selectedDate, category } = req.body;
+//     try {
+//         const db = client.db('packurbag');
+//         const usersCollection = db.collection('users');
+//         const user = await usersCollection.findOne({ username });
+//         if (user && user.todos) {
+//             let todosToReturn = [];
+//             if (category === null || category === undefined) {
+//                 for (const [categoryKey, categoryTodos] of Object.entries(user.todos)) {
+//                     const filteredCategoryTodos = categoryTodos.filter(todo => {
+//                         const todoDate = new Date(todo.date); // Assuming a 'date' field in the todo object
+//                         return todoDate.toISOString().split('T')[0] === selectedDate.split('T')[0];
+//                     });
+//                     todosToReturn = todosToReturn.concat(
+//                         filteredCategoryTodos.map(todo => ({ ...todo, category: categoryKey }))
+//                     );
+//                 }
+//             } else {
+//                 const categoryTodos = user.todos[category] || [];
+//                 const filteredCategoryTodos = categoryTodos.filter(todo => {
+//                     const todoDate = new Date(todo.date); // Assuming a 'date' field in the todo object
+//                     return todoDate.toISOString().split('T')[0] === selectedDate.split('T')[0];
+//                 });
+//                 todosToReturn = filteredCategoryTodos.map(todo => ({ ...todo, category }));
+//             }
+//             res.json({
+//                 success: true,
+//                 todos: todosToReturn,
+//                 message: 'Todos found for the selected date and category',
+//             });
+//         } else {
+//             res.json({
+//                 success: false,
+//                 message: 'Todos not found for the user',
+//             });
+//         }
+//     } catch (error) {
+//         console.error('Error fetching todos:', error);
+//         res.json({ success: false, message: 'Error fetching todos' });
+//     }
+// });
 app.post('/get_todos_by_date', async (req, res) => {
     const { username, selectedDate, category } = req.body;
     try {
@@ -247,15 +289,32 @@ app.post('/get_todos_by_date', async (req, res) => {
         const user = await usersCollection.findOne({ username });
         if (user && user.todos) {
             let todosToReturn = [];
-            if (category === null || category === undefined) {
+            if (selectedDate) {
+                if (category === null || category === undefined) {
+                    for (const [categoryKey, categoryTodos] of Object.entries(user.todos)) {
+                        const filteredCategoryTodos = categoryTodos.filter(todo => {
+                            const todoDate = new Date(todo.date); // Assuming a 'date' field in the todo object
+                            return todoDate.toISOString().split('T')[0] === selectedDate.split('T')[0];
+                        });
+                        todosToReturn = todosToReturn.concat(
+                            filteredCategoryTodos.map(todo => ({ ...todo, category: categoryKey }))
+                        );
+                    }
+                } else {
+                    const categoryTodos = user.todos[category] || [];
+                    const filteredCategoryTodos = categoryTodos.filter(todo => {
+                        const todoDate = new Date(todo.date); // Assuming a 'date' field in the todo object
+                        return todoDate.toISOString().split('T')[0] === selectedDate.split('T')[0];
+                    });
+                    todosToReturn = filteredCategoryTodos.map(todo => ({ ...todo, category }));
+                }
+            } else {
+                // If no date is selected, fetch all todos
                 for (const [categoryKey, categoryTodos] of Object.entries(user.todos)) {
                     todosToReturn = todosToReturn.concat(
                         categoryTodos.map(todo => ({ ...todo, category: categoryKey }))
                     );
                 }
-            } else {
-                const categoryTodos = user.todos[category] || [];
-                todosToReturn = categoryTodos.map(todo => ({ ...todo, category }));
             }
             res.json({
                 success: true,
@@ -273,6 +332,7 @@ app.post('/get_todos_by_date', async (req, res) => {
         res.json({ success: false, message: 'Error fetching todos' });
     }
 });
+
 
 app.post('/add_todo', async (req, res) => {
     const { username, category, todo } = req.body;
