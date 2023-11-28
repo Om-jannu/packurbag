@@ -31,7 +31,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   @override
   void initState() {
     super.initState();
-    addCategoryToDatabase("premade-Birthday");
+    addCategoryToDatabase("premade-Birthdays");
     addCategoryToDatabase("premade-Shopping");
     addCategoryToDatabase("premade-Exercise");
     addCategoryToDatabase("premade-Events");

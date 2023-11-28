@@ -96,6 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadTodos(DateTime selectedDate) async {
     try {
+      print(selectedDate);
       final prefs = await SharedPreferences.getInstance();
       final username = prefs.getString('username') ?? '';
       final response = await http.post(
