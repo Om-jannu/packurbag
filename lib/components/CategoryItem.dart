@@ -135,6 +135,16 @@ class CategoryItem extends StatelessWidget {
     'Meetings',
     'Trips',
     'Bills',
+    'premade-Birthdays',
+    'premade-Shopping',
+    'premade-Exercise',
+    'premade-Exams',
+    'premade-Events',
+    'premade-Savings',
+    'premade-Reading',
+    'premade-Meetings',
+    'premade-Trips',
+    'premade-Bills',
   };
 
   // Define a map to associate categories with colors
@@ -163,6 +173,16 @@ class CategoryItem extends StatelessWidget {
     'Meetings': 'assets/meetings.png',
     'Trips': 'assets/trips.png',
     'Bills': 'assets/bills.png',
+    'premade-Birthdays': 'assets/birthdays.png',
+    'premade-Shopping': 'assets/shopping.png',
+    'premade-Exercise': 'assets/exercise.png',
+    'premade-Exams': 'assets/exams.png',
+    'premade-Events': 'assets/events.png',
+    'premade-Savings': 'assets/savings.png',
+    'premade-Reading': 'assets/reading.png',
+    'premade-Meetings': 'assets/meetings.png',
+    'premade-Trips': 'assets/trips.png',
+    'premade-Bills': 'assets/bills.png',
   };
 
   const CategoryItem({
@@ -201,65 +221,62 @@ class CategoryItem extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20.0),
         ),
-        child: Hero(
-          tag: 'category-background-$category',
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: categoryColor,
-              image: DecorationImage(
-                image: AssetImage(backgroundImage),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  categoryColor!.withOpacity(0.6),
-                  BlendMode.xor,
-                ),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: categoryColor,
+            image: DecorationImage(
+              image: AssetImage(backgroundImage),
+              fit: BoxFit.cover,
+              colorFilter: ColorFilter.mode(
+                categoryColor!.withOpacity(0.6),
+                BlendMode.xor,
               ),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(50),
-                    border: Border.all(
-                      color: categoryColor,
-                      width: 2
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      todoCount.toString(),
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10,vertical: 5),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(50),
+                  border: Border.all(
                     color: categoryColor,
+                    width: 2
                   ),
+                ),
+                child: Center(
                   child: Text(
-                    displayCategory,
+                    todoCount.toString(),
                     style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 15,
+                      color: Colors.grey[700],
                       fontWeight: FontWeight.bold,
+                      fontSize: 15,
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10,vertical: 5),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                  color: categoryColor,
+                ),
+                child: Text(
+                  displayCategory,
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

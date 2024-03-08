@@ -47,6 +47,7 @@ dependencies:
   permission_handler: ^11.0.1
   device_info: ^2.0.3
   flutter_svg: ^2.0.9
+  flutter_speed_dial: ^7.0.0
 
 dev_dependencies:
   flutter_test:

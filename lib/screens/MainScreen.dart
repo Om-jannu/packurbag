@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:pub/main.dart';
-import 'package:pub/screens/BluetoothChatScreen.dart';
-import 'package:pub/screens/GptScreen.dart';
+import 'package:pub/screens/calculator_screen.dart';
+import 'package:pub/screens/currencyConverter.dart';
+import 'BluetoothChatScreen.dart';
+import 'GptScreen.dart';
 import 'CategoriesScreen.dart';
 import 'GlobalAddTodoScreen.dart';
 import 'HomeScreen.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key,var serverIp}) : super(key: key);
+  const MainScreen({Key? key, var serverIp}) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -16,10 +19,9 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // Define the screens for the bottom navigation bar
   final List<Widget> _screens = [
-    HomeScreen(serverIp: serverIp,),
-    CategoriesScreen(serverIp: serverIp,),
+    HomeScreen(serverIp: serverIp),
+    CategoriesScreen(serverIp: serverIp),
     GptScreen(),
     BluetoothChatScreen(),
   ];
@@ -27,9 +29,9 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex], // Show the selected screen
+      body: _screens[_currentIndex],
       floatingActionButtonLocation: _getFabLocation(),
-      floatingActionButton: _buildFab(),
+      floatingActionButton: _buildSpeedDial(),
       bottomNavigationBar: BottomAppBar(
         color: Colors.transparent,
         shadowColor: Colors.transparent,
@@ -53,7 +55,7 @@ class _MainScreenState extends State<MainScreen> {
                   _onTabTapped(1);
                 },
               ),
-              SizedBox(), // The center space for the FAB
+              SizedBox(),
               IconButton(
                 icon: Icon(Icons.chat),
                 onPressed: () {
@@ -73,29 +75,53 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildFab() {
+  Widget _buildSpeedDial() {
     // Disable FAB on GPT screen
     if (_currentIndex == 2) {
-      return SizedBox.shrink(); // Return an empty container
-    }else {
+      return const SizedBox.shrink(); // Return an empty container
+    } else {
       // Default FAB for other screens
-      return FloatingActionButton(
-        shape: CircleBorder(),
-        onPressed: () {
-          _onFabPressed(context);
-        },
-        child: Icon(Icons.add),
+      return SpeedDial(
+        children: [
+          SpeedDialChild(
+            child: const Icon(Icons.add), // Replace with your icon
+            label: 'Add Todo',
+            onTap: () {
+              _onFabPressed(context);
+            },
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.calculate), // Replace with your icon
+            label: 'Calculator',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CalculatorScreen(),
+                ),
+              );
+            },
+          ),
+          SpeedDialChild(
+            child:
+                const Icon(Icons.currency_exchange), // Replace with your icon
+            label: 'Currency Converter',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const CurrencyConverter()),
+              );
+            },
+          ),
+        ],
+        child: const Icon(Icons.add),
       );
     }
   }
 
   FloatingActionButtonLocation _getFabLocation() {
-    // Change FAB position based on the current screen
-    if (_currentIndex == 2) {
-      return FloatingActionButtonLocation.endFloat;
-    } else {
-      return FloatingActionButtonLocation.centerDocked;
-    }
+    return FloatingActionButtonLocation.centerDocked;
   }
 
   void _onTabTapped(int index) {
@@ -105,17 +131,11 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onFabPressed(BuildContext context) {
-    // Show the screen to add todos
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => GlobalAddTodoScreen(serverIp: serverIp,),
+        builder: (context) => GlobalAddTodoScreen(serverIp: serverIp),
       ),
     );
-  }
-
-  void _onFabPressedGpt(BuildContext context) {
-    // Custom functionality for the FAB on GPT screen
-    // Add your GPT-specific action here
   }
 }

@@ -61,7 +61,8 @@ class _TodoListScreenState extends State<TodoListScreen> {
               isChecked: false,
             );
 
-            String formattedDate = DateFormat('MMMM d, y').format(todoItem.date);
+            String formattedDate =
+                DateFormat('MMMM d, y').format(todoItem.date);
 
             if (!todosGroupedByDate.containsKey(formattedDate)) {
               todosGroupedByDate[formattedDate] = [];
@@ -169,119 +170,111 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    
-    String backgroundImage = 'assets/birthdays.png'; // Default image
+    String backgroundImage = 'assets/custom.png'; // Default image
     // Check if the category is predefined to set a specific image
     if (CategoryItem.predefinedCategories.contains(widget.category)) {
       backgroundImage = CategoryItem.categoryImages[widget.category]!;
     }
-    return Hero(
-      tag: 'category-background-${widget.category}',
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('${widget.category}'),
-          actions: [
-            IconButton(
-              icon: Icon(showTodayOnly ? Icons.today_outlined : Icons.calendar_month_outlined),
-              onPressed: toggleShowTodayOnly,
-            ),
-          ],
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(backgroundImage),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  Colors.black.withOpacity(0.5),
-                  BlendMode.darken,
-                ),
-              ),
-            ),
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: Text('${widget.category}'),
+        actions: [
+          IconButton(
+            icon: Icon(showTodayOnly
+                ? Icons.today_outlined
+                : Icons.calendar_month_outlined),
+            onPressed: toggleShowTodayOnly,
           ),
-        ),
-        body: isLoading
-            ? Center(child: CircularProgressIndicator())
-            : ListView.builder(
-                itemCount: showTodayOnly ? 1 : todosGroupedByDate.length,
-                itemBuilder: (context, index) {
-                  if (showTodayOnly) {
-                    String today = DateFormat('MMMM d, y').format(DateTime.now());
-                    List<TodoItem>? todos = todosGroupedByDate[today];
-            
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            today,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        if (todos != null)
-                          ...todos.map((todo) => ListTile(
-                                title: Text(
-                                  todo.text,
-                                  style: todo.isChecked
-                                      ? TextStyle(decoration: TextDecoration.lineThrough)
-                                      : null,
-                                ),
-                                subtitle: Text('Date: ${todo.formattedDate}'),
-                                leading: Checkbox(
-                                  value: todo.isChecked,
-                                  onChanged: (bool? value) {
-                                    setState(() {
-                                      todo.isChecked = value ?? false;
-                                    });
-                                  },
-                                ),
-                              )),
-                      ],
-                    );
-                  } else {
-                    String date = todosGroupedByDate.keys.elementAt(index);
-                    List<TodoItem>? todos = todosGroupedByDate[date];
-            
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            date,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        if (todos != null)
-                          ...todos.map((todo) => ListTile(
-                                title: Text(
-                                  todo.text,
-                                  style: todo.isChecked
-                                      ? TextStyle(decoration: TextDecoration.lineThrough)
-                                      : null,
-                                ),
-                                subtitle: Text('Date: ${todo.formattedDate}'),
-                                leading: Checkbox(
-                                  value: todo.isChecked,
-                                  onChanged: (bool? value) {
-                                    setState(() {
-                                      todo.isChecked = value ?? false;
-                                    });
-                                  },
-                                ),
-                              )),
-                      ],
-                    );
-                  }
-                },
-              ),
+        ],
       ),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+            itemCount: showTodayOnly ? 1 : todosGroupedByDate.length,
+            itemBuilder: (context, index) {
+              if (showTodayOnly) {
+                String today =
+                    DateFormat('MMMM d, y').format(DateTime.now());
+                List<TodoItem>? todos = todosGroupedByDate[today];
+          
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        today,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (todos != null)
+                      ...todos.map((todo) => ListTile(
+                            title: Text(
+                              todo.text,
+                              style: todo.isChecked
+                                  ? TextStyle(
+                                      decoration:
+                                          TextDecoration.lineThrough)
+                                  : null,
+                            ),
+                            subtitle: Text('Date: ${todo.formattedDate}'),
+                            leading: Checkbox(
+                              value: todo.isChecked,
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  todo.isChecked = value ?? false;
+                                });
+                              },
+                            ),
+                          )),
+                  ],
+                );
+              } else {
+                String date = todosGroupedByDate.keys.elementAt(index);
+                List<TodoItem>? todos = todosGroupedByDate[date];
+          
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        date,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (todos != null)
+                      ...todos.map((todo) => ListTile(
+                            title: Text(
+                              todo.text,
+                              style: todo.isChecked
+                                  ? TextStyle(
+                                      decoration:
+                                          TextDecoration.lineThrough)
+                                  : null,
+                            ),
+                            subtitle: Text('Date: ${todo.formattedDate}'),
+                            leading: Checkbox(
+                              value: todo.isChecked,
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  todo.isChecked = value ?? false;
+                                });
+                              },
+                            ),
+                          )),
+                  ],
+                );
+              }
+            },
+          ),
     );
   }
 }
@@ -297,5 +290,3 @@ class TodoItem {
     return DateFormat('MMMM d, y').format(date);
   }
 }
-
-
