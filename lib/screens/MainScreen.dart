@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:pub/main.dart';
+import 'package:pub/screens/BtScreen.dart';
 import 'package:pub/screens/calculator_screen.dart';
 import 'package:pub/screens/currencyConverter.dart';
 import 'BluetoothChatScreen.dart';
@@ -23,7 +24,7 @@ class _MainScreenState extends State<MainScreen> {
     HomeScreen(serverIp: serverIp),
     CategoriesScreen(serverIp: serverIp),
     GptScreen(),
-    BluetoothChatScreen(),
+    BtScreen(),
   ];
 
   @override

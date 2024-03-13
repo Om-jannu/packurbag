@@ -5,7 +5,7 @@ import 'package:pub/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../components/CategoryItem.dart';
 import '../components/CategoryItemShimmer.dart';
-import 'TodoListScreen.dart';
+import 'todoListScreen.dart';
 
 class CategoryWithTodoCount {
   final String name;

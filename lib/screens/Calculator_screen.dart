@@ -63,7 +63,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('Currency Convertor'),
+        title: const Text('Calculator'),
       ),
       body: SafeArea(
         bottom: false,

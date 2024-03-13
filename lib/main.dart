@@ -1,3 +1,4 @@
+import 'package:all_bluetooth/all_bluetooth.dart';
 import 'package:flutter/material.dart';
 import 'package:pub/screens/MonthlyTodoScreen.dart';
 import 'pages/LoginPage.dart';
@@ -7,7 +8,10 @@ import 'screens/MainScreen.dart';
 void main() {
   runApp(const MyApp());
 }
-var serverIp = "192.168.0.120";
+
+const serverIp = "192.168.0.120";
+final allBluetooth = AllBluetooth();
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -23,9 +27,15 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
-        '/': (context) => LoginPage(serverIp: serverIp,),
-        '/home': (context) => MainScreen(serverIp: serverIp,),
-        '/register': (context) => RegisterPage(serverIp: serverIp,),
+        '/': (context) => LoginPage(
+              serverIp: serverIp,
+            ),
+        '/home': (context) => MainScreen(
+              serverIp: serverIp,
+            ),
+        '/register': (context) => RegisterPage(
+              serverIp: serverIp,
+            ),
       },
       // routes: {
       //   '/': (context) => DailyScreen(),
