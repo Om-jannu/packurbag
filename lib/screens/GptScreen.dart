@@ -1,7 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-
 import 'AiImageGeneratorTab.dart';
 import 'ChatGptTab.dart';
 
@@ -30,21 +27,3 @@ class GptScreen extends StatelessWidget {
     );
   }
 }
-
-// class ChatGptTab extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Center(
-//       child: Text('ChatGPT Tab Content'),
-//     );
-//   }
-// }
-
-// class TextToImageTab extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Center(
-//       child: Text('Text-to-Image Tab Content'),
-//     );
-//   }
-// }

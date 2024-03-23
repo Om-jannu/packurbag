@@ -29,7 +29,7 @@ class _GlobalAddTodoScreenState extends State<GlobalAddTodoScreen> {
 
   Future<void> fetchCategories() async {
     final prefs = await SharedPreferences.getInstance();
-    final currentUser = prefs.getString('username') ?? '';
+    final currentUser = prefs.getString('userId') ?? '';
 
     try {
       final response = await http.post(

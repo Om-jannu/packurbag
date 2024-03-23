@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:pub/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../components/GlobalSnackbar.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({Key? key, var serverIp}) : super(key: key);
+  final String serverIp;
+
+  const RegisterPage({Key? key, required this.serverIp}) : super(key: key);
 
   @override
   State<RegisterPage> createState() => _RegisterPageState();
@@ -15,6 +15,7 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   TextEditingController usernameController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController confirmPasswordController = TextEditingController();
 
@@ -29,14 +30,29 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    // Basic validation for email format
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+        .hasMatch(emailController.text)) {
+      GlobalSnackbar.show(context, 'Invalid email address');
+      return;
+    }
+
+    // Show loading indicator
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Registering...')));
+
     final response = await http.post(
-      Uri.parse('http://$serverIp:5000/register'),
+      Uri.parse('http://${widget.serverIp}:5000/register'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'username': usernameController.text,
+        "userEmail": emailController.text,
         'password': passwordController.text,
       }),
     );
+
+    // Hide loading indicator
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -44,8 +60,8 @@ class _RegisterPageState extends State<RegisterPage> {
         // Successfully registered
         print('Successfully registered');
         await saveUsername(usernameController.text);
-        GlobalSnackbar.show(context, 'Successfully registered', success: true);
-        Navigator.pushReplacementNamed(context, '/home');
+        GlobalSnackbar.show(context, '${data['message']}', success: true);
+        Navigator.pop(context); // Navigate back to login page
       } else {
         // Handle registration failure
         print('Registration failed');
@@ -74,6 +90,11 @@ class _RegisterPageState extends State<RegisterPage> {
             TextField(
               controller: usernameController,
               decoration: InputDecoration(labelText: 'Username'),
+            ),
+            SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(labelText: 'Email'),
             ),
             SizedBox(height: 16),
             TextField(

@@ -1,19 +1,3 @@
-// import 'dart:convert';
-// import 'package:flutter/material.dart';
-// class BluetoothChatScreen extends StatefulWidget {
-//   const BluetoothChatScreen({super.key});
-
-//   @override
-//   State<BluetoothChatScreen> createState() => _BluetoothChatScreenState();
-// }
-
-// class _BluetoothChatScreenState extends State<BluetoothChatScreen> {
-//   @override
-//   Widget build(BuildContext context) {
-//     return const Placeholder();
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_bubble/chat_bubble.dart';
 

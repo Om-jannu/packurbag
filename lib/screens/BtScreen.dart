@@ -14,20 +14,14 @@ class BtScreen extends StatefulWidget {
 class _BtScreenState extends State<BtScreen> {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: StreamBuilder(
-          stream: allBluetooth.listenForConnection,
-          builder: (context, snapshot) {
-            final result = snapshot.data;
-            if (result?.state == true) {
-              return const BluetoothChatScreen();
-            }
-            return const BluetoothChat();
-          }),
-      theme: ThemeData(
-        useMaterial3: true,
-      ),
-      debugShowCheckedModeBanner: false,
-    );
+    return StreamBuilder(
+        stream: allBluetooth.listenForConnection,
+        builder: (context, snapshot) {
+          final result = snapshot.data;
+          if (result?.state == true) {
+            return const BluetoothChatScreen();
+          }
+          return const BluetoothChat();
+        });
   }
 }

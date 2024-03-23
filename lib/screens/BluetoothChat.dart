@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../main.dart';
 import 'package:all_bluetooth/all_bluetooth.dart';
+
+import '../main.dart';
+
 class BluetoothChat extends StatefulWidget {
   const BluetoothChat({super.key});
 
@@ -43,9 +45,6 @@ class _BluetoothChatState extends State<BluetoothChat> {
                         setState(() => isListening = true);
                       },
                   },
-                  backgroundColor: bluetoothOn
-                      ? Theme.of(context).primaryColor
-                      : Colors.grey,
                   child: const Icon(Icons.wifi_tethering),
                 ),
             },
@@ -104,6 +103,12 @@ class _BluetoothChatState extends State<BluetoothChat> {
                         ValueListenableBuilder(
                             valueListenable: bondedDevice,
                             builder: (context, devices, child) {
+                              // Check if Bluetooth is off
+                              if (!bluetoothOn) {
+                                return Container(); // Return an empty container
+                              }
+
+                              // If Bluetooth is on, build the list of devices
                               return Expanded(
                                 child: ListView.builder(
                                   itemCount: bondedDevice.value.length,

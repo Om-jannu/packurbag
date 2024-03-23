@@ -27,10 +27,12 @@ class CategoriesScreen extends StatefulWidget {
 class _CategoriesScreenState extends State<CategoriesScreen> {
   List<CategoryWithTodoCount> categories = [];
   bool isLoading = true;
+  bool _isMounted = false;
 
   @override
   void initState() {
     super.initState();
+    _isMounted = true;
     addCategoryToDatabase("premade-Birthdays");
     addCategoryToDatabase("premade-Shopping");
     addCategoryToDatabase("premade-Exercise");
@@ -44,20 +46,25 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     _loadCategories();
   }
 
+  @override
+  void dispose() {
+    _isMounted = false;
+    super.dispose();
+  }
+
   Future<void> _loadCategories() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final username = prefs.getString('username') ?? '';
+      final userId = prefs.getString('userId') ?? '';
 
-      final response = await http.post(
-        Uri.parse('http://$serverIp:5000/get_categories'),
+      final response = await http.get(
+        Uri.parse('http://$serverIp:5000/categories/$userId'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'username': username,
-        }),
       );
 
-      if (response.statusCode == 200) {
+      print("load categories $response");
+
+      if (_isMounted && response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
         if (data['categories'] != null && data['categories'] is List) {
@@ -77,9 +84,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             return CategoryWithTodoCount(name: category, todoCount: todoCount);
           }).toList();
 
-          setState(() {
-            categories = updatedCategories;
-          });
+          if (_isMounted) {
+            setState(() {
+              categories = updatedCategories;
+            });
+          }
         } else {
           print('No categories found for this user');
         }
@@ -90,14 +99,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     } catch (e) {
       print('Error while fetching categories: $e');
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (_isMounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _refreshCategories() async {
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(milliseconds: 500));
     await _loadCategories();
   }
 
@@ -115,7 +126,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
 
     if (response.statusCode == 200) {
-      print('Category added to the database');
+      print('Category sdfdggagrsa added to the database');
       _loadCategories();
     } else {
       print('Failed to add category to the database');
@@ -218,7 +229,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           title: const Text('Edit Category'),
           content: TextField(
             controller: categoryController,
-            decoration: const InputDecoration(hintText: 'Enter new category name'),
+            decoration:
+                const InputDecoration(hintText: 'Enter new category name'),
           ),
           actions: <Widget>[
             TextButton(
@@ -258,7 +270,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ),
             TextButton(
               onPressed: () {
-                 deleteCategory(category);
+                deleteCategory(category);
                 Navigator.of(context).pop();
               },
               child: const Text('Delete'),
@@ -273,8 +285,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        shadowColor: Colors.transparent,
         title: const Text('Categories'),
         actions: [
           IconButton(
@@ -353,18 +363,18 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Widget _buildShimmer() {
     return Container(
       padding: const EdgeInsets.all(10),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-          ),
-          itemCount: 8,
-          itemBuilder: (context, index) {
-            return const CategoryItemShimmer();
-          },
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
         ),
-      );
+        itemCount: 8,
+        itemBuilder: (context, index) {
+          return const CategoryItemShimmer();
+        },
+      ),
+    );
   }
 
   Widget _buildNoCategories() {

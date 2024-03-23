@@ -40,17 +40,16 @@ dependencies:
   table_calendar: ^3.0.9
   stability_image_generation: ^0.0.4
   chat_gpt_sdk: ^2.2.5
-  flutter_blue: ^0.8.0
-  flutter_blue_plus: ^1.16.10
   provider: ^6.0.5
-  device_info: ^2.0.3
-  flutter_svg: ^2.0.9
   flutter_speed_dial: ^7.0.0
   cupertino_icons: ^1.0.6
   all_bluetooth: ^0.1.0
   permission_handler: ^11.3.0
   flutter_chat_bubble: ^2.0.2
   intl: ^0.19.0
+  font_awesome_flutter: ^10.7.0
+  firebase_core: ^2.27.1
+  flex_color_picker: ^3.4.1
 
 dev_dependencies:
   flutter_test:

@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1082239247849",
+    "project_id": "atomic-elixir-310108",
+    "storage_bucket": "atomic-elixir-310108.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1082239247849:android:0a3c0b81aeeaad94f91778",
+        "android_client_info": {
+          "package_name": "com.example.pub"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1082239247849-7e5vvd02t5icadecg4qoodmtusr7s72d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnOXrhefpdQhvJYF6ysmwsKnZSKrVf7vM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1082239247849-7e5vvd02t5icadecg4qoodmtusr7s72d.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1082239247849-98vrgs5d1qc268q119vc7k45du9fuf2r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.pub"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
