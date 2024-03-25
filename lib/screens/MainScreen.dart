@@ -160,8 +160,8 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const HomeScreen(serverIp: serverIp),
     // const CategoriesScreen(serverIp: serverIp),
-    CategoriesPage(),
-    GptScreen(),
+    const CategoriesPage(),
+    const GptScreen(),
     const BtScreen(),
     const ProfilePage()
   ];

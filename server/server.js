@@ -581,7 +581,7 @@ app.delete("/todos/:userId/:todoId", async (req, res) => {
   }
 });
 
-// Set todo as completed
+// Set todo completionstatus
 app.put("/todos/:userId/:todoId/completedStatus", async (req, res) => {
   const userId = req.params.userId;
   const todoId = req.params.todoId;
@@ -749,58 +749,81 @@ app.delete("/categories/:userId/:categoryName", async (req, res) => {
     // Check if the user exists
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).send("User not found");
-    }
-
-    // Check if the category exists for the user
-    const categoryIndex = user.categories.findIndex(
-      (category) => category.categoryName.toLowerCase() === categoryName
-    );
-    if (categoryIndex === -1) {
-      return res.status(404).send("Category not found for the user");
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // Remove the category from the user's categories array
+    const removedCategory = user.categories.find(
+      (category) => category.categoryName.toLowerCase() === categoryName
+    );
+    if (!removedCategory) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found for the user" });
+    }
+
+    const categoryIndex = user.categories.indexOf(removedCategory);
     user.categories.splice(categoryIndex, 1);
+
+    // Update todos with the deleted category name
+    user.todos = user.todos.filter((todo) => todo.category !== categoryName);
+
     await user.save();
 
-    res.send("Category deleted successfully");
+    res.json({ success: true, message: "Category deleted successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).send("Error deleting category");
+    res
+      .status(500)
+      .json({ success: false, message: "Error deleting category" });
   }
 });
 
 // Edit category
 app.put("/categories/:userId/:categoryName", async (req, res) => {
   const userId = req.params.userId;
-  const categoryName = req.params.categoryName.toLowerCase(); // Convert category name to lowercase
+  const oldCategoryName = req.params.categoryName.toLowerCase(); // Convert category name to lowercase
   const { newCategoryName, categoryColor } = req.body;
   try {
     // Check if the user exists
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).send("User not found");
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
-    // Check if the category exists for the user
+    // Find the category to be edited
     const category = user.categories.find(
-      (category) => category.categoryName.toLowerCase() === categoryName
+      (category) => category.categoryName.toLowerCase() === oldCategoryName
     );
     if (!category) {
-      return res.status(404).send("Category not found for the user");
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found for the user" });
     }
 
-    console.log(category);
     // Update the category name and color
     category.categoryName = newCategoryName;
     category.categoryColor = categoryColor;
 
+    // Update todos with the edited category name
+    user.todos.forEach((todo) => {
+      if (todo.category.toLowerCase() === oldCategoryName) {
+        todo.category = newCategoryName;
+      }
+    });
+
     await user.save();
-    res.send("Category updated successfully");
+
+    res.json({ success: true, message: "Category updated successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).send("Error updating category");
+    res
+      .status(500)
+      .json({ success: false, message: "Error deleting category" });
   }
 });
 

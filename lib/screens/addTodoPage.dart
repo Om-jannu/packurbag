@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../components/GlobalSnackbar.dart';
@@ -276,55 +277,63 @@ class _AddTodoPageState extends State<AddTodoPage> {
           builder: (BuildContext context, StateSetter setState) {
             return Padding(
               padding: MediaQuery.of(context).viewInsets,
-              child: Form(
-                key: _addCategoryformKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 16.0),
-                    TextFormField(
-                      controller: _categoryTextController,
-                      decoration:
-                          const InputDecoration(labelText: 'Category Name'),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter category name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16.0),
-                    ListTile(
-                      title: const Text('Category Color'),
-                      subtitle: Text(
-                        ColorTools.nameThatColor(dialogPickerColorLocal),
+              child: Container(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _addCategoryformKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Add new Category',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
                       ),
-                      trailing: ColorIndicator(
-                        width: 44,
-                        height: 44,
-                        borderRadius: 4,
-                        color: dialogPickerColorLocal,
-                        onSelectFocus: false,
-                        onSelect: () async {
-                          final Color colorBeforeDialog =
-                              dialogPickerColorLocal;
-                          if (await colorPickerDialog()) {
-                            setState(() {
-                              dialogPickerColorLocal = dialogPickerColor;
-                            });
-                          } else {
-                            setState(() {
-                              dialogPickerColorLocal = colorBeforeDialog;
-                            });
+                      const SizedBox(height: 16.0),
+                      TextFormField(
+                        controller: _categoryTextController,
+                        decoration:
+                            const InputDecoration(labelText: 'Category Name'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter category name';
                           }
+                          return null;
                         },
                       ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => _addCategory(dialogPickerColorLocal),
-                      child: const Text('Add Category'),
-                    ),
-                  ],
+                      const SizedBox(height: 16.0),
+                      ListTile(
+                        title: const Text('Category Color'),
+                        subtitle: Text(
+                          ColorTools.nameThatColor(dialogPickerColorLocal),
+                        ),
+                        trailing: ColorIndicator(
+                          width: 44,
+                          height: 44,
+                          borderRadius: 4,
+                          color: dialogPickerColorLocal,
+                          onSelectFocus: false,
+                          onSelect: () async {
+                            final Color colorBeforeDialog =
+                                dialogPickerColorLocal;
+                            if (await colorPickerDialog()) {
+                              setState(() {
+                                dialogPickerColorLocal = dialogPickerColor;
+                              });
+                            } else {
+                              setState(() {
+                                dialogPickerColorLocal = colorBeforeDialog;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => _addCategory(dialogPickerColorLocal),
+                        child: const Text('Add Category'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -339,12 +348,11 @@ class _AddTodoPageState extends State<AddTodoPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Todo'),
-        actions: [
-          IconButton(
-            onPressed: () => _showAddCategoryBottomSheet(context),
-            icon: const Icon(Icons.add),
-          ),
-        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddCategoryBottomSheet(context),
+        icon: const FaIcon(FontAwesomeIcons.tag),
+        label: const Text('Add Category'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

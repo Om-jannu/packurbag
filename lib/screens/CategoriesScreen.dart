@@ -395,32 +395,54 @@
 // }
 
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:io';
 
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
-import 'package:pub/screens/addTodoPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../components/GlobalSnackbar.dart';
 import '../main.dart';
 import '../models/category.dart';
-import '../models/todo.dart';
-import '../utils/utils.dart';
+import 'todoListPage.dart';
 
 class CategoriesPage extends StatefulWidget {
+  const CategoriesPage({super.key});
+
   @override
   _CategoriesPageState createState() => _CategoriesPageState();
 }
 
 class _CategoriesPageState extends State<CategoriesPage> {
   List<CategoryData> _categories = [];
+  late Color dialogPickerColor;
+  static const Color guidePrimary = Color(0xFF6200EE);
+  static const Color guidePrimaryVariant = Color(0xFF3700B3);
+  static const Color guideSecondary = Color(0xFF03DAC6);
+  static const Color guideSecondaryVariant = Color(0xFF018786);
+  static const Color guideError = Color(0xFFB00020);
+  static const Color guideErrorDark = Color(0xFFCF6679);
+  static const Color blueBlues = Color(0xFF174378);
 
+  // Make a custom ColorSwatch to name map from the above custom colors.
+  final Map<ColorSwatch<Object>, String> colorsNameMap =
+      <ColorSwatch<Object>, String>{
+    ColorTools.createPrimarySwatch(guidePrimary): 'Guide Purple',
+    ColorTools.createPrimarySwatch(guidePrimaryVariant): 'Guide Purple Variant',
+    ColorTools.createAccentSwatch(guideSecondary): 'Guide Teal',
+    ColorTools.createAccentSwatch(guideSecondaryVariant): 'Guide Teal Variant',
+    ColorTools.createPrimarySwatch(guideError): 'Guide Error',
+    ColorTools.createPrimarySwatch(guideErrorDark): 'Guide Error Dark',
+    ColorTools.createPrimarySwatch(blueBlues): 'Blue blues',
+  };
+
+  final GlobalKey<FormState> _addCategoryformKey = GlobalKey<FormState>();
+  final TextEditingController _categoryTextController = TextEditingController();
   @override
   void initState() {
     super.initState();
+    dialogPickerColor = Colors.red;
     _fetchCategories();
   }
 
@@ -437,6 +459,10 @@ class _CategoriesPageState extends State<CategoriesPage> {
         if (category.success ?? false) {
           setState(() {
             _categories = category.categoryData ?? [];
+            if (_categories.isEmpty) {
+              // If no categories are fetched, populate with predefined categories
+              _categories = _getPredefinedCategories();
+            }
           });
         } else {
           if (mounted) {
@@ -465,17 +491,214 @@ class _CategoriesPageState extends State<CategoriesPage> {
     }
   }
 
+  List<CategoryData> _getPredefinedCategories() {
+    List<CategoryData> predefinedCategories = [
+      CategoryData(
+        categoryName: 'Birthdays',
+        categoryColor: 'FF5733', // Example color (orange)
+        todoCount: 0,
+      ),
+      CategoryData(
+        categoryName: 'Meetings',
+        categoryColor: '3366FF', // Example color (blue)
+        todoCount: 0,
+      ),
+      CategoryData(
+        categoryName: 'Shopping',
+        categoryColor: 'FFD700', // Example color (gold)
+        todoCount: 0,
+      ),
+      CategoryData(
+        categoryName: 'Exercise',
+        categoryColor: '00FF00', // Example color (green)
+        todoCount: 0,
+      ),
+      CategoryData(
+        categoryName: 'Events',
+        categoryColor: 'FF1493', // Example color (deep pink)
+        todoCount: 0,
+      ),
+      CategoryData(
+        categoryName: 'Exams',
+        categoryColor: '9932CC', // Example color (dark orchid)
+        todoCount: 0,
+      ),
+      CategoryData(
+        categoryName: 'Reading',
+        categoryColor: '4169E1', // Example color (royal blue)
+        todoCount: 0,
+      ),
+      CategoryData(
+        categoryName: 'Savings',
+        categoryColor: 'FFA500', // Example color (orange)
+        todoCount: 0,
+      ),
+      CategoryData(
+        categoryName: 'Bills',
+        categoryColor: 'FF4500', // Example color (orangered)
+        todoCount: 0,
+      ),
+      CategoryData(
+        categoryName: 'Trips',
+        categoryColor: 'FF6347', // Example color (tomato)
+        todoCount: 0,
+      ),
+    ];
+
+    return predefinedCategories;
+  }
+
+  void _showAddCategoryBottomSheet(BuildContext context) {
+    Color dialogPickerColorLocal = dialogPickerColor;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Padding(
+              padding: MediaQuery.of(context).viewInsets,
+              child: Container(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _addCategoryformKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Add new Category',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16.0),
+                      TextFormField(
+                        controller: _categoryTextController,
+                        decoration:
+                            const InputDecoration(labelText: 'Category Name'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter category name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16.0),
+                      ListTile(
+                        title: const Text('Category Color'),
+                        subtitle: Text(
+                          ColorTools.nameThatColor(dialogPickerColorLocal),
+                        ),
+                        trailing: ColorIndicator(
+                          width: 44,
+                          height: 44,
+                          borderRadius: 4,
+                          color: dialogPickerColorLocal,
+                          onSelectFocus: false,
+                          onSelect: () async {
+                            final Color colorBeforeDialog =
+                                dialogPickerColorLocal;
+                            if (await colorPickerDialog()) {
+                              setState(() {
+                                dialogPickerColorLocal = dialogPickerColor;
+                              });
+                            } else {
+                              setState(() {
+                                dialogPickerColorLocal = colorBeforeDialog;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => _addCategory(
+                            _categoryTextController.text,
+                            dialogPickerColorLocal),
+                        child: const Text('Add Category'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _addCategory(
+      String _categoryText, Color dialogPickerColorLocal) async {
+    try {
+      if (_addCategoryformKey.currentState!.validate()) {
+        final prefs = await SharedPreferences.getInstance();
+        final userId = prefs.getString('userId') ?? '';
+        final response = await http.post(
+          Uri.parse('http://$serverIp:5000/categories/$userId'),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: jsonEncode(<String, dynamic>{
+            'categoryName': _categoryText,
+            'categoryColor': dialogPickerColorLocal.hex, // Send selected color
+          }),
+        );
+        final data = jsonDecode(response.body);
+        print(data);
+        if (response.statusCode == 201) {
+          _fetchCategories();
+          _addCategoryformKey.currentState!.reset();
+          setState(() {
+            dialogPickerColorLocal = Colors.red;
+          });
+          Navigator.pop(context);
+          if (mounted) {
+            GlobalSnackbar.show(context, data['message'], success: true);
+          }
+        } else {
+          _addCategoryformKey.currentState!.reset();
+          setState(() {
+            dialogPickerColorLocal = Colors.red;
+          });
+          Navigator.pop(context);
+          if (mounted) {
+            GlobalSnackbar.show(context, data['message']);
+          }
+        }
+      }
+    } catch (e) {
+      if (e is SocketException) {
+        if (mounted) {
+          GlobalSnackbar.show(context,
+              'Connection error: Please check your internet connection.');
+        }
+      } else {
+        print('Error: $e');
+        if (mounted) {
+          GlobalSnackbar.show(
+              context, 'An error occurred while adding category');
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Categories'),
+        actions: [
+          IconButton(
+            onPressed: () => _showAddCategoryBottomSheet(context),
+            icon: const Icon(Icons.add),
+          ),
+        ],
       ),
       body: ListView.builder(
         itemCount: _categories.length,
         itemBuilder: (context, index) {
           final category = _categories[index];
-          return GestureDetector(
+          return InkWell(
             onTap: () {
               Navigator.push(
                 context,
@@ -483,6 +706,9 @@ class _CategoriesPageState extends State<CategoriesPage> {
                   builder: (context) => TodoListPage(category: category),
                 ),
               );
+            },
+            onLongPress: () {
+              _showEditDeleteBottomSheet(context, category);
             },
             child: ListTile(
               title: Text(category.categoryName ?? ''),
@@ -499,379 +725,134 @@ class _CategoriesPageState extends State<CategoriesPage> {
     );
   }
 
-  Color _parseColor(String? colorHex) {
-    if (colorHex != null && colorHex.isNotEmpty) {
-      return Color(int.parse('0xFF$colorHex'));
-    }
-    return Colors.grey;
-  }
-}
-
-class TodoListPage extends StatefulWidget {
-  final CategoryData category;
-
-  const TodoListPage({Key? key, required this.category}) : super(key: key);
-
-  @override
-  _TodoListPageState createState() => _TodoListPageState();
-}
-
-class _TodoListPageState extends State<TodoListPage> {
-  late List<TodoData> _todos = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchTodos();
-  }
-
-  Future<void> _fetchTodos() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('userId') ?? '';
-      final response = await http.get(
-        Uri.parse('http://$serverIp:5000/todos/$userId/${widget.category.sId}'),
-      );
-
-      if (response.statusCode == 200) {
-        final todo = Todo.fromJson(jsonDecode(response.body));
-        if (todo.success ?? false) {
-          setState(() {
-            _todos = todo.todoData ?? [];
-          });
-        } else {
-          if (mounted) {
-            GlobalSnackbar.show(
-              context,
-              todo.message ?? 'Failed to fetch todos',
-            );
-          }
-        }
-      } else {
-        if (mounted) {
-          GlobalSnackbar.show(context, 'Failed to fetch todos');
-        }
-      }
-    } catch (e) {
-      print('Error: $e');
-      if (e is SocketException) {
-        if (mounted) {
-          GlobalSnackbar.show(
-            context,
-            'Connection error: Please check your internet connection.',
-          );
-        }
-      } else {
-        if (mounted) {
-          GlobalSnackbar.show(
-            context,
-            'An error occurred while fetching todos',
-          );
-        }
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.category.categoryName ?? ''),
+  Future<bool> colorPickerDialog() async {
+    return ColorPicker(
+      color: dialogPickerColor,
+      onColorChanged: (Color color) =>
+          setState(() => dialogPickerColor = color),
+      width: 40,
+      height: 40,
+      borderRadius: 4,
+      spacing: 5,
+      runSpacing: 5,
+      wheelDiameter: 155,
+      heading: Text(
+        'Select color',
+        style: Theme.of(context).textTheme.titleMedium,
       ),
-      body: ListView.builder(
-        itemCount: _todos.length,
-        itemBuilder: (context, index) {
-          final todo = _todos[index];
-          return _buildTodoItem(todo);
-        },
+      subheading: Text(
+        'Select color shade',
+        style: Theme.of(context).textTheme.titleMedium,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showAddTodoBottomSheet(context);
-        },
-        child: const Icon(Icons.add),
+      wheelSubheading: Text(
+        'Selected color and its shades',
+        style: Theme.of(context).textTheme.titleMedium,
       ),
-    );
-  }
-
-  Widget _buildTodoItem(TodoData todo) {
-    return ListTile(
-      title: Text(todo.text ?? ''),
-      subtitle: Text(todo.date ?? ''),
-      trailing: Checkbox(
-        value: todo.completed ?? false,
-        onChanged: (value) {
-          // Update todo completion status
-          setState(() {
-            todo.completed = value;
-          });
-          // Call API to update todo completion status
-          _updateTodoCompletionStatus(
-              todo, value!); // Pass the updated completion status
-        },
+      showMaterialName: true,
+      showColorName: true,
+      showColorCode: true,
+      copyPasteBehavior: const ColorPickerCopyPasteBehavior(
+        longPressMenu: true,
       ),
-      onTap: () {
-        _showEditTodoBottomSheet(todo);
+      materialNameTextStyle: Theme.of(context).textTheme.bodySmall,
+      colorNameTextStyle: Theme.of(context).textTheme.bodySmall,
+      colorCodeTextStyle: Theme.of(context).textTheme.bodyMedium,
+      colorCodePrefixStyle: Theme.of(context).textTheme.bodySmall,
+      selectedPickerTypeColor: Theme.of(context).colorScheme.primary,
+      pickersEnabled: const <ColorPickerType, bool>{
+        ColorPickerType.both: false,
+        ColorPickerType.primary: true,
+        ColorPickerType.accent: true,
+        ColorPickerType.bw: false,
+        ColorPickerType.custom: true,
+        ColorPickerType.wheel: true,
       },
+      customColorSwatchesAndNames: colorsNameMap,
+    ).showPickerDialog(
+      context,
+      actionsPadding: const EdgeInsets.all(16),
+      constraints:
+          const BoxConstraints(minHeight: 480, minWidth: 300, maxWidth: 320),
     );
   }
 
-  void _showAddTodoBottomSheet(BuildContext context) {
-    TextEditingController nameController = TextEditingController();
-    int priorityValue = 0;
-    DateTime selectedDate = DateTime.now();
-
-    final _formKey = GlobalKey<FormState>();
+  void _showEditDeleteBottomSheet(BuildContext context, CategoryData category) {
+    TextEditingController nameController =
+        TextEditingController(text: category.categoryName);
+    Color dialogPickerColorLocal = _parseColor(category.categoryColor);
 
     showModalBottomSheet(
-      isScrollControlled: true,
       context: context,
+      isScrollControlled: true,
       builder: (BuildContext context) {
-        return Padding(
-          padding: MediaQuery.of(context).viewInsets,
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
+        return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+          return Padding(
+            padding: MediaQuery.of(context).viewInsets,
+            child: Container(
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Add New Todo',
+                    'Edit Category',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
-                  TextFormField(
+                  const SizedBox(height: 16.0),
+                  TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Todo Name'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter todo name';
-                      }
-                      return null;
-                    },
+                    decoration:
+                        const InputDecoration(labelText: 'Category Name'),
                   ),
-                  DropdownButtonFormField<int>(
-                    value: priorityValue,
-                    onChanged: (int? value) {
-                      setState(() {
-                        priorityValue = value ?? 0;
-                      });
-                    },
-                    items:
-                        [0, 1, 2, 3, 4].map<DropdownMenuItem<int>>((int value) {
-                      return DropdownMenuItem<int>(
-                        value: value,
-                        child: Text(priorityLabels[value] ?? 'Unknown'),
-                      );
-                    }).toList(),
-                    decoration: const InputDecoration(labelText: 'Priority'),
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Please select priority';
-                      }
-                      return null;
-                    },
+                  const SizedBox(height: 16.0),
+                  ListTile(
+                    title: const Text('Category Color'),
+                    subtitle: Text(
+                      ColorTools.nameThatColor(dialogPickerColorLocal),
+                    ),
+                    trailing: ColorIndicator(
+                      width: 44,
+                      height: 44,
+                      borderRadius: 4,
+                      color: dialogPickerColorLocal,
+                      onSelectFocus: false,
+                      onSelect: () async {
+                        if (await colorPickerDialog()) {
+                          setState(() {
+                            dialogPickerColorLocal = dialogPickerColor;
+                          });
+                        } else {
+                          setState(() {
+                            dialogPickerColorLocal =
+                                _parseColor(category.categoryColor);
+                          });
+                        }
+                      },
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Date:',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          final DateTime? pickedDate = await showDatePicker(
-                            context: context,
-                            initialDate: selectedDate,
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2101),
-                          );
-                          if (pickedDate != null &&
-                              pickedDate != selectedDate) {
-                            setState(() {
-                              selectedDate = pickedDate;
-                            });
-                          }
-                        },
-                        child: Text(
-                          DateFormat('yyyy-MM-dd').format(selectedDate),
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16.0),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            // Call API to add new todo
-                            _addTodoData(nameController.text, selectedDate,
-                                priorityValue);
-
-                            // Close the bottom sheet
-                            Navigator.pop(context);
-                          }
-                        },
-                        child: const Text('Add'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _addTodoData(String text, DateTime date, int priority) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('userId') ?? '';
-
-      final response = await http.post(
-        Uri.parse('http://$serverIp:5000/todos/$userId'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, dynamic>{
-          'text': text.trim(),
-          'date': date.toIso8601String(),
-          'priority': priority,
-          'category': widget.category.categoryName,
-          'dateOfCreation': DateTime.now().toIso8601String(),
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        // Refresh categories after adding
-        _fetchTodos();
-        if (mounted) {
-          GlobalSnackbar.show(context, 'Todo Added successfully',
-              success: true);
-        }
-      } else {
-        if (mounted) {
-          GlobalSnackbar.show(context, 'Failed to add todo');
-        }
-      }
-    } catch (e) {
-      print('Error adding todo: $e');
-      if (e is SocketException) {
-        if (mounted) {
-          GlobalSnackbar.show(
-            context,
-            'Connection error: Please check your internet connection.',
-          );
-        }
-      } else {
-        if (mounted) {
-          GlobalSnackbar.show(
-            context,
-            'An error occurred while adding todo',
-          );
-        }
-      }
-    }
-  }
-
-  void _showEditTodoBottomSheet(TodoData todo) {
-    TextEditingController textController =
-        TextEditingController(text: todo.text);
-    TextEditingController dateController =
-        TextEditingController(text: todo.date);
-    int? priorityValue = todo.priority;
-
-    final _formKey = GlobalKey<FormState>();
-
-    showModalBottomSheet(
-      isScrollControlled: true,
-      context: context,
-      builder: (BuildContext context) {
-        return Padding(
-          padding: MediaQuery.of(context).viewInsets,
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Edit Todo',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  TextFormField(
-                    controller: textController,
-                    decoration: const InputDecoration(labelText: 'Todo Text'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter todo text';
-                      }
-                      return null;
-                    },
-                  ),
-                  DropdownButtonFormField<int>(
-                    value: priorityValue,
-                    onChanged: (int? value) {
-                      setState(() {
-                        priorityValue = value;
-                      });
-                    },
-                    items:
-                        [0, 1, 2, 3, 4].map<DropdownMenuItem<int>>((int value) {
-                      return DropdownMenuItem<int>(
-                        value: value,
-                        child: Text(priorityLabels[value] ?? 'Unknown'),
-                      );
-                    }).toList(),
-                    decoration: const InputDecoration(labelText: 'Priority'),
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Please select priority';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            // Update todo data
-                            todo.text = textController.text;
-                            todo.date = dateController.text;
-                            todo.priority = priorityValue;
-                            _updateTodoData(todo);
-                            // Close the bottom sheet
-                            Navigator.pop(context);
-                          }
+                          // Perform edit operation
+                          _editCategory(category, nameController.text,
+                              dialogPickerColorLocal.hex);
+                          Navigator.pop(context); // Close bottom sheet
                         },
                         child: const Text('Save'),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8.0),
                       ElevatedButton(
                         onPressed: () {
-                          // Delete todo
-                          _deleteTodoData(todo);
-
-                          // Close the bottom sheet
-                          Navigator.pop(context);
+                          // Perform delete operation
+                          _deleteCategory(category);
+                          Navigator.pop(context); // Close bottom sheet
                         },
-                        style: ButtonStyle(
-                          backgroundColor:
-                              MaterialStateProperty.all(Colors.red),
-                        ),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red),
                         child: const Text('Delete'),
                       ),
                     ],
@@ -879,154 +860,87 @@ class _TodoListPageState extends State<TodoListPage> {
                 ],
               ),
             ),
-          ),
-        );
+          );
+        });
       },
     );
   }
 
-  Future<void> _updateTodoCompletionStatus(
-      TodoData todo, bool completedStatus) async {
+  void _editCategory(
+      CategoryData category, String newName, String newColor) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
+      final categoryName = category.categoryName ?? '';
+
       final response = await http.put(
-        Uri.parse(
-            'http://$serverIp:5000/todos/$userId/${todo.sId}/completedStatus'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
+        Uri.parse('http://$serverIp:5000/categories/$userId/$categoryName'),
+        body:
+            jsonEncode({'newCategoryName': newName, 'categoryColor': newColor}),
+        headers: {
+          'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'completed': completedStatus,
-          'todo':
-              todo.toJson(), // Pass the todo along with the completion status
-        }),
       );
 
       if (response.statusCode == 200) {
         setState(() {
-          // Update the todo in the list
-          final index = _todos.indexWhere((element) => element.sId == todo.sId);
-          if (index != -1) {
-            _todos[index].completed = completedStatus;
-          }
-        });
-      } else {
-        if (mounted) {
-          GlobalSnackbar.show(
-              context, 'Failed to update todo completion status');
-        }
-      }
-    } catch (e) {
-      print('Error updating todo completion status: $e');
-      if (e is SocketException) {
-        if (mounted) {
-          GlobalSnackbar.show(
-            context,
-            'Connection error: Please check your internet connection.',
-          );
-        }
-      } else {
-        if (mounted) {
-          GlobalSnackbar.show(
-            context,
-            'An error occurred while updating todo completion status',
-          );
-        }
-      }
-    }
-  }
-
-  Future<void> _updateTodoData(TodoData todo) async {
-    print(todo.toJson());
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('userId') ?? '';
-      final response = await http.put(
-        Uri.parse('http://$serverIp:5000/todos/$userId/${todo.sId}'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(todo.toJson()),
-      );
-
-      if (response.statusCode == 200) {
-        // Update successful, no need to parse response
-        setState(() {
-          // Update the todo in the list
-          final index = _todos.indexWhere((element) => element.sId == todo.sId);
-          if (index != -1) {
-            _todos[index] = todo; // Update with the modified todo
-          }
-          if (mounted) {
-            GlobalSnackbar.show(context, 'todo updated successfully',
-                success: true);
-          }
-        });
-      } else {
-        if (mounted) {
-          GlobalSnackbar.show(context, 'Failed to update todo');
-        }
-      }
-    } catch (e) {
-      print('Error updating todo: $e');
-      if (e is SocketException) {
-        if (mounted) {
-          GlobalSnackbar.show(
-            context,
-            'Connection error: Please check your internet connection.',
-          );
-        }
-      } else {
-        if (mounted) {
-          GlobalSnackbar.show(
-            context,
-            'An error occurred while updating todo',
-          );
-        }
-      }
-    }
-  }
-
-  Future<void> _deleteTodoData(TodoData todo) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('userId') ?? '';
-      final response = await http.delete(
-        Uri.parse('http://$serverIp:5000/todos/$userId/${todo.sId}'),
-      );
-
-      if (response.statusCode == 200) {
-        setState(() {
-          // Remove the deleted todo from the list
-          _todos.removeWhere((element) => element.sId == todo.sId);
+          category.categoryName = newName;
+          category.categoryColor = newColor;
         });
         if (mounted) {
-          GlobalSnackbar.show(context, 'todo deleted successfully',
+          GlobalSnackbar.show(context, 'Category updated successfully',
               success: true);
         }
       } else {
         if (mounted) {
-          GlobalSnackbar.show(context, 'Failed to delete todo');
+          GlobalSnackbar.show(context, 'Failed to update category');
         }
       }
     } catch (e) {
-      print('Error deleting todo: $e');
-      if (e is SocketException) {
+      print('Error: $e');
+      if (mounted) {
+        GlobalSnackbar.show(
+            context, 'An error occurred while updating category');
+      }
+    }
+  }
+
+  void _deleteCategory(CategoryData category) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId') ?? '';
+      final categoryName = category.categoryName ?? '';
+
+      final response = await http.delete(
+        Uri.parse('http://$serverIp:5000/categories/$userId/$categoryName'),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _categories.remove(category);
+        });
         if (mounted) {
-          GlobalSnackbar.show(
-            context,
-            'Connection error: Please check your internet connection.',
-          );
+          GlobalSnackbar.show(context, 'Category deleted successfully',
+              success: true);
         }
       } else {
         if (mounted) {
-          GlobalSnackbar.show(
-            context,
-            'An error occurred while deleting todo',
-          );
+          GlobalSnackbar.show(context, 'Failed to delete category');
         }
       }
+    } catch (e) {
+      print('Error: $e');
+      if (mounted) {
+        GlobalSnackbar.show(
+            context, 'An error occurred while deleting category');
+      }
     }
+  }
+
+  Color _parseColor(String? colorHex) {
+    if (colorHex != null && colorHex.isNotEmpty) {
+      return Color(int.parse('0xFF$colorHex'));
+    }
+    return Colors.grey;
   }
 }

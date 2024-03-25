@@ -2,6 +2,8 @@ import 'dart:collection';
 
 import 'package:table_calendar/table_calendar.dart';
 
+import '../models/category.dart';
+
 /// Example event class.
 class Event {
   final String title;
