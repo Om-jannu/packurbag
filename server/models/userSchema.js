@@ -59,9 +59,8 @@ const userSchema = {
     default: [],
   },
   todos: {
-    type: Map,
-    of: [todoSchema],
-    default: {},
+    type: [todoSchema],
+    default: [],
   },
 };
 const User = mongoose.model("User", userSchema);

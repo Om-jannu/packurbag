@@ -373,15 +373,95 @@ function generateUniqueKey() {
 }
 
 // ==========================Define routes================================
+// Register a new user
+app.post("/register", async (req, res) => {
+  const { username, password, userEmail } = req.body;
+  try {
+    const newUser = new User({ username, userEmail, password });
+    await newUser.save();
+    res.json({ success: true, message: "User registered successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Registration failed" });
+  }
+});
+// Login user
+app.post("/login", async (req, res) => {
+  const { userEmail, password } = req.body;
+  console.log(userEmail, password);
+  try {
+    const user = await User.findOne({
+      userEmail: userEmail,
+      password: password,
+    });
+    console.log("user details", user);
+    if (user) {
+      res.json({ success: true, message: "Login successful", data: user });
+    } else {
+      res.json({ success: false, message: "User not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Login failed" });
+  }
+});
+
 // Fetch todos
 app.get("/todos/:userId", async (req, res) => {
   const userId = req.params.userId;
   try {
     const user = await User.findById(userId);
-    res.send(user.todos);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+    res.json({ success: true, message: "Todos found", data: user.todos });
   } catch (error) {
     console.error(error);
-    res.status(500).send("Error fetching todos");
+    res.status(500).json({ success: false, message: "Error fetching todos" });
+  }
+});
+
+// Fetch todos for a category
+app.get("/todos/:userId/:categoryId", async (req, res) => {
+  const userId = req.params.userId;
+  const categoryId = req.params.categoryId;
+  try {
+    // Find the user by userId
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Find the category by categoryId
+    const category = user.categories.find((cat) => cat._id == categoryId);
+    if (!category) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+
+    // Filter todos based on the category name
+    const todosForCategory = user.todos.filter(
+      (todo) => todo.category === category.categoryName
+    );
+
+    if (todosForCategory.length > 0) {
+      res.json({
+        success: true,
+        message: "Todos Found",
+        data: todosForCategory,
+      });
+    } else {
+      res.json({
+        success: false,
+        message: "No Todos Found for this category",
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching todos" });
   }
 });
 
@@ -389,7 +469,7 @@ app.get("/todos/:userId", async (req, res) => {
 app.post("/todos/:userId", async (req, res) => {
   const userId = req.params.userId;
   const todoData = req.body;
-  console.log(userId, todoData);
+  console.log(todoData);
 
   try {
     const user = await User.findById(userId);
@@ -400,11 +480,8 @@ app.post("/todos/:userId", async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    // Generate unique key for the todo
-    const todoKey = generateUniqueKey();
-
-    // Set the todo with the generated key
-    user.todos.set(todoKey, todoData);
+    // Add the todo to the todos array
+    user.todos.push(todoData);
 
     // Update the todo count for the corresponding category
     const categoryIndex = user.categories.findIndex(
@@ -431,10 +508,25 @@ app.put("/todos/:userId/:todoId", async (req, res) => {
   const updatedTodoData = req.body;
   try {
     const user = await User.findById(userId);
-    const todo = user.todos.id(todoId);
-    todo.set(updatedTodoData);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Find the todo by todoId
+    const todo = user.todos.find((todo) => todo._id == todoId);
+    if (!todo) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Todo not found" });
+    }
+
+    // Update todo data
+    Object.assign(todo, updatedTodoData);
+
     await user.save();
-    res.send(user.todos);
+    res.json({ success: true, message: "Todo updated successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).send("Error updating todo");
@@ -447,24 +539,129 @@ app.delete("/todos/:userId/:todoId", async (req, res) => {
   const todoId = req.params.todoId;
   try {
     const user = await User.findById(userId);
-    user.todos.id(todoId).remove();
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Find the todo by todoId
+    const todo = user.todos.find((todo) => todo._id == todoId);
+    console.log(todo);
+    if (!todo) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Todo not found" });
+    }
+
+    // Find the category associated with the todo
+    const category = user.categories.find(
+      (cat) => cat.categoryName === todo.category
+    );
+    if (!category) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found for the todo" });
+    }
+
+    // Remove todo from the todos array
+    const todoIndex = user.todos.findIndex((todo) => todo._id == todoId);
+    user.todos.splice(todoIndex, 1);
+
+    // Update todo count for the category
+    if (category.todoCount && category.todoCount > 0) {
+      category.todoCount--;
+    }
+
     await user.save();
-    res.send(user.todos);
+    res.json({ success: true, message: "Todo deleted successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).send("Error deleting todo");
   }
 });
 
-// Register a new user
-app.post("/register", async (req, res) => {
-  const { username, password, userEmail } = req.body;
+// Set todo as completed
+app.put("/todos/:userId/:todoId/completedStatus", async (req, res) => {
+  const userId = req.params.userId;
+  const todoId = req.params.todoId;
+  const { completed } = req.body;
+  console.log(userId, todoId, completed);
   try {
-    const newUser = new User({ username, userEmail, password });
-    await newUser.save();
-    res.json({ success: true, message: "User registered successfully" });
+    // Find the user by userId
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Find the todo item by todoId
+    const todoIndex = user.todos.findIndex(
+      (todo) => todo._id.toString() === todoId
+    );
+    if (todoIndex === -1) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Todo not found" });
+    }
+
+    // Update the completion status of the todo item
+    user.todos[todoIndex].completed = completed;
+
+    // Save the updated user document
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Todo completion status updated successfully",
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Registration failed" });
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating todo completion status",
+    });
+  }
+});
+// Set completion status for batched todos
+app.put("/todos/:userId/batchCompletedStatus", async (req, res) => {
+  const userId = req.params.userId;
+  const batchedTodos = req.body;
+  console.log(userId, batchedTodos);
+  try {
+    // Find the user by userId
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Iterate over batchedTodos array and update completion status for each todo
+    batchedTodos.forEach((batchedTodo) => {
+      const { todoId, completed } = batchedTodo;
+      const todoIndex = user.todos.findIndex(
+        (todo) => todo._id.toString() === todoId
+      );
+      if (todoIndex !== -1) {
+        user.todos[todoIndex].completed = completed;
+      }
+    });
+
+    // Save the updated user document
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Todo completion status updated successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating todo completion status",
+    });
   }
 });
 
@@ -604,26 +801,6 @@ app.put("/categories/:userId/:categoryName", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send("Error updating category");
-  }
-});
-
-// Login user
-app.post("/login", async (req, res) => {
-  const { userEmail, password } = req.body;
-  console.log(userEmail, password);
-  try {
-    const user = await User.findOne({
-      userEmail: userEmail,
-      password: password,
-    });
-    console.log("user details", user);
-    if (user) {
-      res.json({ success: true, message: "Login successful", data: user });
-    } else {
-      res.json({ success: false, message: "User not found" });
-    }
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Login failed" });
   }
 });
 

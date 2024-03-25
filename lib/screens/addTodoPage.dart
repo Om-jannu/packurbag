@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../components/GlobalSnackbar.dart';
 import '../main.dart';
+import '../utils/utils.dart';
 
 class AddTodoPage extends StatefulWidget {
   const AddTodoPage({Key? key}) : super(key: key);
@@ -28,7 +29,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
   final List<int> _priorities = [0, 1, 2, 3, 4]; // Example priority levels
 
   //color picker
-  late Color dialogPickerColor; // Color for picker in dialog using onChanged
+  late Color dialogPickerColor;
   late bool isDark;
 
   static const Color guidePrimary = Color(0xFF6200EE);
@@ -159,6 +160,60 @@ class _AddTodoPageState extends State<AddTodoPage> {
     }
   }
 
+  Future<void> _addCategory(Color dialogPickerColorLocal) async {
+    try {
+      if (_addCategoryformKey.currentState!.validate()) {
+        final prefs = await SharedPreferences.getInstance();
+        final userId = prefs.getString('userId') ?? '';
+        final response = await http.post(
+          Uri.parse('http://$serverIp:5000/categories/$userId'),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: jsonEncode(<String, dynamic>{
+            'categoryName': _categoryTextController.text,
+            'categoryColor': dialogPickerColorLocal.hex, // Send selected color
+          }),
+        );
+        final data = jsonDecode(response.body);
+        print(data);
+        if (response.statusCode == 201) {
+          _fetchCategories();
+          _addCategoryformKey.currentState!.reset();
+          setState(() {
+            dialogPickerColorLocal = Colors.red;
+          });
+          Navigator.pop(context);
+          if (mounted) {
+            GlobalSnackbar.show(context, data['message'], success: true);
+          }
+        } else {
+          _addCategoryformKey.currentState!.reset();
+          setState(() {
+            dialogPickerColorLocal = Colors.red;
+          });
+          Navigator.pop(context);
+          if (mounted) {
+            GlobalSnackbar.show(context, data['message']);
+          }
+        }
+      }
+    } catch (e) {
+      if (e is SocketException) {
+        if (mounted) {
+          GlobalSnackbar.show(context,
+              'Connection error: Please check your internet connection.');
+        }
+      } else {
+        print('Error: $e');
+        if (mounted) {
+          GlobalSnackbar.show(
+              context, 'An error occurred while adding category');
+        }
+      }
+    }
+  }
+
   Future<bool> colorPickerDialog() async {
     return ColorPicker(
       color: dialogPickerColor,
@@ -220,12 +275,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                top: 16,
-                left: 16,
-                right: 16,
-              ),
+              padding: MediaQuery.of(context).viewInsets,
               child: Form(
                 key: _addCategoryformKey,
                 child: Column(
@@ -271,48 +321,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () async {
-                        if (_addCategoryformKey.currentState!.validate()) {
-                          final prefs = await SharedPreferences.getInstance();
-                          final userId = prefs.getString('userId') ?? '';
-                          print(userId +
-                              " " +
-                              _categoryTextController.text +
-                              " " +
-                              dialogPickerColorLocal.hex);
-                          final response = await http.post(
-                            Uri.parse(
-                                'http://$serverIp:5000/categories/$userId'),
-                            headers: <String, String>{
-                              'Content-Type': 'application/json; charset=UTF-8',
-                            },
-                            body: jsonEncode(<String, dynamic>{
-                              'categoryName': _categoryTextController.text,
-                              'categoryColor': dialogPickerColorLocal
-                                  .toString(), // Send selected color
-                            }),
-                          );
-                          final data = jsonDecode(response.body);
-                          print(data);
-                          if (response.statusCode == 201) {
-                            GlobalSnackbar.show(context, data['message'],
-                                success: true);
-                            _fetchCategories();
-                            Navigator.pop(context);
-                            _addCategoryformKey.currentState!.reset();
-                            setState(() {
-                              dialogPickerColorLocal = Colors.red;
-                            });
-                          } else {
-                            _addCategoryformKey.currentState!.reset();
-                            setState(() {
-                              dialogPickerColorLocal = Colors.red;
-                            });
-                            Navigator.pop(context);
-                            GlobalSnackbar.show(context, data['message']);
-                          }
-                        }
-                      },
+                      onPressed: () => _addCategory(dialogPickerColorLocal),
                       child: const Text('Add Category'),
                     ),
                   ],
@@ -408,7 +417,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
                 items: _priorities.map((int priority) {
                   return DropdownMenuItem<int>(
                     value: priority,
-                    child: Text('Priority $priority'),
+                    child: Text(priorityLabels[priority] ?? 'Unknown'),
                   );
                 }).toList(),
                 decoration: const InputDecoration(labelText: 'Priority'),
