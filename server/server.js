@@ -480,16 +480,26 @@ app.post("/todos/:userId", async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    // Add the todo to the todos array
-    user.todos.push(todoData);
-
-    // Update the todo count for the corresponding category
-    const categoryIndex = user.categories.findIndex(
+    // Find the category for the todo
+    const category = user.categories.find(
       (category) => category.categoryName === todoData.category
     );
-    if (categoryIndex !== -1) {
-      user.categories[categoryIndex].todoCount++;
+
+    if (!category) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
     }
+
+    // Add the todo to the todos array with category color
+    const todoWithCategoryColor = {
+      ...todoData,
+      categoryColor: category.categoryColor,
+    };
+    user.todos.push(todoWithCategoryColor);
+
+    // Update the todo count for the corresponding category
+    category.todoCount++;
 
     // Save the user
     await user.save();
@@ -533,7 +543,6 @@ app.put("/todos/:userId/:todoId", async (req, res) => {
   }
 });
 
-// Delete todo
 app.delete("/todos/:userId/:todoId", async (req, res) => {
   const userId = req.params.userId;
   const todoId = req.params.todoId;
@@ -573,6 +582,13 @@ app.delete("/todos/:userId/:todoId", async (req, res) => {
       category.todoCount--;
     }
 
+    // Decrement todoCompleted count if todo is completed
+    if (todo.completed) {
+      if (category.todoCompleted && category.todoCompleted > 0) {
+        category.todoCompleted--;
+      }
+    }
+
     await user.save();
     res.json({ success: true, message: "Todo deleted successfully" });
   } catch (error) {
@@ -581,7 +597,7 @@ app.delete("/todos/:userId/:todoId", async (req, res) => {
   }
 });
 
-// Set todo completionstatus
+//todo completionstatus
 app.put("/todos/:userId/:todoId/completedStatus", async (req, res) => {
   const userId = req.params.userId;
   const todoId = req.params.todoId;
@@ -609,6 +625,19 @@ app.put("/todos/:userId/:todoId/completedStatus", async (req, res) => {
     // Update the completion status of the todo item
     user.todos[todoIndex].completed = completed;
 
+    // Increment or decrement todoCompleted count in categories based on completion status
+    const category = user.todos[todoIndex].category;
+    const categoryIndex = user.categories.findIndex(
+      (cat) => cat.categoryName === category
+    );
+    if (categoryIndex !== -1) {
+      if (completed) {
+        user.categories[categoryIndex].todoCompleted++;
+      } else {
+        user.categories[categoryIndex].todoCompleted--;
+      }
+    }
+
     // Save the updated user document
     await user.save();
 
@@ -624,6 +653,7 @@ app.put("/todos/:userId/:todoId/completedStatus", async (req, res) => {
     });
   }
 });
+
 // Set completion status for batched todos
 app.put("/todos/:userId/batchCompletedStatus", async (req, res) => {
   const userId = req.params.userId;
@@ -686,7 +716,7 @@ app.get("/categories/:userId", async (req, res) => {
       });
     } else {
       res.json({
-        success: false,
+        success: true,
         message: "No Categories Found",
       });
     }
@@ -814,6 +844,7 @@ app.put("/categories/:userId/:categoryName", async (req, res) => {
       if (todo.category.toLowerCase() === oldCategoryName) {
         todo.category = newCategoryName;
       }
+      todo.categoryColor = categoryColor;
     });
 
     await user.save();

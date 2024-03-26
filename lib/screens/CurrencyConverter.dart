@@ -5,8 +5,11 @@ import 'dart:convert';
 class ConversionCard extends StatefulWidget {
   final rates;
   final Map currencies;
-  const ConversionCard(
-      {super.key, @required this.rates, required this.currencies});
+  const ConversionCard({
+    Key? key,
+    required this.rates,
+    required this.currencies,
+  }) : super(key: key);
 
   @override
   State<ConversionCard> createState() => _ConversionCardState();
@@ -46,6 +49,101 @@ class _ConversionCardState extends State<ConversionCard> {
     });
   }
 
+  void showCurrencyPicker(BuildContext context, String selectedCurrency) {
+    String? searchQuery;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Search currencies',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          searchQuery = value.toLowerCase();
+                        });
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: widget.currencies.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        String currencyCode =
+                            widget.currencies.keys.elementAt(index);
+                        String currencyName = widget.currencies[currencyCode]!;
+
+                        // Filter currencies based on search query
+                        if (searchQuery != null &&
+                            !currencyCode
+                                .toLowerCase()
+                                .contains(searchQuery!) &&
+                            !currencyName
+                                .toLowerCase()
+                                .contains(searchQuery!)) {
+                          return Container();
+                        }
+
+                        return ListTile(
+                          title: Text('$currencyCode - $currencyName'),
+                          onTap: () {
+                            Navigator.pop(context, currencyCode);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).then((selectedCurrencyCode) {
+      if (selectedCurrencyCode != null) {
+        setState(() {
+          selectedCurrency == 'dropdownValue1'
+              ? dropdownValue1 = selectedCurrencyCode
+              : dropdownValue2 = selectedCurrencyCode;
+        });
+      }
+    });
+  }
+
+  void onKeyboardTap(String value) {
+    setState(() {
+      amountController.text += value;
+    });
+  }
+
+  Widget buildKeyboardButton(String text) {
+    return Expanded(
+      child: TextButton(
+        onPressed: () => onKeyboardTap(text),
+        child: Text(
+          text,
+          style: TextStyle(fontSize: 20),
+        ),
+      ),
+    );
+  }
+
+  Widget buildKeyboardRow(List<String> rowValues) {
+    return Row(
+      children: rowValues.map((value) => buildKeyboardButton(value)).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -57,6 +155,8 @@ class _ConversionCardState extends State<ConversionCard> {
             controller: amountController,
             decoration: const InputDecoration(
               hintText: 'Enter Amount',
+              border: OutlineInputBorder(),
+              labelText: 'Amount',
             ),
             keyboardType: TextInputType.number,
             validator: (value) {
@@ -66,71 +166,62 @@ class _ConversionCardState extends State<ConversionCard> {
               return null;
             },
           ),
-          const SizedBox(
-            height: 20,
-          ),
-          DropdownRow(
-            label: 'From:',
-            value: dropdownValue1,
-            currencies: widget.currencies,
-            onChanged: (String? newValue) {
-              setState(() {
-                dropdownValue1 = newValue!;
-              });
-            },
-          ),
-          IconButton.filledTonal(
-            icon: const Icon(Icons.swap_vert),
-            onPressed: () {
-              if (amountController.text.isEmpty) {
-                swapCurrencies();
-              } else {
-                swapCurrencies();
-                convertAndDisplay();
-              }
-            },
-          ),
-          DropdownRow(
-            label: 'To:',
-            value: dropdownValue2,
-            currencies: widget.currencies,
-            onChanged: (String? newValue) {
-              setState(() {
-                dropdownValue2 = newValue!;
-              });
-            },
-          ),
-          const SizedBox(
-            height: 20,
-          ),
+          const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (formFieldKey.currentState!.validate()) {
-                      startLoading();
-                      conversion = '';
-                      convertAndDisplay();
-                    }
+                child: DropdownRow(
+                  label: 'From:',
+                  value: dropdownValue1,
+                  currencies: widget.currencies,
+                  onChanged: (String? newValue) {
+                    showCurrencyPicker(context, 'dropdownValue1');
                   },
-                  child: isLoading
-                      ? const CircularProgressIndicator()
-                      : const Text('Convert'),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.swap_vert),
+                onPressed: () {
+                  if (amountController.text.isEmpty) {
+                    swapCurrencies();
+                  } else {
+                    swapCurrencies();
+                    convertAndDisplay();
+                  }
+                },
+              ),
+              Expanded(
+                child: DropdownRow(
+                  label: 'To:',
+                  value: dropdownValue2,
+                  currencies: widget.currencies,
+                  onChanged: (String? newValue) {
+                    showCurrencyPicker(context, 'dropdownValue2');
+                  },
                 ),
               ),
             ],
           ),
-          const SizedBox(
-            height: 20,
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              if (formFieldKey.currentState!.validate()) {
+                startLoading();
+                conversion = '';
+                convertAndDisplay();
+              }
+            },
+            child: isLoading
+                ? const CircularProgressIndicator()
+                : const Text('Convert'),
           ),
+          const SizedBox(height: 20),
           Text(
             conversion,
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: Theme.of(context).textTheme.subtitle1,
             textAlign: TextAlign.center,
           ),
           const Spacer(),
-          const Text('Currency Rates by Open Exchange Rates'),
         ],
       ),
     );
@@ -154,37 +245,24 @@ class DropdownRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(
-          width: 20,
-        ),
         Expanded(
-          child: DropdownButton<String>(
-            borderRadius: BorderRadius.circular(15),
-            menuMaxHeight: 500.0,
-            value: value,
-            icon: const Icon(Icons.arrow_drop_down_rounded),
-            isExpanded: true,
-            onChanged: onChanged,
-            items: currencies.keys
-                .toSet()
-                .toList()
-                .map<DropdownMenuItem<String>>((value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(
-                  '$value - ${currencies[value]}',
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }).toList(),
+          child: InkWell(
+            onTap: () {
+              onChanged(value);
+            },
+            child: InputDecorator(
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(value),
+                  const Icon(Icons.arrow_drop_down),
+                ],
+              ),
+            ),
           ),
-        ),
-        const SizedBox(
-          width: 20,
         ),
       ],
     );
@@ -256,6 +334,7 @@ Map<String, String> allCurrenciesFromJson(String str) =>
 
 String allCurrenciesToJson(Map<String, String> data) =>
     json.encode(Map.from(data).map((k, v) => MapEntry<String, dynamic>(k, v)));
+
 Future<RatesModel> fetchRates() async {
   var response = await http.get(Uri.parse(AppUrl.ratesUrl));
   final ratesModel = ratesModelFromJson(response.body);
@@ -269,7 +348,7 @@ Future<Map> fetchCurrencies() async {
 }
 
 class CurrencyConverter extends StatefulWidget {
-  const CurrencyConverter({super.key});
+  const CurrencyConverter({Key? key});
 
   @override
   State<CurrencyConverter> createState() => _CurrencyConverterState();
@@ -295,34 +374,36 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('Currency Convertor'),
+        title: const Text('Currency Converter'),
       ),
       body: FutureBuilder<RatesModel>(
-          future: ratesModel,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-            } else {
-              return FutureBuilder<Map>(
-                  future: currenciesModel,
-                  builder: (context, index) {
-                    if (index.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    } else if (index.hasError) {
-                      return Center(child: Text('Error: ${index.error}'));
-                    } else {
-                      return ConversionCard(
-                        rates: snapshot.data!.rates,
-                        currencies: index.data!,
-                      );
-                    }
-                  });
-            }
-          }),
+        future: ratesModel,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          } else {
+            return FutureBuilder<Map>(
+              future: currenciesModel,
+              builder: (context, index) {
+                if (index.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                } else if (index.hasError) {
+                  return Center(child: Text('Error: ${index.error}'));
+                } else {
+                  return ConversionCard(
+                    rates: snapshot.data!.rates,
+                    currencies: index.data!,
+                  );
+                }
+              },
+            );
+          }
+        },
+      ),
     );
   }
 }

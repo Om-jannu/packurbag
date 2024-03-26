@@ -460,8 +460,8 @@ class _CategoriesPageState extends State<CategoriesPage> {
           setState(() {
             _categories = category.categoryData ?? [];
             if (_categories.isEmpty) {
-              // If no categories are fetched, populate with predefined categories
-              _categories = _getPredefinedCategories();
+              // If no categories are fetched, add predefined categories to the database
+              _addPredefinedCategories(userId);
             }
           });
         } else {
@@ -488,6 +488,34 @@ class _CategoriesPageState extends State<CategoriesPage> {
               context, 'An error occurred while fetching categories');
         }
       }
+    }
+  }
+
+  Future<void> _addPredefinedCategories(String userId) async {
+    try {
+      final List<CategoryData> predefinedCategories =
+          _getPredefinedCategories();
+      for (final category in predefinedCategories) {
+        final response = await http.post(
+          Uri.parse('http://$serverIp:5000/categories/$userId'),
+          headers: <String, String>{
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+          body: jsonEncode(<String, dynamic>{
+            'categoryName': category.categoryName,
+            'categoryColor': category.categoryColor,
+          }),
+        );
+        if (response.statusCode == 201) {
+          print('Predefined category added: ${category.categoryName}');
+        } else {
+          print('Failed to add predefined category: ${category.categoryName}');
+        }
+      }
+      // Fetch categories again after adding predefined categories
+      _fetchCategories();
+    } catch (e) {
+      print('Error adding predefined categories: $e');
     }
   }
 

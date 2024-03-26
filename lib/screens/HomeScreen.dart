@@ -1,41 +1,54 @@
-import 'dart:collection';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:pub/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-// import '../utils/utils.dart';
-
-/// Example event class.
 class Event {
-  final String title;
+  final String text;
+  final DateTime date;
+  final bool completed;
+  final int priority;
+  final String category;
+  final String categoryColor;
+  final DateTime dateOfCreation;
+  final String id;
 
-  const Event(this.title);
+  Event({
+    required this.text,
+    required this.date,
+    required this.completed,
+    required this.priority,
+    required this.category,
+    required this.categoryColor,
+    required this.dateOfCreation,
+    required this.id,
+  });
+
+  factory Event.fromJson(Map<String, dynamic> json) {
+    return Event(
+      text: json['text'] ?? '',
+      date: DateTime.parse(json['date'] ?? ''),
+      completed: json['completed'] ?? false,
+      priority: json['priority'] ?? 0,
+      category: json['category'] ?? '',
+      categoryColor: json['categoryColor'] ?? '',
+      dateOfCreation: DateTime.parse(json['dateOfCreation'] ?? ''),
+      id: json['_id'] ?? '',
+    );
+  }
 
   @override
-  String toString() => title;
+  String toString() => text;
 }
-
-final kEvents = LinkedHashMap<DateTime, List<Event>>(
-  equals: isSameDay,
-  hashCode: getHashCode,
-)..addAll(_kEventSource);
-
-final _kEventSource = Map.fromIterable(List.generate(50, (index) => index),
-    key: (item) => DateTime.utc(kFirstDay.year, kFirstDay.month, item * 5),
-    value: (item) => List.generate(
-        item % 4 + 1, (index) => Event('Event $item | ${index + 1}')))
-  ..addAll({
-    kToday: [
-      const Event('Today\'s Event 1'),
-      const Event('Today\'s Event 2'),
-    ],
-  });
 
 int getHashCode(DateTime key) {
   return key.day * 1000000 + key.month * 10000 + key.year;
 }
 
-/// Returns a list of [DateTime] objects from [first] to [last], inclusive.
 List<DateTime> daysInRange(DateTime first, DateTime last) {
   final dayCount = last.difference(first).inDays + 1;
   return List.generate(
@@ -48,6 +61,33 @@ final kToday = DateTime.now();
 final kFirstDay = DateTime(kToday.year, kToday.month - 3, kToday.day);
 final kLastDay = DateTime(kToday.year, kToday.month + 3, kToday.day);
 
+Future<List<Event>> fetchTodos(String userId, BuildContext context) async {
+  try {
+    final response =
+        await http.get(Uri.parse('http://$serverIp:5000/todos/$userId'));
+
+    if (response.statusCode == 200) {
+      final todosData = jsonDecode(response.body);
+      if (todosData['success']) {
+        final List<dynamic> todos = todosData['data'];
+        return todos.map<Event>((todo) => Event.fromJson(todo)).toList();
+      } else {
+        throw Exception('Failed to load todos: ${todosData['message']}');
+      }
+    } else {
+      throw Exception('Failed to load todos: ${response.reasonPhrase}');
+    }
+  } catch (e) {
+    final errorMessage = e is SocketException
+        ? 'Connection error: Please check your internet connection.'
+        : 'An error occurred while fetching todos';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(errorMessage)),
+    );
+    throw Exception('Failed to load todos: $e');
+  }
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key, this.serverIp}) : super(key: key);
 
@@ -58,7 +98,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<Event> _selectedEvents = [];
+  List<Event> _allEvents = [];
+  List<Event> _events = [];
   CalendarFormat _calendarFormat = CalendarFormat.month;
   RangeSelectionMode _rangeSelectionMode = RangeSelectionMode.toggledOff;
   DateTime _focusedDay = DateTime.now();
@@ -69,20 +110,40 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-
     _selectedDay = _focusedDay;
-    _selectedEvents = _getEventsForDay(_selectedDay!);
+    _loadTodos();
+  }
+
+  Future<void> _loadTodos() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId') ?? '';
+      final todos = await fetchTodos(userId, context);
+
+      // Get todos for the selected or current date
+      final DateTime selectedDate = _selectedDay ?? DateTime.now();
+      final selectedTodos = todos
+          .where((event) =>
+              event.date.year == selectedDate.year &&
+              event.date.month == selectedDate.month &&
+              event.date.day == selectedDate.day)
+          .toList();
+
+      setState(() {
+        _events = selectedTodos;
+        _allEvents = todos; // Populate all events
+      });
+    } catch (e) {
+      print('Error fetching todos: $e');
+    }
   }
 
   List<Event> _getEventsForDay(DateTime day) {
-    // Implementation example
-    return kEvents[day] ?? [];
+    return _allEvents.where((event) => isSameDay(event.date, day)).toList();
   }
 
   List<Event> _getEventsForRange(DateTime start, DateTime end) {
-    // Implementation example
     final days = daysInRange(start, end);
-
     return [
       for (final d in days) ..._getEventsForDay(d),
     ];
@@ -93,10 +154,10 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _selectedDay = selectedDay;
         _focusedDay = focusedDay;
-        _rangeStart = null; // Important to clean those
+        _rangeStart = null;
         _rangeEnd = null;
         _rangeSelectionMode = RangeSelectionMode.toggledOff;
-        _selectedEvents = _getEventsForDay(selectedDay);
+        _events = _getEventsForDay(selectedDay);
       });
     }
   }
@@ -110,33 +171,85 @@ class _HomeScreenState extends State<HomeScreen> {
       _rangeSelectionMode = RangeSelectionMode.toggledOn;
     });
 
-    // `start` or `end` could be null
     if (start != null && end != null) {
       setState(() {
-        _selectedEvents = _getEventsForRange(start, end);
+        _events = _getEventsForRange(start, end);
       });
     } else if (start != null) {
       setState(() {
-        _selectedEvents = _getEventsForDay(start);
+        _events = _getEventsForDay(start);
       });
     } else if (end != null) {
       setState(() {
-        _selectedEvents = _getEventsForDay(end);
+        _events = _getEventsForDay(end);
       });
     }
   }
 
+  bool _groupByCategory = true;
   @override
   Widget build(BuildContext context) {
+    int pendingTodosCount = _events.where((event) => !event.completed).length;
+
+    // Group todos by category
+    Map<String, List<Event>> todosByCategory = {};
+    for (Event event in _events) {
+      if (!todosByCategory.containsKey(event.category)) {
+        todosByCategory[event.category] = [];
+      }
+      todosByCategory[event.category]!.add(event);
+    }
+
+// Group todos by priority
+    Map<String, List<Event>> todosByPriority = {};
+    for (Event event in _events) {
+      String priorityKey = event.priority.toString();
+      if (!todosByPriority.containsKey(priorityKey)) {
+        todosByPriority[priorityKey] = [];
+      }
+      todosByPriority[priorityKey]!.add(event);
+    }
+
+    // Determine which grouping option is currently selected
+    Map<String, List<Event>> selectedGroup;
+    String selectedGroupTitle;
+    if (_groupByCategory) {
+      selectedGroup = todosByCategory;
+      selectedGroupTitle = 'Category';
+    } else {
+      selectedGroup = todosByPriority;
+      selectedGroupTitle = 'Priority';
+    }
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Home"),
+        title: const Text("PackUrBag"),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_month),
             onPressed: () {
               // Handle calendar button tap
             },
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              setState(() {
+                if (value == 'category') {
+                  _groupByCategory = true;
+                } else {
+                  _groupByCategory = false;
+                }
+              });
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem<String>(
+                value: 'category',
+                child: Text('Group by Category'),
+              ),
+              const PopupMenuItem<String>(
+                value: 'priority',
+                child: Text('Group by Priority'),
+              ),
+            ],
           ),
         ],
       ),
@@ -154,7 +267,6 @@ class _HomeScreenState extends State<HomeScreen> {
             eventLoader: _getEventsForDay,
             startingDayOfWeek: StartingDayOfWeek.monday,
             calendarStyle: const CalendarStyle(
-              // Use `CalendarStyle` to customize the UI
               outsideDaysVisible: false,
             ),
             onDaySelected: _onDaySelected,
@@ -173,27 +285,55 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           const SizedBox(height: 8.0),
+          Text(
+            'Pending Todos: $pendingTodosCount',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           Expanded(
-            child: ListView.builder(
-              itemCount: _selectedEvents.length,
-              itemBuilder: (context, index) {
-                final event = _selectedEvents[index];
-                return Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 12.0,
-                    vertical: 4.0,
+            child: _events.isEmpty
+                ? const Center(
+                    child: Text('No todos added'),
+                  )
+                : ListView.builder(
+                    itemCount: selectedGroup.length,
+                    itemBuilder: (context, index) {
+                      dynamic groupKey = selectedGroup.keys.elementAt(index);
+                      List<Event> todosInGroup = selectedGroup[groupKey]!;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 8.0, horizontal: 16.0),
+                            child: Text(
+                              '$selectedGroupTitle: $groupKey',
+                              style: const TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: todosInGroup.length,
+                            itemBuilder: (context, index) {
+                              Event todo = todosInGroup[index];
+                              return ListTile(
+                                title: Text(todo.text),
+                                leading: todo.completed
+                                    ? const Icon(Icons.check_circle,
+                                        color: Colors.green)
+                                    : const Icon(Icons.radio_button_unchecked),
+                                onTap: () {
+                                  // Handle todo tap
+                                },
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                  decoration: BoxDecoration(
-                    border: Border.all(),
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  child: ListTile(
-                    onTap: () => print('$event'),
-                    title: Text('$event'),
-                  ),
-                );
-              },
-            ),
           ),
         ],
       ),

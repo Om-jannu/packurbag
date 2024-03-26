@@ -20,6 +20,10 @@ const todoSchema = {
     type: String,
     default: "Uncategorized",
   },
+  categoryColor: {
+    type: String,
+    default: "#fff",
+  },
   dateOfCreation: {
     type: Date,
   },
@@ -35,6 +39,10 @@ const categorySchema = {
     default: "#FFFFFF",
   },
   todoCount: {
+    type: Number,
+    default: 0,
+  },
+  todoCompleted: {
     type: Number,
     default: 0,
   },

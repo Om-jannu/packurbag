@@ -133,6 +133,7 @@ import 'package:pub/screens/calculator_screen.dart';
 import 'package:pub/screens/colorPicker.dart';
 import 'package:pub/screens/currencyConverter.dart';
 import 'package:pub/screens/profilePage.dart';
+import 'package:pub/screens/temp.dart';
 import 'GptScreen.dart';
 import 'CategoriesScreen.dart';
 import 'GlobalAddTodoScreen.dart';
@@ -159,11 +160,10 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(serverIp: serverIp),
-    // const CategoriesScreen(serverIp: serverIp),
     const CategoriesPage(),
     const GptScreen(),
     const BtScreen(),
-    const ProfilePage()
+    const ProfilePage(),
   ];
 
   void _onPageChanged(int index) {
@@ -290,16 +290,15 @@ class _MainScreenState extends State<MainScreen> {
           ),
           SpeedDialChild(
             child: const FaIcon(
-              FontAwesomeIcons.colonSign,
+              FontAwesomeIcons.moneyBillTransfer,
               size: 18,
             ),
             shape: const CircleBorder(),
-            label: 'Color Picker',
+            label: 'Currency Converter',
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => const ColorPickerPage()),
+                MaterialPageRoute(builder: (context) => TaskList()),
               );
             },
           ),
