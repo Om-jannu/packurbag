@@ -361,17 +361,6 @@ mongoose.connect(
   "mongodb+srv://vedant:vedant@cluster0.fmdoczv.mongodb.net/packurbag?retryWrites=true&w=majority"
 );
 
-const { v4: uuidv4 } = require("uuid");
-
-function generateUniqueKey() {
-  return uuidv4();
-}
-function generateUniqueKey() {
-  const timestamp = Date.now().toString(36); // Convert current timestamp to base36 string
-  const randomNumber = Math.random().toString(36).substr(2, 5); // Generate a random number and convert to base36 string
-  return `${timestamp}-${randomNumber}`;
-}
-
 // ==========================Define routes================================
 // Register a new user
 app.get("/", async (req, res) => {
@@ -429,6 +418,7 @@ app.get("/todos/:userId", async (req, res) => {
 
 // Fetch todos for a category
 app.get("/todos/:userId/:categoryId", async (req, res) => {
+  console.log("inside fetch todos for categoryId");
   const userId = req.params.userId;
   const categoryId = req.params.categoryId;
   try {
@@ -660,47 +650,6 @@ app.put("/todos/:userId/:todoId/completedStatus", async (req, res) => {
   }
 });
 
-// Set completion status for batched todos
-app.put("/todos/:userId/batchCompletedStatus", async (req, res) => {
-  const userId = req.params.userId;
-  const batchedTodos = req.body;
-  console.log(userId, batchedTodos);
-  try {
-    // Find the user by userId
-    const user = await User.findById(userId);
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
-
-    // Iterate over batchedTodos array and update completion status for each todo
-    batchedTodos.forEach((batchedTodo) => {
-      const { todoId, completed } = batchedTodo;
-      const todoIndex = user.todos.findIndex(
-        (todo) => todo._id.toString() === todoId
-      );
-      if (todoIndex !== -1) {
-        user.todos[todoIndex].completed = completed;
-      }
-    });
-
-    // Save the updated user document
-    await user.save();
-
-    res.json({
-      success: true,
-      message: "Todo completion status updated successfully",
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: "Error updating todo completion status",
-    });
-  }
-});
-
 // Fetch categories
 app.get("/categories/:userId", async (req, res) => {
   const userId = req.params.userId;
@@ -731,6 +680,41 @@ app.get("/categories/:userId", async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Error fetching categories" });
+  }
+});
+
+// Fetch a category by its Name
+app.get("/categories/:userId/:categoryName", async (req, res) => {
+  const { userId, categoryName } = req.params;
+  try {
+    // Find the user by userId
+    const user = await User.findById(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Find the category by categoryId
+    const category = user.categories.find(
+      (cat) => cat.categoryName.toLowerCase() === categoryName
+    );
+    if (!category) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Category found",
+      data: category,
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ success: false, message: "Error fetching category" });
   }
 });
 

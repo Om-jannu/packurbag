@@ -130,13 +130,10 @@ import 'package:pub/main.dart';
 import 'package:pub/screens/BtScreen.dart';
 import 'package:pub/screens/addTodoPage.dart';
 import 'package:pub/screens/calculator_screen.dart';
-import 'package:pub/screens/colorPicker.dart';
 import 'package:pub/screens/currencyConverter.dart';
 import 'package:pub/screens/profilePage.dart';
-import 'package:pub/screens/temp.dart';
 import 'GptScreen.dart';
 import 'CategoriesScreen.dart';
-import 'GlobalAddTodoScreen.dart';
 import 'HomeScreen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -197,7 +194,7 @@ class _MainScreenState extends State<MainScreen> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: FaIcon(
-              FontAwesomeIcons.house,
+              FontAwesomeIcons.rectangleList,
               size: 18.0,
             ),
             label: 'Home',
@@ -275,7 +272,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
           SpeedDialChild(
             child: const FaIcon(
-              FontAwesomeIcons.moneyBillTransfer,
+              FontAwesomeIcons.wallet,
               size: 18,
             ),
             shape: const CircleBorder(),
@@ -285,20 +282,6 @@ class _MainScreenState extends State<MainScreen> {
                 context,
                 MaterialPageRoute(
                     builder: (context) => const CurrencyConverter()),
-              );
-            },
-          ),
-          SpeedDialChild(
-            child: const FaIcon(
-              FontAwesomeIcons.moneyBillTransfer,
-              size: 18,
-            ),
-            shape: const CircleBorder(),
-            label: 'Currency Converter',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => TaskList()),
               );
             },
           ),

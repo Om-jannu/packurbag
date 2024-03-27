@@ -1,34 +1,13 @@
 import 'dart:collection';
 
+import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../models/category.dart';
 
-/// Example event class.
-class Event {
-  final String title;
-
-  const Event(this.title);
-
-  @override
-  String toString() => title;
-}
-
-final kEvents = LinkedHashMap<DateTime, List<Event>>(
-  equals: isSameDay,
-  hashCode: getHashCode,
-)..addAll(_kEventSource);
-
-final _kEventSource = Map.fromIterable(List.generate(50, (index) => index),
-    key: (item) => DateTime.utc(kFirstDay.year, kFirstDay.month, item * 5),
-    value: (item) => List.generate(
-        item % 4 + 1, (index) => Event('Event $item | ${index + 1}')))
-  ..addAll({
-    kToday: [
-      Event('Today\'s Event 1'),
-      Event('Today\'s Event 2'),
-    ],
-  });
+/// Example event class
 
 int getHashCode(DateTime key) {
   return key.day * 1000000 + key.month * 10000 + key.year;
@@ -49,9 +28,16 @@ final kLastDay = DateTime(kToday.year, kToday.month + 3, kToday.day);
 
 // Map priority numbers to corresponding text labels
 final Map<int, String> priorityLabels = {
-  0: 'Low',
-  1: 'Medium',
+  0: 'Trivial',
+  1: 'low',
   2: 'Neutral',
   3: 'High',
   4: 'Critical',
 };
+String formattedDate(String? dateString) {
+  if (dateString == null || dateString.isEmpty) return '';
+
+  final DateTime dateTime = DateTime.parse(dateString);
+  final DateFormat formatter = DateFormat(' dd MMMM yyyy,E');
+  return formatter.format(dateTime);
+}

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flex_color_picker/flex_color_picker.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -21,8 +23,13 @@ class TodoListPage extends StatefulWidget {
   _TodoListPageState createState() => _TodoListPageState();
 }
 
+enum SortBy { Priority, Date }
+
 class _TodoListPageState extends State<TodoListPage> {
   late List<TodoData> _todos = [];
+  SortBy _sortBy = SortBy.Priority;
+  String _searchText = ''; // Variable to store user's search query
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -44,13 +51,6 @@ class _TodoListPageState extends State<TodoListPage> {
           setState(() {
             _todos = todo.todoData ?? [];
           });
-        } else {
-          if (mounted) {
-            GlobalSnackbar.show(
-              context,
-              todo.message ?? 'Failed to fetch todos',
-            );
-          }
         }
       } else {
         if (mounted) {
@@ -79,45 +79,215 @@ class _TodoListPageState extends State<TodoListPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Group todos by date
+    Map<String, List<TodoData>> groupedTodos = {};
+
+    // Filter todos based on search text
+    List<TodoData> filteredTodos = _todos.where((todo) {
+      return todo.text!.toLowerCase().contains(_searchText.toLowerCase());
+    }).toList();
+
+    // Sort todos
+    if (_sortBy == SortBy.Priority) {
+      filteredTodos.sort((a, b) => a.priority!.compareTo(b.priority!));
+    } else {
+      filteredTodos.sort((a, b) => a.date!.compareTo(b.date!));
+    }
+
+    filteredTodos.forEach((todo) {
+      if (!groupedTodos.containsKey(todo.date)) {
+        groupedTodos[todo.date ?? ''] = [];
+      }
+      groupedTodos[todo.date ?? '']!.add(todo);
+    });
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.category.categoryName ?? ''),
+        title: _isSearching
+            ? TextField(
+                onChanged: (value) {
+                  setState(() {
+                    _searchText = value;
+                  });
+                },
+                decoration: const InputDecoration(
+                  hintText: 'Search todos...',
+                  border: InputBorder.none,
+                ),
+              )
+            : Text(
+                widget.category.categoryName.capitalizeMaybeNull ?? '',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+        shadowColor: _parseColor(widget.category.categoryColor),
+        backgroundColor: _parseColor(widget.category.categoryColor),
+        foregroundColor: Colors.black,
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                // Clear search text when exiting search mode
+                if (!_isSearching) {
+                  _searchText = '';
+                }
+              });
+            },
+          ),
+          PopupMenuButton<SortBy>(
+            icon: const Icon(Icons.sort),
+            onSelected: (SortBy result) {
+              setState(() {
+                _sortBy = result;
+              });
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<SortBy>>[
+              const PopupMenuItem<SortBy>(
+                value: SortBy.Priority,
+                child: Text('Sort by Priority'),
+              ),
+              const PopupMenuItem<SortBy>(
+                value: SortBy.Date,
+                child: Text('Sort by Date'),
+              ),
+            ],
+          ),
+        ],
       ),
-      body: ListView.builder(
-        itemCount: _todos.length,
-        itemBuilder: (context, index) {
-          final todo = _todos[index];
-          return _buildTodoItem(todo);
-        },
-      ),
+      body: groupedTodos.isEmpty
+          ? const Center(
+              child: Text('No todos found'),
+            )
+          : ListView.builder(
+              itemCount: groupedTodos.length,
+              itemBuilder: (context, index) {
+                final date = groupedTodos.keys.toList()[index];
+                final todos = groupedTodos[date];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Container(
+                              margin: const EdgeInsets.only(
+                                  left: 10.0, right: 15.0),
+                              child: Divider(
+                                color: Colors.grey.shade800,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            formattedDate(date),
+                            style: TextStyle(
+                              color: Colors.grey.shade800,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                              margin: const EdgeInsets.only(
+                                  left: 10.0, right: 15.0),
+                              child: Divider(
+                                color: Colors.grey.shade800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: todos!.length,
+                      itemBuilder: (context, index) {
+                        final todo = todos[index];
+                        return _buildTodoItem(todo);
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
       floatingActionButton: FloatingActionButton(
+        shape: const CircleBorder(),
         onPressed: () {
           _showAddTodoBottomSheet(context);
         },
-        child: const Icon(Icons.add),
+        child: const FaIcon(
+          FontAwesomeIcons.penToSquare,
+          size: 20,
+        ),
       ),
     );
   }
 
   Widget _buildTodoItem(TodoData todo) {
-    return ListTile(
-      title: Text(todo.text ?? ''),
-      subtitle: Text(todo.date ?? ''),
-      trailing: Checkbox(
-        value: todo.completed ?? false,
-        onChanged: (value) {
-          // Update todo completion status
-          setState(() {
-            todo.completed = value;
-          });
-          // Call API to update todo completion status
-          _updateTodoCompletionStatus(
-              todo, value!); // Pass the updated completion status
-        },
-      ),
+    return GestureDetector(
       onTap: () {
         _showEditTodoBottomSheet(todo);
       },
+      child: ListTile(
+        horizontalTitleGap: 5,
+        leading: Transform.scale(
+          scale: 1.2,
+          child: Checkbox(
+            side: BorderSide(color: _parseColor(widget.category.categoryColor)),
+            activeColor: Colors.transparent,
+            checkColor: _parseColor(widget.category.categoryColor),
+            shape: const CircleBorder(),
+            value: todo.completed,
+            onChanged: (bool? value) async {
+              _updateTodoCompletionStatus(todo, value!);
+              setState(() {
+                todo.completed = value;
+              });
+            },
+          ),
+        ),
+        title: Text(
+          todo.text ?? '',
+          style: TextStyle(
+            color: todo.completed! ? Colors.grey[600] : Colors.white,
+          ),
+        ),
+        subtitle: Row(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: _parseColor(widget.category.categoryColor),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 8),
+              child: Text(
+                todo.category.capitalizeMaybeNull ?? '',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Row(
+              children: [
+                _getPriorityIcon(todo.priority!),
+                const SizedBox(width: 4),
+                Text(
+                  priorityLabels[todo.priority] ?? 'Unknown',
+                  style: TextStyle(
+                    color: _getPriorityIconColor(todo.priority!),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -285,6 +455,70 @@ class _TodoListPageState extends State<TodoListPage> {
         }
       }
     }
+  }
+
+  Color _getPriorityIconColor(int priority) {
+    switch (priority) {
+      case 0:
+        return Colors.grey;
+      case 1:
+        return Colors.blue;
+      case 2:
+        return Colors.yellow;
+      case 3:
+        return Colors.redAccent;
+      case 4:
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  FaIcon _getPriorityIcon(int priority) {
+    switch (priority) {
+      case 0:
+        return const FaIcon(
+          size: 15,
+          FontAwesomeIcons.spinner,
+          color: Colors.grey,
+        );
+      case 1:
+        return const FaIcon(
+          size: 15,
+          FontAwesomeIcons.anglesDown,
+          color: Colors.blue,
+        );
+      case 2:
+        return const FaIcon(
+          size: 15,
+          FontAwesomeIcons.water,
+          color: Colors.yellow,
+        );
+      case 3:
+        return const FaIcon(
+          size: 15,
+          FontAwesomeIcons.anglesUp,
+          color: Colors.redAccent,
+        );
+      case 4:
+        return const FaIcon(
+          size: 15,
+          FontAwesomeIcons.triangleExclamation,
+          color: Colors.red,
+        );
+      default:
+        return const FaIcon(
+          FontAwesomeIcons.question,
+          color: Colors.grey,
+        );
+    }
+  }
+
+  Color _parseColor(String? colorHex) {
+    if (colorHex != null && colorHex.isNotEmpty) {
+      return Color(int.parse('0xFF$colorHex'));
+    }
+    return Colors.grey;
   }
 
   void _showEditTodoBottomSheet(TodoData todo) {

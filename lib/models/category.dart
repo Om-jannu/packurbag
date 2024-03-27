@@ -31,15 +31,17 @@ class CategoryData {
   String? categoryName;
   String? categoryColor;
   int? todoCount;
+  int? todoCompleted;
   String? sId;
 
   CategoryData(
-      {this.categoryName, this.categoryColor, this.todoCount, this.sId});
+      {this.categoryName, this.categoryColor, this.todoCount,this.todoCompleted, this.sId});
 
   CategoryData.fromJson(Map<String, dynamic> json) {
     categoryName = json['categoryName'];
     categoryColor = json['categoryColor'];
     todoCount = json['todoCount'];
+    todoCompleted = json['todoCompleted'];
     sId = json['_id'];
   }
 
@@ -48,6 +50,7 @@ class CategoryData {
     categoryData['categoryName'] = this.categoryName;
     categoryData['categoryColor'] = this.categoryColor;
     categoryData['todoCount'] = this.todoCount;
+    categoryData['todoCompleted'] = this.todoCompleted;
     categoryData['_id'] = this.sId;
     return categoryData;
   }
