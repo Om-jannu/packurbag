@@ -374,6 +374,12 @@ function generateUniqueKey() {
 
 // ==========================Define routes================================
 // Register a new user
+app.get("/", async (req, res) => {
+  res.json({
+    success: "true",
+    message: "server running ",
+  });
+});
 app.post("/register", async (req, res) => {
   const { username, password, userEmail } = req.body;
   try {
