@@ -200,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
       todosByCategory[event.category]!.add(event);
     }
 
-// Group todos by priority
+    // Group todos by priority
     Map<String, List<Event>> todosByPriority = {};
     for (Event event in _events) {
       String priorityKey = event.priority.toString();
