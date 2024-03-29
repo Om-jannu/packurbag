@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:stability_image_generation/stability_image_generation.dart';
 
 class AiImageGeneratorScreen extends StatefulWidget {
+  const AiImageGeneratorScreen({super.key});
+
   @override
   _AiImageGeneratorScreenState createState() => _AiImageGeneratorScreenState();
 }
@@ -50,7 +52,7 @@ class _AiImageGeneratorScreenState extends State<AiImageGeneratorScreen> {
               Container(
                 width: double.infinity,
                 height: 50,
-                margin: EdgeInsets.all(10),
+                margin: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   color: Colors.black54,
@@ -59,15 +61,15 @@ class _AiImageGeneratorScreenState extends State<AiImageGeneratorScreen> {
                       color: Colors.black.withOpacity(0.2),
                       spreadRadius: 1,
                       blurRadius: 5,
-                      offset: Offset(0, 3),
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
                 child: TextField(
                   controller: _queryController,
                   focusNode: _queryFocus,
-                  style: TextStyle(color: Colors.white60),
-                  decoration: InputDecoration(
+                  style: const TextStyle(color: Colors.white60),
+                  decoration: const InputDecoration(
                     hintText: 'Enter query text...',
                     hintStyle: TextStyle(color: Colors.grey),
                     border: InputBorder.none,
@@ -93,7 +95,7 @@ class _AiImageGeneratorScreenState extends State<AiImageGeneratorScreen> {
                     value: style,
                     child: Text(
                       style.toString().split('.').last,
-                      style: TextStyle(color: Colors.white),
+                      style: const TextStyle(color: Colors.white),
                     ),
                   );
                 }).toList(),
@@ -109,13 +111,13 @@ class _AiImageGeneratorScreenState extends State<AiImageGeneratorScreen> {
                           future: _generate(_queryController.text, selectedStyle),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
-                              return Center(
-                                child: const CircularProgressIndicator(),
+                              return const Center(
+                                child: CircularProgressIndicator(),
                               );
                             } else if (snapshot.hasError) {
                               return Text(
                                 'Error: ${snapshot.error}',
-                                style: TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Colors.white),
                               );
                             } else if (snapshot.hasData) {
                               return ClipRRect(
@@ -159,7 +161,7 @@ class _AiImageGeneratorScreenState extends State<AiImageGeneratorScreen> {
         run = true;
       });
     } else {
-      if (bool.fromEnvironment("dart.vm.product")) {
+      if (const bool.fromEnvironment("dart.vm.product")) {
         print('Query is empty !!');
       }
     }

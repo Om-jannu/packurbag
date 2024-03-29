@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:pub/screens/BluetoothChat.dart';
-import 'package:pub/screens/BluetoothChatScreen.dart';
 
 import '../main.dart';
+import '../pages/BluetoothChat.dart';
+import '../pages/BluetoothChatScreen.dart';
 
 class BtScreen extends StatefulWidget {
   const BtScreen({super.key});

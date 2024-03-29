@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'AiImageGeneratorTab.dart';
-import 'ChatGptTab.dart';
+import '../pages/AiImageGeneratorTab.dart';
+import '../pages/ChatGptTab.dart';
 
 class GptScreen extends StatelessWidget {
   const GptScreen({super.key});
@@ -19,7 +19,7 @@ class GptScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: TabBarView(
+        body: const TabBarView(
           children: [
             ChatGptTab(),
             AiImageGeneratorScreen(),

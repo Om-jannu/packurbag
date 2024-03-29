@@ -266,7 +266,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
   }
 
   Future<void> _addCategory(
-      String _categoryText, Color dialogPickerColorLocal) async {
+      String categoryText, Color dialogPickerColorLocal) async {
     try {
       if (_addCategoryformKey.currentState!.validate()) {
         final prefs = await SharedPreferences.getInstance();
@@ -277,7 +277,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
             'Content-Type': 'application/json; charset=UTF-8',
           },
           body: jsonEncode(<String, dynamic>{
-            'categoryName': _categoryText,
+            'categoryName': categoryText,
             'categoryColor': dialogPickerColorLocal.hex, // Send selected color
           }),
         );
@@ -335,7 +335,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
         _showEditDeleteBottomSheet(context, category);
       },
       child: Card(
-        color: Colors.black54,
+        color: Colors.transparent,
         child: Container(
           decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
@@ -435,12 +435,12 @@ class _CategoriesPageState extends State<CategoriesPage> {
     return TextField(
       controller: _searchController,
       autofocus: true,
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         hintText: 'Search categories',
         border: InputBorder.none,
         hintStyle: TextStyle(color: Colors.white60),
       ),
-      style: TextStyle(color: Colors.white),
+      style: const TextStyle(color: Colors.white),
       onChanged: _filterCategories,
     );
   }
@@ -470,9 +470,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
           icon: const Icon(Icons.search),
         ),
         IconButton(
-          onPressed: () {
-            // Add action for other buttons in the AppBar
-          },
+          onPressed: () => _showAddCategoryBottomSheet(context),
           icon: const Icon(Icons.add),
         ),
       ];

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -13,23 +12,7 @@ import 'package:table_calendar/table_calendar.dart';
 
 import '../components/GlobalSnackbar.dart';
 import '../models/event.dart';
-import '../utils/utils.dart';
-
-int getHashCode(DateTime key) {
-  return key.day * 1000000 + key.month * 10000 + key.year;
-}
-
-List<DateTime> daysInRange(DateTime first, DateTime last) {
-  final dayCount = last.difference(first).inDays + 1;
-  return List.generate(
-    dayCount,
-    (index) => DateTime.utc(first.year, first.month, first.day + index),
-  );
-}
-
-final kToday = DateTime.now();
-final kFirstDay = DateTime(kToday.year, kToday.month - 3, kToday.day);
-final kLastDay = DateTime(kToday.year, kToday.month + 3, kToday.day);
+import '../utils.dart';
 
 Future<List<Event>> fetchTodos(String userId, BuildContext context) async {
   try {
@@ -76,6 +59,8 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime? _selectedDay;
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
+  bool _showIncompleteTasks = false;
+  bool _groupByCategory = true;
   @override
   void initState() {
     super.initState();
@@ -155,7 +140,53 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  bool _groupByCategory = true;
+  Future<void> updateTodoCompletionStatus(
+      Event todo, bool completedStatus) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId') ?? '';
+      final response = await http.put(
+        Uri.parse(
+            'http://$serverIp:5000/todos/$userId/${todo.id}/completedStatus'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({
+          'completed': completedStatus,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          // Update the todo in the list
+          todo.completed = completedStatus;
+        });
+      } else {
+        if (mounted) {
+          GlobalSnackbar.show(
+              context, 'Failed to update todo completion status');
+        }
+      }
+    } catch (e) {
+      print('Error updating todo completion status: $e');
+      if (e is SocketException) {
+        if (mounted) {
+          GlobalSnackbar.show(
+            context,
+            'Connection error: Please check your internet connection.',
+          );
+        }
+      } else {
+        if (mounted) {
+          GlobalSnackbar.show(
+            context,
+            'An error occurred while updating todo completion status',
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     int pendingTodosCount = _events.where((event) => !event.completed).length;
@@ -197,65 +228,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Determine which grouping option is currently selected
     Map<String, List<Event>> selectedGroup;
-    String selectedGroupTitle;
     if (_groupByCategory) {
       selectedGroup = todosByCategory;
-      selectedGroupTitle = 'Category';
     } else {
       selectedGroup = todosByPriority;
-      selectedGroupTitle = 'Priority';
-    }
-    Future<void> updateTodoCompletionStatus(
-        Event todo, bool completedStatus) async {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final userId = prefs.getString('userId') ?? '';
-        final response = await http.put(
-          Uri.parse(
-              'http://$serverIp:5000/todos/$userId/${todo.id}/completedStatus'),
-          headers: <String, String>{
-            'Content-Type': 'application/json; charset=UTF-8',
-          },
-          body: jsonEncode({
-            'completed': completedStatus,
-          }),
-        );
-
-        if (response.statusCode == 200) {
-          setState(() {
-            // Update the todo in the list
-            todo.completed = completedStatus;
-          });
-        } else {
-          if (mounted) {
-            GlobalSnackbar.show(
-                context, 'Failed to update todo completion status');
-          }
-        }
-      } catch (e) {
-        print('Error updating todo completion status: $e');
-        if (e is SocketException) {
-          if (mounted) {
-            GlobalSnackbar.show(
-              context,
-              'Connection error: Please check your internet connection.',
-            );
-          }
-        } else {
-          if (mounted) {
-            GlobalSnackbar.show(
-              context,
-              'An error occurred while updating todo completion status',
-            );
-          }
-        }
-      }
     }
 
     Widget buildCountTile(IconData icon, String title, int count) {
       return Card(
         child: ListTile(
-          leading: Icon(icon,size: 20,),
+          leading: Icon(
+            icon,
+            size: 20,
+          ),
           title: Text(title),
           subtitle: Text('$count tasks'),
         ),
@@ -291,8 +276,30 @@ class _HomeScreenState extends State<HomeScreen> {
             rangeSelectionMode: _rangeSelectionMode,
             eventLoader: _getEventsForDay,
             startingDayOfWeek: StartingDayOfWeek.monday,
-            calendarStyle: const CalendarStyle(
+            calendarStyle: CalendarStyle(
               outsideDaysVisible: false,
+              weekendTextStyle: const TextStyle().copyWith(color: Colors.red),
+              holidayTextStyle: const TextStyle().copyWith(color: Colors.blue),
+              selectedTextStyle:
+                  const TextStyle().copyWith(color: Colors.white),
+              todayTextStyle: const TextStyle().copyWith(color: Colors.green),
+              markersAlignment: Alignment.bottomCenter,
+              todayDecoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.transparent,
+                border: Border.all(
+                  color: Colors.green,
+                  width: 2.0,
+                ),
+              ),
+              selectedDecoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.blue,
+              ),
+              markerDecoration: const BoxDecoration(
+                color: Colors.grey,
+                shape: BoxShape.circle,
+              ),
             ),
             onDaySelected: _onDaySelected,
             onRangeSelected: _onRangeSelected,
@@ -315,12 +322,14 @@ class _HomeScreenState extends State<HomeScreen> {
             childAspectRatio: (1 / .4),
             crossAxisCount: 2, // You can adjust the number of columns here
             children: [
-              buildCountTile(FontAwesomeIcons.hourglassHalf, 'Pending', pendingTodosCount),
+              buildCountTile(
+                  FontAwesomeIcons.hourglassHalf, 'Pending', pendingTodosCount),
               buildCountTile(
                   FontAwesomeIcons.calendarXmark, 'Overdue', overdueTodosCount),
               buildCountTile(
                   Icons.pending_actions, 'Upcoming', upcomingTodosCount),
-              buildCountTile(Icons.done, 'Completed', completedTodosCount),
+              buildCountTile(FontAwesomeIcons.circleCheck, 'Completed',
+                  completedTodosCount),
             ],
           ),
           Container(
@@ -336,26 +345,38 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: const TextStyle(
                       fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                PopupMenuButton<String>(
-                  icon: const FaIcon(FontAwesomeIcons.filter),
-                  iconSize: 16,
-                  onSelected: (value) {
-                    setState(() {
-                      if (value == 'category') {
-                        _groupByCategory = true;
-                      } else {
-                        _groupByCategory = false;
-                      }
-                    });
-                  },
-                  itemBuilder: (BuildContext context) => [
-                    const PopupMenuItem<String>(
-                      value: 'category',
-                      child: Text('Group by Category'),
+                Row(
+                  children: [
+                    PopupMenuButton<String>(
+                      icon: const FaIcon(FontAwesomeIcons.filter),
+                      iconSize: 16,
+                      onSelected: (value) {
+                        setState(() {
+                          if (value == 'category') {
+                            _groupByCategory = true;
+                          } else {
+                            _groupByCategory = false;
+                          }
+                        });
+                      },
+                      itemBuilder: (BuildContext context) => [
+                        const PopupMenuItem<String>(
+                          value: 'category',
+                          child: Text('Group by Category'),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'priority',
+                          child: Text('Group by Priority'),
+                        ),
+                      ],
                     ),
-                    const PopupMenuItem<String>(
-                      value: 'priority',
-                      child: Text('Group by Priority'),
+                    Switch(
+                      value: _showIncompleteTasks,
+                      onChanged: (value) {
+                        setState(() {
+                          _showIncompleteTasks = value;
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -368,6 +389,11 @@ class _HomeScreenState extends State<HomeScreen> {
               itemBuilder: (context, index) {
                 dynamic groupKey = selectedGroup.keys.elementAt(index);
                 List<Event> todosInGroup = selectedGroup[groupKey]!;
+                // Filter completed tasks if _showIncompleteTasks is true
+                if (_showIncompleteTasks) {
+                  todosInGroup =
+                      todosInGroup.where((todo) => !todo.completed).toList();
+                }
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,13 +480,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Color _getPriorityIconColor(int priority) {
     switch (priority) {
       case 0:
-        return Colors.grey;
+        return Colors.blueGrey;
       case 1:
         return Colors.blue;
       case 2:
-        return Colors.deepOrange;
+        return Colors.yellow;
       case 3:
-        return Colors.redAccent;
+        return Colors.orange;
       case 4:
         return Colors.red;
       default:
@@ -474,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return const FaIcon(
           size: 15,
           FontAwesomeIcons.spinner,
-          color: Colors.grey,
+          color: Colors.blueGrey,
         );
       case 1:
         return const FaIcon(
@@ -486,13 +512,13 @@ class _HomeScreenState extends State<HomeScreen> {
         return const FaIcon(
           size: 15,
           FontAwesomeIcons.water,
-          color: Colors.deepOrange,
+          color: Colors.yellow,
         );
       case 3:
         return const FaIcon(
           size: 15,
           FontAwesomeIcons.anglesUp,
-          color: Colors.redAccent,
+          color: Colors.orange,
         );
       case 4:
         return const FaIcon(

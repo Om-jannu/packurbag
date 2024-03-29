@@ -39,7 +39,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     // Show loading indicator
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('Registering...')));
+        .showSnackBar(const SnackBar(content: Text('Registering...')));
 
     final response = await http.post(
       Uri.parse('http://${widget.serverIp}:5000/register'),
@@ -80,7 +80,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Register Page'),
+        title: const Text('Register Page'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -89,29 +89,29 @@ class _RegisterPageState extends State<RegisterPage> {
           children: [
             TextField(
               controller: usernameController,
-              decoration: InputDecoration(labelText: 'Username'),
+              decoration: const InputDecoration(labelText: 'Username'),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             TextField(
               controller: emailController,
-              decoration: InputDecoration(labelText: 'Email'),
+              decoration: const InputDecoration(labelText: 'Email'),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             TextField(
               controller: passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
+              decoration: const InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             TextField(
               controller: confirmPasswordController,
-              decoration: InputDecoration(labelText: 'Confirm Password'),
+              decoration: const InputDecoration(labelText: 'Confirm Password'),
               obscureText: true,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => register(context),
-              child: Text('Register'),
+              child: const Text('Register'),
             ),
           ],
         ),

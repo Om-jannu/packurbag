@@ -1,89 +1,98 @@
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
-class TaskList extends StatefulWidget {
+class Temp extends StatefulWidget {
   @override
-  _TaskListState createState() => _TaskListState();
+  _TempState createState() => _TempState();
 }
 
-class _TaskListState extends State<TaskList> {
-  List<Map<String, dynamic>> tasks = [
-    {
-      'title': 'Morning workout',
-      'time': '7:00 AM',
-      'category': 'Home',
-      'categoryColor': Colors.purple,
-    },
-    {
-      'title': 'Make a presentation about',
-      'time': '11:00 AM',
-      'category': 'Study',
-      'categoryColor': Colors.orange,
-    },
-    {
-      'title': 'Organize last week\'s sales',
-      'time': '1:00 PM',
-      'category': 'Work',
-      'categoryColor': Colors.blue,
-    },
-    {
-      'title': 'Meeting with Amy',
-      'time': '3:00 PM',
-      'category': 'Meeting',
-      'categoryColor': Colors.green,
-    },
-  ];
+enum TtsState { playing, stopped, paused, continued }
+
+class _TempState extends State<Temp> {
+  SpeechToText _speechToText = SpeechToText();
+  bool _speechEnabled = false;
+  String _lastWords = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _initSpeech();
+  }
+
+  /// This has to happen only once per app
+  void _initSpeech() async {
+    _speechEnabled = await _speechToText.initialize();
+    setState(() {});
+  }
+
+  /// Each time to start a speech recognition session
+  void _startListening() async {
+    await _speechToText.listen(onResult: _onSpeechResult);
+    setState(() {});
+  }
+
+  /// Manually stop the active speech recognition session
+  /// Note that there are also timeouts that each platform enforces
+  /// and the SpeechToText plugin supports setting timeouts on the
+  /// listen method.
+  void _stopListening() async {
+    await _speechToText.stop();
+    setState(() {});
+  }
+
+  /// This is the callback that the SpeechToText plugin calls when
+  /// the platform returns recognized words.
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    setState(() {
+      _lastWords = result.recognizedWords;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Task List'),
+        title: Text('Speech Demo'),
       ),
-      body: ListView.builder(
-        itemCount: tasks.length,
-        itemBuilder: (context, index) {
-          final task = tasks[index];
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundColor: task['categoryColor'],
-              child: Icon(
-                getCategoryIcon(task['category']),
-                color: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Container(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Recognized words:',
+                style: TextStyle(fontSize: 20.0),
               ),
             ),
-            title: Text(task['title']),
-            subtitle: Text(task['time']),
-            trailing: Text(
-              task['category'],
-              style: TextStyle(
-                color: task['categoryColor'],
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Container(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  // If listening is active show the recognized words
+                  _speechToText.isListening
+                      ? '$_lastWords'
+                      // If listening isn't active but could be tell the user
+                      // how to start it, otherwise indicate that speech
+                      // recognition is not yet ready or not supported on
+                      // the target device
+                      : _speechEnabled
+                          ? 'Tap the microphone to start listening...'
+                          : 'Speech not available',
+                ),
               ),
             ),
-          );
-        },
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Add task for today
-        },
-        child: Icon(Icons.add),
+        onPressed:
+            // If not yet listening for speech start, otherwise stop
+            _speechToText.isNotListening ? _startListening : _stopListening,
+        tooltip: 'Listen',
+        child: Icon(_speechToText.isNotListening ? Icons.mic_off : Icons.mic),
       ),
     );
-  }
-
-  IconData getCategoryIcon(String category) {
-    switch (category) {
-      case 'Home':
-        return Icons.home;
-      case 'Study':
-        return Icons.book;
-      case 'Work':
-        return Icons.work;
-      case 'Meeting':
-        return Icons.meeting_room;
-      default:
-        return Icons.event;
-    }
   }
 }

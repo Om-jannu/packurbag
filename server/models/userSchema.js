@@ -32,7 +32,6 @@ const categorySchema = {
   categoryName: {
     type: String,
     required: true,
-    unique: true,
   },
   categoryColor: {
     type: String,

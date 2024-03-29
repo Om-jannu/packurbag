@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class ChatGptTab extends StatefulWidget {
+  const ChatGptTab({super.key});
+
   @override
   _ChatGptTabState createState() => _ChatGptTabState();
 }
 
 class _ChatGptTabState extends State<ChatGptTab> {
-  TextEditingController _messageController = TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
   List<String> messages = [];
   String selectedModel = 'text-davinci-002'; // Default model
 
@@ -83,13 +85,13 @@ class _ChatGptTabState extends State<ChatGptTab> {
               Expanded(
                 child: TextField(
                   controller: _messageController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: 'Type a message...',
                   ),
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.send),
+                icon: const Icon(Icons.send),
                 onPressed: () {
                   final message = _messageController.text.trim();
                   if (message.isNotEmpty) {

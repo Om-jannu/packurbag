@@ -12,7 +12,7 @@ import '../components/GlobalSnackbar.dart';
 import '../main.dart';
 import '../models/category.dart';
 import '../models/todo.dart';
-import '../utils/utils.dart';
+import '../utils.dart';
 
 class TodoListPage extends StatefulWidget {
   final CategoryData category;
@@ -23,14 +23,12 @@ class TodoListPage extends StatefulWidget {
   _TodoListPageState createState() => _TodoListPageState();
 }
 
-enum SortBy { Priority, Date }
-
 class _TodoListPageState extends State<TodoListPage> {
   late List<TodoData> _todos = [];
-  SortBy _sortBy = SortBy.Priority;
   String _searchText = ''; // Variable to store user's search query
   bool _isSearching = false;
-
+  int _selectedPriorityFilter = -1;
+  bool _showInComplete = false;
   @override
   void initState() {
     super.initState();
@@ -79,26 +77,20 @@ class _TodoListPageState extends State<TodoListPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Group todos by date
-    Map<String, List<TodoData>> groupedTodos = {};
-
-    // Filter todos based on search text
+// Filter todos based on search text, selected priority filter, and completed tasks visibility
     List<TodoData> filteredTodos = _todos.where((todo) {
-      return todo.text!.toLowerCase().contains(_searchText.toLowerCase());
+      return (todo.text!.toLowerCase().contains(_searchText.toLowerCase())) &&
+          ((todo.priority == _selectedPriorityFilter) ||
+              (_selectedPriorityFilter == -1)) &&
+          (!_showInComplete || !todo.completed!);
     }).toList();
 
-    // Sort todos
-    if (_sortBy == SortBy.Priority) {
-      filteredTodos.sort((a, b) => a.priority!.compareTo(b.priority!));
-    } else {
-      filteredTodos.sort((a, b) => a.date!.compareTo(b.date!));
-    }
-
+    // Group todos by date
+    Map<String, List<TodoData>> groupedTodos = {};
     filteredTodos.forEach((todo) {
-      if (!groupedTodos.containsKey(todo.date)) {
-        groupedTodos[todo.date ?? ''] = [];
-      }
-      groupedTodos[todo.date ?? '']!.add(todo);
+      final todoDate = todo.date!.substring(0, 10);
+      groupedTodos.putIfAbsent(todoDate, () => []);
+      groupedTodos[todoDate]!.add(todo);
     });
 
     return Scaffold(
@@ -135,23 +127,104 @@ class _TodoListPageState extends State<TodoListPage> {
               });
             },
           ),
-          PopupMenuButton<SortBy>(
-            icon: const Icon(Icons.sort),
-            onSelected: (SortBy result) {
+          PopupMenuButton<int>(
+            onSelected: (value) {
               setState(() {
-                _sortBy = result;
+                _selectedPriorityFilter = value;
               });
             },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<SortBy>>[
-              const PopupMenuItem<SortBy>(
-                value: SortBy.Priority,
-                child: Text('Sort by Priority'),
-              ),
-              const PopupMenuItem<SortBy>(
-                value: SortBy.Date,
-                child: Text('Sort by Date'),
-              ),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                  value: -1,
+                  child: Row(
+                    children: [
+                      FaIcon(
+                        size: 15,
+                        FontAwesomeIcons.inbox,
+                        color: Colors.white,
+                      ),
+                      SizedBox(width: 5),
+                      Text('All'),
+                    ],
+                  )),
+              const PopupMenuItem(
+                  value: 0,
+                  child: Row(
+                    children: [
+                      FaIcon(
+                        size: 15,
+                        FontAwesomeIcons.spinner,
+                        color: Colors.blueGrey,
+                      ),
+                      SizedBox(width: 5),
+                      Text('Trivial'),
+                    ],
+                  )),
+              const PopupMenuItem(
+                  value: 1,
+                  child: Row(
+                    children: [
+                      FaIcon(
+                        size: 15,
+                        FontAwesomeIcons.anglesDown,
+                        color: Colors.blue,
+                      ),
+                      SizedBox(width: 5),
+                      Text('Low'),
+                    ],
+                  )),
+              const PopupMenuItem(
+                  value: 2,
+                  child: Row(
+                    children: [
+                      FaIcon(
+                        size: 15,
+                        FontAwesomeIcons.water,
+                        color: Colors.yellow,
+                      ),
+                      SizedBox(width: 5),
+                      Text('Neutral'),
+                    ],
+                  )),
+              const PopupMenuItem(
+                  value: 3,
+                  child: Row(
+                    children: [
+                      FaIcon(
+                        size: 15,
+                        FontAwesomeIcons.anglesUp,
+                        color: Colors.orange,
+                      ),
+                      SizedBox(width: 5),
+                      Text('High'),
+                    ],
+                  )),
+              const PopupMenuItem(
+                  value: 4,
+                  child: Row(
+                    children: [
+                      FaIcon(
+                        size: 15,
+                        FontAwesomeIcons.triangleExclamation,
+                        color: Colors.red,
+                      ),
+                      SizedBox(width: 5),
+                      Text('Critical'),
+                    ],
+                  )),
             ],
+          ),
+          Switch(
+            activeColor: _parseColor(widget.category.categoryColor),
+            activeTrackColor: Colors.black,
+            inactiveTrackColor: Colors.black,
+            inactiveThumbColor: _parseColor(widget.category.categoryColor),
+            value: _showInComplete,
+            onChanged: (value) {
+              setState(() {
+                _showInComplete = value;
+              });
+            },
           ),
         ],
       ),
@@ -216,77 +289,78 @@ class _TodoListPageState extends State<TodoListPage> {
             ),
       floatingActionButton: FloatingActionButton(
         shape: const CircleBorder(),
+        backgroundColor: _parseColor(widget.category.categoryColor),
         onPressed: () {
           _showAddTodoBottomSheet(context);
         },
         child: const FaIcon(
           FontAwesomeIcons.penToSquare,
           size: 20,
+          color: Colors.black,
         ),
       ),
     );
   }
 
   Widget _buildTodoItem(TodoData todo) {
-    return GestureDetector(
-      onTap: () {
-        _showEditTodoBottomSheet(todo);
-      },
-      child: ListTile(
-        horizontalTitleGap: 5,
-        leading: Transform.scale(
-          scale: 1.2,
-          child: Checkbox(
-            side: BorderSide(color: _parseColor(widget.category.categoryColor)),
-            activeColor: Colors.transparent,
-            checkColor: _parseColor(widget.category.categoryColor),
-            shape: const CircleBorder(),
-            value: todo.completed,
-            onChanged: (bool? value) async {
-              _updateTodoCompletionStatus(todo, value!);
-              setState(() {
-                todo.completed = value;
-              });
-            },
-          ),
+    if (_showInComplete && todo.completed!) {
+      return const SizedBox(); // Hide completed tasks when the toggle is off
+    }
+    return ListTile(
+      onTap: () => _showEditTodoBottomSheet(todo),
+      horizontalTitleGap: 5,
+      leading: Transform.scale(
+        scale: 1.2,
+        child: Checkbox(
+          side: BorderSide(color: _parseColor(widget.category.categoryColor)),
+          activeColor: Colors.transparent,
+          checkColor: _parseColor(widget.category.categoryColor),
+          shape: const CircleBorder(),
+          value: todo.completed,
+          onChanged: (bool? value) async {
+            _updateTodoCompletionStatus(todo, value!);
+            setState(() {
+              todo.completed = value;
+            });
+          },
         ),
-        title: Text(
-          todo.text ?? '',
-          style: TextStyle(
-            color: todo.completed! ? Colors.grey[600] : Colors.white,
-          ),
+      ),
+      title: Text(
+        todo.text ?? '',
+        style: TextStyle(
+          color: todo.completed! ? Colors.grey[600] : Colors.white,
         ),
-        subtitle: Row(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: _parseColor(widget.category.categoryColor),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 8),
-              child: Text(
-                todo.category.capitalizeMaybeNull ?? '',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+      ),
+      subtitle: Row(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: _parseColor(widget.category.categoryColor),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 8),
+            child: Text(
+              todo.category.capitalizeMaybeNull ?? '',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-            const SizedBox(width: 8),
-            Row(
-              children: [
-                _getPriorityIcon(todo.priority!),
-                const SizedBox(width: 4),
-                Text(
-                  priorityLabels[todo.priority] ?? 'Unknown',
-                  style: TextStyle(
-                    color: _getPriorityIconColor(todo.priority!),
-                  ),
+          ),
+          const SizedBox(width: 8),
+          Row(
+            children: [
+              _getPriorityIcon(todo.priority!),
+              const SizedBox(width: 4),
+              Text(
+                priorityLabels[todo.priority] ?? 'Unknown',
+                style: TextStyle(
+                  color: _getPriorityIconColor(todo.priority!),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -294,9 +368,9 @@ class _TodoListPageState extends State<TodoListPage> {
   void _showAddTodoBottomSheet(BuildContext context) {
     TextEditingController nameController = TextEditingController();
     int priorityValue = 0;
-    DateTime selectedDate = DateTime.now();
+    DateTime selectedDate = DateTime.now(); // Initialize selected date here
 
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
       isScrollControlled: true,
@@ -307,7 +381,7 @@ class _TodoListPageState extends State<TodoListPage> {
           child: Container(
             padding: const EdgeInsets.all(20),
             child: Form(
-              key: _formKey,
+              key: formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,7 +441,8 @@ class _TodoListPageState extends State<TodoListPage> {
                           if (pickedDate != null &&
                               pickedDate != selectedDate) {
                             setState(() {
-                              selectedDate = pickedDate;
+                              selectedDate =
+                                  pickedDate; // Update selected date here
                             });
                           }
                         },
@@ -384,7 +459,7 @@ class _TodoListPageState extends State<TodoListPage> {
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          if (_formKey.currentState!.validate()) {
+                          if (formKey.currentState!.validate()) {
                             // Call API to add new todo
                             _addTodoData(nameController.text, selectedDate,
                                 priorityValue);
@@ -410,6 +485,7 @@ class _TodoListPageState extends State<TodoListPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
+      print(date);
 
       final response = await http.post(
         Uri.parse('http://$serverIp:5000/todos/$userId'),
@@ -460,13 +536,13 @@ class _TodoListPageState extends State<TodoListPage> {
   Color _getPriorityIconColor(int priority) {
     switch (priority) {
       case 0:
-        return Colors.grey;
+        return Colors.blueGrey;
       case 1:
         return Colors.blue;
       case 2:
         return Colors.yellow;
       case 3:
-        return Colors.redAccent;
+        return Colors.orange;
       case 4:
         return Colors.red;
       default:
@@ -480,7 +556,7 @@ class _TodoListPageState extends State<TodoListPage> {
         return const FaIcon(
           size: 15,
           FontAwesomeIcons.spinner,
-          color: Colors.grey,
+          color: Colors.blueGrey,
         );
       case 1:
         return const FaIcon(
@@ -498,7 +574,7 @@ class _TodoListPageState extends State<TodoListPage> {
         return const FaIcon(
           size: 15,
           FontAwesomeIcons.anglesUp,
-          color: Colors.redAccent,
+          color: Colors.orange,
         );
       case 4:
         return const FaIcon(
@@ -528,7 +604,7 @@ class _TodoListPageState extends State<TodoListPage> {
         TextEditingController(text: todo.date);
     int? priorityValue = todo.priority;
 
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
 
     showModalBottomSheet(
       isScrollControlled: true,
@@ -539,7 +615,7 @@ class _TodoListPageState extends State<TodoListPage> {
           child: Container(
             padding: const EdgeInsets.all(20),
             child: Form(
-              key: _formKey,
+              key: formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,7 +662,7 @@ class _TodoListPageState extends State<TodoListPage> {
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          if (_formKey.currentState!.validate()) {
+                          if (formKey.currentState!.validate()) {
                             // Update todo data
                             todo.text = textController.text;
                             todo.date = dateController.text;
@@ -677,7 +753,6 @@ class _TodoListPageState extends State<TodoListPage> {
   }
 
   Future<void> _updateTodoData(TodoData todo) async {
-    print(todo.toJson());
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
