@@ -8,7 +8,7 @@ void main() {
   runApp(const MyApp());
 }
 
-const serverIp = "192.168.0.120";
+const serverIp = "089c-103-185-11-141.ngrok-free.app";
 final allBluetooth = AllBluetooth();
 
 class MyApp extends StatelessWidget {

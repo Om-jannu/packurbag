@@ -28,6 +28,8 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     quickActions.setShortcutItems([
       const ShortcutItem(
+          type: "translator", localizedTitle: "Translator", icon: "translator"),
+      const ShortcutItem(
           type: "currency_converter",
           localizedTitle: "Currency Converter",
           icon: "currency_converter"),
@@ -46,6 +48,9 @@ class _MainScreenState extends State<MainScreen> {
       } else if (type == "currency_converter") {
         Navigator.of(context).push(
             MaterialPageRoute(builder: (context) => const CurrencyConverter()));
+      } else if (type == "translator") {
+        Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const TranslationPage()));
       }
     });
   }
@@ -56,7 +61,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const HomeScreen(serverIp: serverIp),
     const CategoriesPage(),
-    const GptScreen(),
+    const TranslationPage(),
     const BtScreen(),
     const ProfilePage(),
   ];
@@ -106,10 +111,10 @@ class _MainScreenState extends State<MainScreen> {
           ),
           BottomNavigationBarItem(
             icon: FaIcon(
-              FontAwesomeIcons.diceD20,
+              FontAwesomeIcons.earthAmericas,
               size: 18.0,
             ),
-            label: 'AI',
+            label: 'Translator',
           ),
           BottomNavigationBarItem(
             icon: FaIcon(
@@ -185,30 +190,15 @@ class _MainScreenState extends State<MainScreen> {
           ),
           SpeedDialChild(
             child: const FaIcon(
-              FontAwesomeIcons.earthAmericas,
+              FontAwesomeIcons.diceD20,
               size: 18,
             ),
             shape: const CircleBorder(),
-            label: 'Translator',
+            label: 'AI',
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => const TranslationPage()),
-              );
-            },
-          ),
-          SpeedDialChild(
-            child: const FaIcon(
-              FontAwesomeIcons.wallet,
-              size: 18,
-            ),
-            shape: const CircleBorder(),
-            label: 'Currency Converter',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => Temp()),
+                MaterialPageRoute(builder: (context) => const GptScreen()),
               );
             },
           ),

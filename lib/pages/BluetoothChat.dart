@@ -45,6 +45,7 @@ class _BluetoothChatState extends State<BluetoothChat> {
           floatingActionButton: isListening
               ? null
               : FloatingActionButton(
+                  shape: const CircleBorder(),
                   onPressed: bluetoothOn
                       ? () {
                           allBluetooth.startBluetoothServer();

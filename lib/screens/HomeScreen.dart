@@ -17,7 +17,7 @@ import '../utils.dart';
 Future<List<Event>> fetchTodos(String userId, BuildContext context) async {
   try {
     final response =
-        await http.get(Uri.parse('http://$serverIp:5000/todos/$userId'));
+        await http.get(Uri.parse('http://$serverIp/todos/$userId'));
 
     if (response.statusCode == 200) {
       final todosData = jsonDecode(response.body);
@@ -146,8 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
       final response = await http.put(
-        Uri.parse(
-            'http://$serverIp:5000/todos/$userId/${todo.id}/completedStatus'),
+        Uri.parse('http://$serverIp/todos/$userId/${todo.id}/completedStatus'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -249,7 +248,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("PackUrBag"),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/icon_packurbag.png', // Replace with your custom logo path
+              width: 50,
+              height: 50,
+            ),
+            const Text("packurbag")
+          ],
+        ),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
+          ),
+        ),
         // actions: [
         //   IconButton(
         //     icon: const Icon(Icons.calendar_month),

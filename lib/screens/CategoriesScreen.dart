@@ -59,7 +59,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
       final response =
-          await http.get(Uri.parse('http://$serverIp:5000/categories/$userId'));
+          await http.get(Uri.parse('http://$serverIp/categories/$userId'));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -107,7 +107,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
           _getPredefinedCategories();
       for (final category in predefinedCategories) {
         final response = await http.post(
-          Uri.parse('http://$serverIp:5000/categories/$userId'),
+          Uri.parse('http://$serverIp/categories/$userId'),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
           },
@@ -272,7 +272,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
         final prefs = await SharedPreferences.getInstance();
         final userId = prefs.getString('userId') ?? '';
         final response = await http.post(
-          Uri.parse('http://$serverIp:5000/categories/$userId'),
+          Uri.parse('http://$serverIp/categories/$userId'),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
           },
@@ -405,6 +405,11 @@ class _CategoriesPageState extends State<CategoriesPage> {
     return Scaffold(
       appBar: AppBar(
         title: _isSearching ? _buildSearchField() : const Text('Categories'),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
+          ),
+        ),
         actions: _buildAppBarActions(),
       ),
       body: Padding(
@@ -636,7 +641,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       final categoryName = category.categoryName ?? '';
 
       final response = await http.put(
-        Uri.parse('http://$serverIp:5000/categories/$userId/$categoryName'),
+        Uri.parse('http://$serverIp/categories/$userId/$categoryName'),
         body:
             jsonEncode({'newCategoryName': newName, 'categoryColor': newColor}),
         headers: {
@@ -674,7 +679,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       final categoryName = category.categoryName ?? '';
 
       final response = await http.delete(
-        Uri.parse('http://$serverIp:5000/categories/$userId/$categoryName'),
+        Uri.parse('http://$serverIp/categories/$userId/$categoryName'),
       );
 
       if (response.statusCode == 200) {

@@ -40,7 +40,7 @@ class _TodoListPageState extends State<TodoListPage> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
       final response = await http.get(
-        Uri.parse('http://$serverIp:5000/todos/$userId/${widget.category.sId}'),
+        Uri.parse('http://$serverIp/todos/$userId/${widget.category.sId}'),
       );
 
       if (response.statusCode == 200) {
@@ -488,7 +488,7 @@ class _TodoListPageState extends State<TodoListPage> {
       print(date);
 
       final response = await http.post(
-        Uri.parse('http://$serverIp:5000/todos/$userId'),
+        Uri.parse('http://$serverIp/todos/$userId'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -707,7 +707,7 @@ class _TodoListPageState extends State<TodoListPage> {
       final userId = prefs.getString('userId') ?? '';
       final response = await http.put(
         Uri.parse(
-            'http://$serverIp:5000/todos/$userId/${todo.sId}/completedStatus'),
+            'http://$serverIp/todos/$userId/${todo.sId}/completedStatus'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -757,7 +757,7 @@ class _TodoListPageState extends State<TodoListPage> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
       final response = await http.put(
-        Uri.parse('http://$serverIp:5000/todos/$userId/${todo.sId}'),
+        Uri.parse('http://$serverIp/todos/$userId/${todo.sId}'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -807,7 +807,7 @@ class _TodoListPageState extends State<TodoListPage> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
       final response = await http.delete(
-        Uri.parse('http://$serverIp:5000/todos/$userId/${todo.sId}'),
+        Uri.parse('http://$serverIp/todos/$userId/${todo.sId}'),
       );
 
       if (response.statusCode == 200) {
