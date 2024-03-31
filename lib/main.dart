@@ -10,7 +10,7 @@ void main() {
   runApp(const MyApp());
 }
 
-const serverIp = "https://e27c-103-111-134-68.ngrok-free.app";
+const serverIp = "https://46a1-103-219-166-143.ngrok-free.app";
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
