@@ -123,6 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Get todos for the selected or current date
       final DateTime selectedDate = _selectedDay ?? DateTime.now();
+      todos.forEach((element) => DateFormat('yyyy-MM-dd HH:mm:ss').format(element.date));
       final selectedTodos = todos
           .where((event) =>
               event.date.year == selectedDate.year &&

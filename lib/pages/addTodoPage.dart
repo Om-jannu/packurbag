@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_print
-
 import 'dart:convert';
 import 'dart:io';
 import 'package:flex_color_picker/flex_color_picker.dart';
@@ -9,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../components/GlobalSnackbar.dart';
 import '../main.dart';
+import '../screens/HomeScreen.dart';
 import '../utils.dart';
 
 class AddTodoPage extends StatefulWidget {
@@ -134,6 +133,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
           // Refresh categories after adding
           _fetchCategories();
           Navigator.pop(context);
+          fetchTodos(userId, context);
           if (mounted) {
             GlobalSnackbar.show(context, 'Todo Added successfully',
                 success: true);

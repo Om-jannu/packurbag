@@ -30,7 +30,7 @@ final Map<int, String> priorityLabels = {
 String formattedDate(String? dateString) {
   if (dateString == null || dateString.isEmpty) return '';
 
-  final DateTime dateTime = DateTime.parse(dateString);
+  final DateTime dateTime = DateTime.parse(dateString).toLocal();
   final DateFormat formatter = DateFormat(' dd MMMM yyyy,E');
   return formatter.format(dateTime);
 }

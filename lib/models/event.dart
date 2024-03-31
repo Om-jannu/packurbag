@@ -22,12 +22,12 @@ class Event {
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
       text: json['text'] ?? '',
-      date: DateTime.parse(json['date'] ?? ''),
+      date: DateTime.parse(json['date'] ?? '').toLocal(),
       completed: json['completed'] ?? false,
       priority: json['priority'] ?? 0,
       category: json['category'] ?? '',
       categoryColor: json['categoryColor'] ?? '',
-      dateOfCreation: DateTime.parse(json['dateOfCreation'] ?? ''),
+      dateOfCreation: DateTime.parse(json['dateOfCreation'] ?? '').toLocal(),
       id: json['_id'] ?? '',
     );
   }

@@ -88,9 +88,10 @@ class _TodoListPageState extends State<TodoListPage> {
     // Group todos by date
     Map<String, List<TodoData>> groupedTodos = {};
     filteredTodos.forEach((todo) {
-      final todoDate = todo.date!.substring(0, 10);
-      groupedTodos.putIfAbsent(todoDate, () => []);
-      groupedTodos[todoDate]!.add(todo);
+      DateTime todoDate = DateTime.parse(todo.date!).toLocal();
+      final todoDateString = todoDate.toString().substring(0, 10);
+      groupedTodos.putIfAbsent(todoDateString, () => []);
+      groupedTodos[todoDateString]!.add(todo);
     });
 
     return Scaffold(
@@ -706,8 +707,7 @@ class _TodoListPageState extends State<TodoListPage> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
       final response = await http.put(
-        Uri.parse(
-            '$serverIp/todos/$userId/${todo.sId}/completedStatus'),
+        Uri.parse('$serverIp/todos/$userId/${todo.sId}/completedStatus'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
