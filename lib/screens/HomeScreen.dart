@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -7,17 +9,18 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:pub/extensions.dart';
 import 'package:pub/main.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../components/GlobalSnackbar.dart';
 import '../models/event.dart';
+import '../pages/sosScreen.dart';
 import '../utils.dart';
 
 Future<List<Event>> fetchTodos(String userId, BuildContext context) async {
   try {
-    final response =
-        await http.get(Uri.parse('http://$serverIp/todos/$userId'));
+    final response = await http.get(Uri.parse('$serverIp/todos/$userId'));
 
     if (response.statusCode == 200) {
       final todosData = jsonDecode(response.body);
@@ -42,9 +45,7 @@ Future<List<Event>> fetchTodos(String userId, BuildContext context) async {
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key, this.serverIp}) : super(key: key);
-
-  final String? serverIp;
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -61,11 +62,57 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime? _rangeEnd;
   bool _showIncompleteTasks = false;
   bool _groupByCategory = true;
+  late StreamSubscription<AccelerometerEvent> _accelerometerSubscription;
+  bool _isShaking = false;
+  bool _isSosPageOpen = false;
   @override
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
     _loadTodos();
+    _startListeningToAccelerometer();
+  }
+
+  @override
+  void dispose() {
+    _stopListeningToAccelerometer();
+    super.dispose();
+  }
+
+  void _startListeningToAccelerometer() {
+    _accelerometerSubscription =
+        accelerometerEvents.listen((AccelerometerEvent event) {
+      final double accelerationSquared =
+          event.x * event.x + event.y * event.y + event.z * event.z;
+      final double acceleration = sqrt(accelerationSquared);
+
+      if (acceleration > 50 && !_isSosPageOpen) {
+        // Check if SOS page is not already open
+        setState(() {
+          _isShaking = true;
+        });
+
+        // Set the flag to true to prevent opening SOS page multiple times
+        _isSosPageOpen = true;
+
+        // Navigate to SOS screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SosScreen()),
+        ).then((_) {
+          // Reset the flag when SOS page is closed
+          _isSosPageOpen = false;
+        });
+
+        setState(() {
+          _isShaking = false;
+        });
+      }
+    });
+  }
+
+  void _stopListeningToAccelerometer() {
+    _accelerometerSubscription.cancel();
   }
 
   Future<void> _loadTodos() async {
@@ -146,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
       final response = await http.put(
-        Uri.parse('http://$serverIp/todos/$userId/${todo.id}/completedStatus'),
+        Uri.parse('$serverIp/todos/$userId/${todo.id}/completedStatus'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },

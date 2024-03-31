@@ -1,6 +1,6 @@
+import 'package:all_bluetooth/all_bluetooth.dart';
 import 'package:flutter/material.dart';
 
-import '../main.dart';
 import '../pages/BluetoothChat.dart';
 import '../pages/BluetoothChatScreen.dart';
 
@@ -10,6 +10,8 @@ class BtScreen extends StatefulWidget {
   @override
   State<BtScreen> createState() => _BtScreenState();
 }
+
+final allBluetooth = AllBluetooth();
 
 class _BtScreenState extends State<BtScreen> {
   @override

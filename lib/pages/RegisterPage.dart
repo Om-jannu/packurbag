@@ -42,7 +42,7 @@ class _RegisterPageState extends State<RegisterPage> {
         .showSnackBar(const SnackBar(content: Text('Registering...')));
 
     final response = await http.post(
-      Uri.parse('http://${widget.serverIp}:5000/register'),
+      Uri.parse('${widget.serverIp}:5000/register'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'username': usernameController.text,

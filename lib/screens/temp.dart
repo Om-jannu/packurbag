@@ -1,98 +1,131 @@
+import 'package:all_bluetooth/all_bluetooth.dart';
 import 'package:flutter/material.dart';
-import 'package:speech_to_text/speech_recognition_result.dart';
-import 'package:speech_to_text/speech_to_text.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-class Temp extends StatefulWidget {
+import '../main.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
-  _TempState createState() => _TempState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-enum TtsState { playing, stopped, paused, continued }
-
-class _TempState extends State<Temp> {
-  SpeechToText _speechToText = SpeechToText();
-  bool _speechEnabled = false;
-  String _lastWords = '';
-
+class _HomeScreenState extends State<HomeScreen> {
+  final bondedDevice = ValueNotifier(<BluetoothDevice>[]);
+  bool isListening = false;
   @override
   void initState() {
     super.initState();
-    _initSpeech();
-  }
-
-  /// This has to happen only once per app
-  void _initSpeech() async {
-    _speechEnabled = await _speechToText.initialize();
-    setState(() {});
-  }
-
-  /// Each time to start a speech recognition session
-  void _startListening() async {
-    await _speechToText.listen(onResult: _onSpeechResult);
-    setState(() {});
-  }
-
-  /// Manually stop the active speech recognition session
-  /// Note that there are also timeouts that each platform enforces
-  /// and the SpeechToText plugin supports setting timeouts on the
-  /// listen method.
-  void _stopListening() async {
-    await _speechToText.stop();
-    setState(() {});
-  }
-
-  /// This is the callback that the SpeechToText plugin calls when
-  /// the platform returns recognized words.
-  void _onSpeechResult(SpeechRecognitionResult result) {
-    setState(() {
-      _lastWords = result.recognizedWords;
-    });
+    Future.wait([
+      Permission.bluetooth.request(),
+      Permission.bluetoothScan.request(),
+      Permission.bluetoothConnect.request(),
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Speech Demo'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Container(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Recognized words:',
-                style: TextStyle(fontSize: 20.0),
-              ),
+    return StreamBuilder(
+        stream: allBluetooth.streamBluetoothState,
+        builder: (context, snapshot) {
+          final bluetoothOn = snapshot.data ?? false;
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text("Bluetooth Connect"),
             ),
-            Expanded(
-              child: Container(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  // If listening is active show the recognized words
-                  _speechToText.isListening
-                      ? '$_lastWords'
-                      // If listening isn't active but could be tell the user
-                      // how to start it, otherwise indicate that speech
-                      // recognition is not yet ready or not supported on
-                      // the target device
-                      : _speechEnabled
-                          ? 'Tap the microphone to start listening...'
-                          : 'Speech not available',
+            floatingActionButton: switch (isListening) {
+              true => null,
+              false => FloatingActionButton(
+                  onPressed: switch (bluetoothOn) {
+                    false => null,
+                    true => () {
+                        allBluetooth.startBluetoothServer();
+                        setState(() => isListening = true);
+                      },
+                  },
+                  backgroundColor: bluetoothOn
+                      ? Theme.of(context).primaryColor
+                      : Colors.grey,
+                  child: const Icon(Icons.wifi_tethering),
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed:
-            // If not yet listening for speech start, otherwise stop
-            _speechToText.isNotListening ? _startListening : _stopListening,
-        tooltip: 'Listen',
-        child: Icon(_speechToText.isNotListening ? Icons.mic_off : Icons.mic),
-      ),
-    );
+            },
+            body: isListening
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text("Listening for Connections"),
+                        const CircularProgressIndicator(),
+                        FloatingActionButton(
+                          child: const Icon(Icons.stop),
+                          onPressed: () {
+                            allBluetooth.closeConnection();
+                            setState(() {
+                              isListening = false;
+                            });
+                          },
+                        )
+                      ],
+                    ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              switch (bluetoothOn) {
+                                true => "ON",
+                                false => "OFF",
+                              },
+                              style: TextStyle(
+                                  color:
+                                      bluetoothOn ? Colors.green : Colors.red),
+                            ),
+                            ElevatedButton(
+                              onPressed: switch (bluetoothOn) {
+                                false => null,
+                                true => () async {
+                                    final devices =
+                                        await allBluetooth.getBondedDevices();
+                                    bondedDevice.value = devices;
+                                  },
+                              },
+                              child: const Text("Available Devices"),
+                            ),
+                          ],
+                        ),
+                        if (!bluetoothOn)
+                          const Center(
+                            child: Text("Turn bluetooth on"),
+                          ),
+                        ValueListenableBuilder(
+                            valueListenable: bondedDevice,
+                            builder: (context, devices, child) {
+                              return Expanded(
+                                child: ListView.builder(
+                                  itemCount: bondedDevice.value.length,
+                                  itemBuilder: (context, index) {
+                                    final device = devices[index];
+                                    return ListTile(
+                                      title: Text(device.name),
+                                      subtitle: Text(device.address),
+                                      onTap: () {
+                                        allBluetooth
+                                            .connectToDevice(device.address);
+                                      },
+                                    );
+                                  },
+                                ),
+                              );
+                            })
+                      ],
+                    ),
+                  ),
+          );
+        });
   }
 }

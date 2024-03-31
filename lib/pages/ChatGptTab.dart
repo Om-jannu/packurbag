@@ -23,7 +23,7 @@ class _ChatGptTabState extends State<ChatGptTab> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://your-backend-server-url.com/send-message'), // Replace with your backend server URL
+        Uri.parse('your-backend-server-url.com/send-message'), // Replace with your backend server URL
         headers: {
           'Content-Type': 'application/json',
         },

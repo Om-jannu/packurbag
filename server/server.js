@@ -371,6 +371,7 @@ app.get("/", async (req, res) => {
 });
 app.post("/register", async (req, res) => {
   const { username, password, userEmail } = req.body;
+  console.log(username, password, userEmail);
   try {
     const newUser = new User({ username, userEmail, password });
     await newUser.save();

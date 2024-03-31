@@ -59,7 +59,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
       final response =
-          await http.get(Uri.parse('http://$serverIp/categories/$userId'));
+          await http.get(Uri.parse('$serverIp/categories/$userId'));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -107,7 +107,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
           _getPredefinedCategories();
       for (final category in predefinedCategories) {
         final response = await http.post(
-          Uri.parse('http://$serverIp/categories/$userId'),
+          Uri.parse('$serverIp/categories/$userId'),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
           },
@@ -272,7 +272,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
         final prefs = await SharedPreferences.getInstance();
         final userId = prefs.getString('userId') ?? '';
         final response = await http.post(
-          Uri.parse('http://$serverIp/categories/$userId'),
+          Uri.parse('$serverIp/categories/$userId'),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
           },
@@ -641,7 +641,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       final categoryName = category.categoryName ?? '';
 
       final response = await http.put(
-        Uri.parse('http://$serverIp/categories/$userId/$categoryName'),
+        Uri.parse('$serverIp/categories/$userId/$categoryName'),
         body:
             jsonEncode({'newCategoryName': newName, 'categoryColor': newColor}),
         headers: {
@@ -679,7 +679,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       final categoryName = category.categoryName ?? '';
 
       final response = await http.delete(
-        Uri.parse('http://$serverIp/categories/$userId/$categoryName'),
+        Uri.parse('$serverIp/categories/$userId/$categoryName'),
       );
 
       if (response.statusCode == 200) {

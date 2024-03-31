@@ -1,15 +1,16 @@
-import 'package:all_bluetooth/all_bluetooth.dart';
 import 'package:flutter/material.dart';
 import 'package:pub/screens/splashScreen.dart';
+import 'package:torch_controller/torch_controller.dart';
 import 'pages/LoginPage.dart';
 import 'screens/MainScreen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  TorchController().initialize();
   runApp(const MyApp());
 }
 
-const serverIp = "089c-103-185-11-141.ngrok-free.app";
-final allBluetooth = AllBluetooth();
+const serverIp = "https://e27c-103-111-134-68.ngrok-free.app";
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

@@ -65,7 +65,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
       final response =
-          await http.get(Uri.parse('http://$serverIp/categories/$userId'));
+          await http.get(Uri.parse('$serverIp/categories/$userId'));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -117,7 +117,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
       final userId = prefs.getString('userId') ?? '';
       if (_formKey.currentState!.validate()) {
         final response = await http.post(
-          Uri.parse('http://$serverIp/todos/$userId'),
+          Uri.parse('$serverIp/todos/$userId'),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
           },
@@ -167,7 +167,7 @@ class _AddTodoPageState extends State<AddTodoPage> {
         final prefs = await SharedPreferences.getInstance();
         final userId = prefs.getString('userId') ?? '';
         final response = await http.post(
-          Uri.parse('http://$serverIp/categories/$userId'),
+          Uri.parse('$serverIp/categories/$userId'),
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
           },
