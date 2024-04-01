@@ -2,7 +2,7 @@ import 'package:all_bluetooth/all_bluetooth.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../main.dart';
+import 'BtScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

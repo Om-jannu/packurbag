@@ -1,6 +1,7 @@
 import 'package:avatar_glow/avatar_glow.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:translator/translator.dart';
@@ -144,7 +145,12 @@ class _TranslationPageState extends State<TranslationPage> {
   @override
   void initState() {
     super.initState();
-    _initSpeech();
+    try {
+      _initSpeech();
+    } catch (e) {
+      print(e);
+    }
+
     _filteredLanguages = _languages;
   }
 
@@ -238,7 +244,43 @@ class _TranslationPageState extends State<TranslationPage> {
   }
 
   void _initSpeech() async {
-    _speechEnabled = await _speechToText.initialize();
+    // Request permission for speech recognition
+    PermissionStatus status = await Permission.speech.request();
+
+    if (status == PermissionStatus.granted) {
+      // Permission granted, initialize speech-to-text
+      try {
+        _speechEnabled = await _speechToText.initialize();
+      } catch (e) {
+        print(e);
+      }
+    } else if (status == PermissionStatus.denied ||
+        status == PermissionStatus.permanentlyDenied) {
+      // Permission denied, prompt the user again
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Permission Required'),
+            content: Text(
+                'Please grant permission for speech recognition to use this feature.'),
+            actions: <Widget>[
+              TextButton(
+                child: Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _initSpeech(); // Request permission again
+                },
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      // Handle other permission statuses (e.g., restricted)
+      print('Permission for speech recognition not granted.');
+    }
+
     setState(() {});
   }
 
@@ -265,20 +307,25 @@ class _TranslationPageState extends State<TranslationPage> {
       appBar: AppBar(
         title: const Text('Language Translation'),
       ),
-      floatingActionButton: AvatarGlow(
-        animate: _speechToText.isListening,
-        glowColor: Colors.blue,
-        glowShape: BoxShape.circle,
-        duration: const Duration(milliseconds: 2000),
-        repeat: true,
-        child: FloatingActionButton(
-          shape: CircleBorder(),
-          onPressed:
-              _speechToText.isNotListening ? _startListening : _stopListening,
-          tooltip: 'Listen',
-          child: Icon(_speechToText.isNotListening ? Icons.mic : Icons.mic_off),
-        ),
-      ),
+      floatingActionButton: _speechEnabled
+          ? AvatarGlow(
+              animate: _speechToText.isListening,
+              glowColor: Colors.blue,
+              glowShape: BoxShape.circle,
+              duration: const Duration(milliseconds: 2000),
+              repeat: true,
+              child: FloatingActionButton(
+                shape: CircleBorder(),
+                onPressed: _speechToText.isNotListening
+                    ? _startListening
+                    : _stopListening,
+                tooltip: 'Listen',
+                child: Icon(
+                    _speechToText.isNotListening ? Icons.mic : Icons.mic_off),
+              ),
+            )
+          : Container(), // Placeholder widget if permission is not granted
+
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
