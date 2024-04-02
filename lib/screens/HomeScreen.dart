@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -13,8 +12,6 @@ import 'package:pub/main.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
 
 import '../components/GlobalSnackbar.dart';
 import '../models/event.dart';
@@ -68,111 +65,18 @@ class _HomeScreenState extends State<HomeScreen> {
   late StreamSubscription<AccelerometerEvent> _accelerometerSubscription;
   bool _isShaking = false;
   bool _isSosPageOpen = false;
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
   @override
   void initState() {
     super.initState();
     _selectedDay = _focusedDay;
     _loadTodos();
     _startListeningToAccelerometer();
-    initializeNotifications();
   }
 
   @override
   void dispose() {
     _stopListeningToAccelerometer();
     super.dispose();
-  }
-
-  // Function to initialize notifications
-  Future<void> initializeNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    final InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-  }
-
-// Function to display a local notification
-  Future<void> _showNotification(String title, String body) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'your channel id',
-      'your channel name',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
-    await flutterLocalNotificationsPlugin.show(
-      0,
-      title,
-      body,
-      platformChannelSpecifics,
-    );
-  }
-
-  Future<void> _addReminder(Event todo) async {
-    tz.initializeTimeZones();
-
-    // Retrieve the local timezone
-    final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
-    final tz.Location timeZone = tz.getLocation(timeZoneName);
-
-    // Show a dialog to set reminder date and time
-    DateTime? selectedDateTime = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    );
-    if (selectedDateTime != null) {
-      TimeOfDay? selectedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
-      if (selectedTime != null) {
-        DateTime reminderDateTime = DateTime(
-          selectedDateTime.year,
-          selectedDateTime.month,
-          selectedDateTime.day,
-          selectedTime.hour,
-          selectedTime.minute,
-        );
-
-        // Convert DateTime to TZDateTime
-        tz.TZDateTime scheduledDate = tz.TZDateTime(
-          timeZone,
-          reminderDateTime.year,
-          reminderDateTime.month,
-          reminderDateTime.day,
-          reminderDateTime.hour,
-          reminderDateTime.minute,
-        );
-
-        // Schedule the notification
-        await flutterLocalNotificationsPlugin.zonedSchedule(
-          todo.id as int, // Unique id for the notification
-          'Todo Reminder', // Notification title
-          todo.text, // Notification body
-          scheduledDate,
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'your channel id',
-              'your channel name',
-              importance: Importance.max,
-              priority: Priority.high,
-              ticker: 'ticker',
-            ),
-          ),
-          androidAllowWhileIdle: true,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: DateTimeComponents.time,
-        );
-      }
-    }
   }
 
   void _startListeningToAccelerometer() {
@@ -219,8 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Get todos for the selected or current date
       final DateTime selectedDate = _selectedDay ?? DateTime.now();
-      todos.forEach(
-          (element) => DateFormat('yyyy-MM-dd HH:mm:ss').format(element.date));
+      todos.forEach((element) => DateFormat('yyyy-MM-dd HH:mm:ss').format(element.date));
       final selectedTodos = todos
           .where((event) =>
               event.date.year == selectedDate.year &&
@@ -399,11 +302,8 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Image.asset(
               'assets/icon_packurbag.png', // Replace with your custom logo path
-              width: 35,
-              height: 35,
-            ),
-            const SizedBox(
-              width: 8,
+              width: 50,
+              height: 50,
             ),
             const Text("packurbag")
           ],

@@ -62,7 +62,6 @@ dependencies:
   flutter_phone_direct_caller: ^2.1.1
   audioplayers: ^6.0.0
   torch_controller: ^2.0.1
-  flutter_local_notifications: ^17.0.0
 
 dev_dependencies:
   flutter_test:
