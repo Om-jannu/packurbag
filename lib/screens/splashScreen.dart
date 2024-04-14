@@ -70,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen>
             const SizedBox(height: 20), // Add some space between logo and text
             // Your custom text widget
             const Text(
-              'PackUrBag',
+              'TourBuddy',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,

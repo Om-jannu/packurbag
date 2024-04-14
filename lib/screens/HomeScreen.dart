@@ -305,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 50,
               height: 50,
             ),
-            const Text("packurbag")
+            const Text("TourBuddy")
           ],
         ),
         shape: const RoundedRectangleBorder(

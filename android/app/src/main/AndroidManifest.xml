@@ -15,7 +15,7 @@
         </intent>
     </queries>
     <application
-        android:label="pub"
+        android:label="Tour Buddy"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

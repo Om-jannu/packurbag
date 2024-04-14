@@ -82,7 +82,7 @@ class _BluetoothChatScreenState extends State<BluetoothChatScreen> {
                         ? Alignment.centerRight
                         : Alignment.centerLeft,
                     child: Text(
-                      message.message + message.isMe.toString(),
+                      message.message,
                       style: TextStyle(
                         color: message.isMe ? Colors.white : Colors.black,
                       ),
