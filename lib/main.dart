@@ -10,7 +10,7 @@ void main() {
   runApp(const MyApp());
 }
 
-const serverIp = "https://95be-103-185-11-48.ngrok-free.app";
+const serverIp = "https://8eb9-103-219-166-102.ngrok-free.app";
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -20,7 +20,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData(
         brightness: Brightness.dark,
-        primaryColor: Colors.purple,
         scaffoldBackgroundColor: Colors.grey[900], // Adjust as needed
         useMaterial3: true,
       ),

@@ -9,11 +9,9 @@ const port = 5000;
 
 app.use(cors());
 app.use(bodyParser.json());
-require('dotenv').config()
+require("dotenv").config();
 
-mongoose.connect(
-  process.env.MONGO_URL
-);
+mongoose.connect(process.env.MONGO_URL);
 
 // ==========================Define routes================================
 // Register a new user
@@ -461,6 +459,7 @@ app.put("/categories/:userId/:categoryName", async (req, res) => {
   const userId = req.params.userId;
   const oldCategoryName = req.params.categoryName.toLowerCase(); // Convert category name to lowercase
   const { newCategoryName, categoryColor } = req.body;
+  console.log(newCategoryName, categoryColor);
   try {
     // Check if the user exists
     const user = await User.findById(userId);
@@ -488,8 +487,8 @@ app.put("/categories/:userId/:categoryName", async (req, res) => {
     user.todos.forEach((todo) => {
       if (todo.category.toLowerCase() === oldCategoryName) {
         todo.category = newCategoryName;
+         todo.categoryColor = categoryColor;
       }
-      todo.categoryColor = categoryColor;
     });
 
     await user.save();
@@ -582,15 +581,20 @@ app.post("/delete_category", async (req, res) => {
 app.put("/edit_category", async (req, res) => {
   const { username, oldCategory, newCategory } = req.body;
   try {
+    // Find the user and update the category name
     const user = await User.findOneAndUpdate(
-      { username, categories: oldCategory },
-      { $set: { "categories.$": newCategory } }
+      { username, "categories.categoryName": oldCategory },
+      { $set: { "categories.$.categoryName": newCategory } }
     );
+
     if (user) {
+      // Update todos with the old category name to the new category name
       await User.updateOne(
-        { username },
-        { $rename: { [`todos.${oldCategory}`]: `todos.${newCategory}` } }
+        { username, "todos.category": oldCategory },
+        { $set: { "todos.$.category": newCategory } },
+        { multi: true }
       );
+
       res.json({ success: true, message: "Category edited successfully" });
     } else {
       res.json({ success: false, message: "User or category not found" });
@@ -602,6 +606,7 @@ app.put("/edit_category", async (req, res) => {
       .json({ success: false, message: "Failed to edit category" });
   }
 });
+
 // Get todos for a category
 app.get("/get_todos", async (req, res) => {
   const userId = req.query.userId;

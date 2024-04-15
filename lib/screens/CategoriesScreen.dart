@@ -7,6 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../components/CategoryItemShimmer.dart';
 import '../components/GlobalSnackbar.dart';
 import '../main.dart';
 import '../models/category.dart';
@@ -417,24 +418,45 @@ class _CategoriesPageState extends State<CategoriesPage> {
         child: Column(
           children: [
             Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10.0,
-                  mainAxisSpacing: 10.0,
+              child: _categories.isEmpty // Check if categories are empty
+          ? _buildShimmerLoading() // Show shimmer loading effect
+          : Column(
+              children: [
+                Expanded(
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10.0,
+                      mainAxisSpacing: 10.0,
+                    ),
+                    itemCount: _filteredCategories.length,
+                    itemBuilder: (context, index) {
+                      final category = _filteredCategories[index];
+                      return _buildCategoryCard(category);
+                    },
+                  ),
                 ),
-                itemCount: _filteredCategories.length,
-                itemBuilder: (context, index) {
-                  final category = _filteredCategories[index];
-                  return _buildCategoryCard(category);
-                },
-              ),
+              ],
+            ),
             ),
           ],
         ),
       ),
     );
   }
+  Widget _buildShimmerLoading() {
+  return GridView.builder(
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2,
+      crossAxisSpacing: 10.0,
+      mainAxisSpacing: 10.0,
+    ),
+    itemCount: 10, // Number of shimmer items
+    itemBuilder: (context, index) {
+      return const CategoryItemShimmer(); // Use CategoryItemShimmer here
+    },
+  );
+}
 
   Widget _buildSearchField() {
     return TextField(
@@ -639,6 +661,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? '';
       final categoryName = category.categoryName ?? '';
+
 
       final response = await http.put(
         Uri.parse('$serverIp/categories/$userId/$categoryName'),
