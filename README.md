@@ -47,6 +47,7 @@ Tour Buddy is a travel support app designed to enhance your travel experience wi
 
 ```
 MONGO_URL="mongodb+srv://<username>:<password>@beyondthebasics.abcde.mongodb.net/test"
+PORT=5000
 ```
 
 1. Run server:
