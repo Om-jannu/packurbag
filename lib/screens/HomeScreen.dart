@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:pub/extensions.dart';
 import 'package:pub/main.dart';
 import 'package:sensors_plus/sensors_plus.dart';
@@ -123,7 +124,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Get todos for the selected or current date
       final DateTime selectedDate = _selectedDay ?? DateTime.now();
-      todos.forEach((element) => DateFormat('yyyy-MM-dd HH:mm:ss').format(element.date));
+      todos.forEach(
+          (element) => DateFormat('yyyy-MM-dd HH:mm:ss').format(element.date));
       final selectedTodos = todos
           .where((event) =>
               event.date.year == selectedDate.year &&
@@ -300,12 +302,11 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/icon_packurbag.png', // Replace with your custom logo path
-              width: 50,
-              height: 50,
+            Lottie.asset(
+              height: 60,
+              "assets/animations/world2.json",
             ),
-            const Text("TourBuddy")
+            const Text("Tour Buddy")
           ],
         ),
         shape: const RoundedRectangleBorder(
@@ -313,14 +314,6 @@ class _HomeScreenState extends State<HomeScreen> {
             bottom: Radius.circular(20),
           ),
         ),
-        // actions: [
-        //   IconButton(
-        //     icon: const Icon(Icons.calendar_month),
-        //     onPressed: () {
-        //       // Handle calendar button tap
-        //     },
-        //   ),
-        // ],
       ),
       body: Column(
         children: [
@@ -411,7 +404,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   children: [
                     PopupMenuButton<String>(
-                      icon: const FaIcon(FontAwesomeIcons.filter),
+                      icon: const Row(
+                        children: [
+                          Text("Group by"),
+                          SizedBox(
+                            width: 8,
+                          ),
+                          FaIcon(FontAwesomeIcons.filter),
+                        ],
+                      ),
                       iconSize: 16,
                       onSelected: (value) {
                         setState(() {
@@ -425,11 +426,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemBuilder: (BuildContext context) => [
                         const PopupMenuItem<String>(
                           value: 'category',
-                          child: Text('Group by Category'),
+                          child: Text('Category'),
                         ),
                         const PopupMenuItem<String>(
                           value: 'priority',
-                          child: Text('Group by Priority'),
+                          child: Text('Priority'),
                         ),
                       ],
                     ),

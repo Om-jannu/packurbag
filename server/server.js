@@ -5,14 +5,13 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 const User = require("./models/userSchema");
 const app = express();
-const port = 5000;
 
 app.use(cors());
 app.use(bodyParser.json());
 require("dotenv").config();
 
 mongoose.connect(process.env.MONGO_URL);
-
+const port = process.env.PORT || 5000;
 // ==========================Define routes================================
 // Register a new user
 app.get("/", async (req, res) => {
@@ -45,7 +44,7 @@ app.post("/login", async (req, res) => {
     if (user) {
       res.json({ success: true, message: "Login successful", data: user });
     } else {
-      res.json({ success: false, message: "User not found" });
+      res.json({ success: false, message: "Incorrect Password or Email" });
     }
   } catch (error) {
     res.status(500).json({ success: false, message: "Login failed" });
@@ -487,7 +486,7 @@ app.put("/categories/:userId/:categoryName", async (req, res) => {
     user.todos.forEach((todo) => {
       if (todo.category.toLowerCase() === oldCategoryName) {
         todo.category = newCategoryName;
-         todo.categoryColor = categoryColor;
+        todo.categoryColor = categoryColor;
       }
     });
 
@@ -502,206 +501,206 @@ app.put("/categories/:userId/:categoryName", async (req, res) => {
   }
 });
 
-// Get categories for a user
-app.post("/get_categories", async (req, res) => {
-  const { username } = req.body;
-  try {
-    const user = await User.findOne({ username });
-    console.log(user.categories, user.todos);
-    if (user && user.categories) {
-      const categoriesWithCount = await Promise.all(
-        user.categories.map(async (category) => {
-          const todosCount =
-            user.todos && user.todos.get(category)
-              ? user.todos.get(category).length
-              : 0;
+// // Get categories for a user
+// app.post("/get_categories", async (req, res) => {
+//   const { username } = req.body;
+//   try {
+//     const user = await User.findOne({ username });
+//     console.log(user.categories, user.todos);
+//     if (user && user.categories) {
+//       const categoriesWithCount = await Promise.all(
+//         user.categories.map(async (category) => {
+//           const todosCount =
+//             user.todos && user.todos.get(category)
+//               ? user.todos.get(category).length
+//               : 0;
 
-          return {
-            category,
-            todoCount: todosCount,
-          };
-        })
-      );
-      console.log(categoriesWithCount);
+//           return {
+//             category,
+//             todoCount: todosCount,
+//           };
+//         })
+//       );
+//       console.log(categoriesWithCount);
 
-      res.json({
-        success: true,
-        categories: user.categories,
-        categorywithcount: categoriesWithCount,
-        message: "Categories found for the user",
-      });
-    } else {
-      res.json({
-        success: false,
-        message: "Categories not found for the user",
-      });
-    }
-  } catch (error) {
-    console.error("Error fetching categories:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Error fetching categories" });
-  }
-});
+//       res.json({
+//         success: true,
+//         categories: user.categories,
+//         categorywithcount: categoriesWithCount,
+//         message: "Categories found for the user",
+//       });
+//     } else {
+//       res.json({
+//         success: false,
+//         message: "Categories not found for the user",
+//       });
+//     }
+//   } catch (error) {
+//     console.error("Error fetching categories:", error);
+//     res
+//       .status(500)
+//       .json({ success: false, message: "Error fetching categories" });
+//   }
+// });
 
-// Add category to user
-app.post("/add_category", async (req, res) => {
-  const { username, category } = req.body;
-  try {
-    await User.updateOne({ username }, { $addToSet: { categories: category } });
-    res.json({ success: true, message: "Category added successfully" });
-  } catch (error) {
-    console.error("Failed to add category:", error);
-    res.status(500).json({ success: false, message: "Failed to add category" });
-  }
-});
+// // Add category to user
+// app.post("/add_category", async (req, res) => {
+//   const { username, category } = req.body;
+//   try {
+//     await User.updateOne({ username }, { $addToSet: { categories: category } });
+//     res.json({ success: true, message: "Category added successfully" });
+//   } catch (error) {
+//     console.error("Failed to add category:", error);
+//     res.status(500).json({ success: false, message: "Failed to add category" });
+//   }
+// });
 
-// Delete category
-app.post("/delete_category", async (req, res) => {
-  const { username, category } = req.body;
-  try {
-    const user = await User.findOneAndUpdate(
-      { username },
-      { $pull: { categories: category }, $unset: { [`todos.${category}`]: "" } }
-    );
-    if (user) {
-      res.json({ success: true, message: "Category deleted successfully" });
-    } else {
-      res.json({ success: false, message: "User not found" });
-    }
-  } catch (error) {
-    console.error("Failed to delete category:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to delete category" });
-  }
-});
+// // Delete category
+// app.post("/delete_category", async (req, res) => {
+//   const { username, category } = req.body;
+//   try {
+//     const user = await User.findOneAndUpdate(
+//       { username },
+//       { $pull: { categories: category }, $unset: { [`todos.${category}`]: "" } }
+//     );
+//     if (user) {
+//       res.json({ success: true, message: "Category deleted successfully" });
+//     } else {
+//       res.json({ success: false, message: "User not found" });
+//     }
+//   } catch (error) {
+//     console.error("Failed to delete category:", error);
+//     res
+//       .status(500)
+//       .json({ success: false, message: "Failed to delete category" });
+//   }
+// });
 
-// Edit category
-app.put("/edit_category", async (req, res) => {
-  const { username, oldCategory, newCategory } = req.body;
-  try {
-    // Find the user and update the category name
-    const user = await User.findOneAndUpdate(
-      { username, "categories.categoryName": oldCategory },
-      { $set: { "categories.$.categoryName": newCategory } }
-    );
+// // Edit category
+// app.put("/edit_category", async (req, res) => {
+//   const { username, oldCategory, newCategory } = req.body;
+//   try {
+//     // Find the user and update the category name
+//     const user = await User.findOneAndUpdate(
+//       { username, "categories.categoryName": oldCategory },
+//       { $set: { "categories.$.categoryName": newCategory } }
+//     );
 
-    if (user) {
-      // Update todos with the old category name to the new category name
-      await User.updateOne(
-        { username, "todos.category": oldCategory },
-        { $set: { "todos.$.category": newCategory } },
-        { multi: true }
-      );
+//     if (user) {
+//       // Update todos with the old category name to the new category name
+//       await User.updateOne(
+//         { username, "todos.category": oldCategory },
+//         { $set: { "todos.$.category": newCategory } },
+//         { multi: true }
+//       );
 
-      res.json({ success: true, message: "Category edited successfully" });
-    } else {
-      res.json({ success: false, message: "User or category not found" });
-    }
-  } catch (error) {
-    console.error("Failed to edit category:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to edit category" });
-  }
-});
+//       res.json({ success: true, message: "Category edited successfully" });
+//     } else {
+//       res.json({ success: false, message: "User or category not found" });
+//     }
+//   } catch (error) {
+//     console.error("Failed to edit category:", error);
+//     res
+//       .status(500)
+//       .json({ success: false, message: "Failed to edit category" });
+//   }
+// });
 
-// Get todos for a category
-app.get("/get_todos", async (req, res) => {
-  const userId = req.query.userId;
-  console.log(userId);
-  try {
-    const user = await User.findById(userId);
-    console.log(user);
-    if (user && user.todos) {
-      let allTodos = [];
-      user.todos.forEach((categoryTodos) => {
-        allTodos = allTodos.concat(categoryTodos);
-      });
-      res.json({
-        success: true,
-        todos: allTodos,
-        message: `Todos found for the user ${user.username}`,
-      });
-    } else {
-      res.json({
-        success: false,
-        message: `Todos not found for the user ${user}`,
-      });
-    }
-  } catch (error) {
-    console.error("Error fetching todos:", error);
-    res.status(500).json({ success: false, message: "Error fetching todos" });
-  }
-});
+// // Get todos for a category
+// app.get("/get_todos", async (req, res) => {
+//   const userId = req.query.userId;
+//   console.log(userId);
+//   try {
+//     const user = await User.findById(userId);
+//     console.log(user);
+//     if (user && user.todos) {
+//       let allTodos = [];
+//       user.todos.forEach((categoryTodos) => {
+//         allTodos = allTodos.concat(categoryTodos);
+//       });
+//       res.json({
+//         success: true,
+//         todos: allTodos,
+//         message: `Todos found for the user ${user.username}`,
+//       });
+//     } else {
+//       res.json({
+//         success: false,
+//         message: `Todos not found for the user ${user}`,
+//       });
+//     }
+//   } catch (error) {
+//     console.error("Error fetching todos:", error);
+//     res.status(500).json({ success: false, message: "Error fetching todos" });
+//   }
+// });
 
-// Add todo to a category
-app.post("/add_todo", async (req, res) => {
-  const { username, category, todo, date } = req.body;
-  try {
-    const user = await User.findOneAndUpdate(
-      { username, categories: category },
-      {
-        $addToSet: {
-          [`todos.${category}`]: {
-            text: todo,
-            date: new Date(date),
-            completed: false,
-          },
-        },
-      }
-    );
-    if (user) {
-      res.json({ success: true, message: "Todo added successfully" });
-    } else {
-      res.json({ success: false, message: "User or category not found" });
-    }
-  } catch (error) {
-    console.error("Failed to add todo:", error);
-    res.status(500).json({ success: false, message: "Failed to add todo" });
-  }
-});
+// // Add todo to a category
+// app.post("/add_todo", async (req, res) => {
+//   const { username, category, todo, date } = req.body;
+//   try {
+//     const user = await User.findOneAndUpdate(
+//       { username, categories: category },
+//       {
+//         $addToSet: {
+//           [`todos.${category}`]: {
+//             text: todo,
+//             date: new Date(date),
+//             completed: false,
+//           },
+//         },
+//       }
+//     );
+//     if (user) {
+//       res.json({ success: true, message: "Todo added successfully" });
+//     } else {
+//       res.json({ success: false, message: "User or category not found" });
+//     }
+//   } catch (error) {
+//     console.error("Failed to add todo:", error);
+//     res.status(500).json({ success: false, message: "Failed to add todo" });
+//   }
+// });
 
-// Edit todo text
-app.put("/edit_todo", async (req, res) => {
-  const { username, category, oldTodo, newTodo } = req.body;
-  try {
-    const user = await User.findOneAndUpdate(
-      { username, [`todos.${category}.text`]: oldTodo },
-      { $set: { [`todos.${category}.$[elem].text`]: newTodo } },
-      { arrayFilters: [{ "elem.text": oldTodo }], new: true }
-    );
-    if (user) {
-      res.json({ success: true, message: "Todo edited successfully" });
-    } else {
-      res.json({ success: false, message: "User or todo not found" });
-    }
-  } catch (error) {
-    console.error("Failed to edit todo:", error);
-    res.status(500).json({ success: false, message: "Failed to edit todo" });
-  }
-});
+// // Edit todo text
+// app.put("/edit_todo", async (req, res) => {
+//   const { username, category, oldTodo, newTodo } = req.body;
+//   try {
+//     const user = await User.findOneAndUpdate(
+//       { username, [`todos.${category}.text`]: oldTodo },
+//       { $set: { [`todos.${category}.$[elem].text`]: newTodo } },
+//       { arrayFilters: [{ "elem.text": oldTodo }], new: true }
+//     );
+//     if (user) {
+//       res.json({ success: true, message: "Todo edited successfully" });
+//     } else {
+//       res.json({ success: false, message: "User or todo not found" });
+//     }
+//   } catch (error) {
+//     console.error("Failed to edit todo:", error);
+//     res.status(500).json({ success: false, message: "Failed to edit todo" });
+//   }
+// });
 
-// Delete todo from a category
-app.delete("/delete_todo", async (req, res) => {
-  const { username, category, todo } = req.body;
-  try {
-    const user = await User.findOneAndUpdate(
-      { username, [`todos.${category}.text`]: todo },
-      { $pull: { [`todos.${category}`]: { text: todo } } },
-      { new: true }
-    );
-    if (user) {
-      res.json({ success: true, message: "Todo deleted successfully" });
-    } else {
-      res.json({ success: false, message: "User or todo not found" });
-    }
-  } catch (error) {
-    console.error("Failed to delete todo:", error);
-    res.status(500).json({ success: false, message: "Failed to delete todo" });
-  }
-});
+// // Delete todo from a category
+// app.delete("/delete_todo", async (req, res) => {
+//   const { username, category, todo } = req.body;
+//   try {
+//     const user = await User.findOneAndUpdate(
+//       { username, [`todos.${category}.text`]: todo },
+//       { $pull: { [`todos.${category}`]: { text: todo } } },
+//       { new: true }
+//     );
+//     if (user) {
+//       res.json({ success: true, message: "Todo deleted successfully" });
+//     } else {
+//       res.json({ success: false, message: "User or todo not found" });
+//     }
+//   } catch (error) {
+//     console.error("Failed to delete todo:", error);
+//     res.status(500).json({ success: false, message: "Failed to delete todo" });
+//   }
+// });
 
 app.post("/generate-image", async (req, res) => {
   try {

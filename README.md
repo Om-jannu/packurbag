@@ -1,16 +1,131 @@
-# pub
+# Tour Buddy
 
-A new Flutter project.
+Tour Buddy is a travel support app designed to enhance your travel experience with various features including category-based to-do task lists, currency converter, calculator, language translation, and emergency SOS.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- **Category-based To-Do Task List**: Organize your tasks by categories such as sightseeing, dining, accommodation, etc., to stay organized during your travels.
+- **Currency Converter**: Easily convert currencies to help you manage your expenses and budget effectively in different countries.
+- **Calculator**: Perform quick calculations while on the go, whether it's budgeting or splitting bills with friends.
+- **Language Translation**: Overcome language barriers with built-in translation features, helping you communicate effectively in foreign countries.
+- **Emergency SOS**: Access emergency assistance quickly with the SOS feature, providing peace of mind during your travels.
 
-A few resources to get you started if this is your first Flutter project:
+## Installation
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+1. Clone the repository:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+   ```bash
+   git clone https://github.com/Om-jannu/packurbag.git
+   ```
+
+2. Navigate into the project directory:
+
+   ```bash
+   cd packurbag
+   ```
+
+3. Install dependencies for flutter:
+   ```bash
+   flutter pub get
+   ```
+4. Install dependencies for server:
+
+   ```bash
+   cd server
+   ```
+
+   ```bash
+   npm install
+   ```
+
+## Usage
+
+##### (Step 1.) Server Setup :
+
+1. Create `.env` file inside the server diretory and add :
+   (**Note: use appropriate mongo url**)
+
+```
+MONGO_URL="mongodb+srv://<username>:<password>@beyondthebasics.abcde.mongodb.net/test"
+```
+
+1. Run server:
+
+```bash
+npm run dev
+```
+
+Here's a guide for setting up Ngrok and starting port forwarding:
+
+### (Step 2) Ngrok Setup & Installation
+
+1. **Download Ngrok**:
+
+   - Go to the [Ngrok website](https://ngrok.com/) and sign up for an account if you haven't already.
+   - Download the Ngrok executable suitable for your operating system.
+
+2. **Extract Ngrok**:
+
+   - Extract the Ngrok executable file from the downloaded archive.
+
+3. **Open Terminal/Command Prompt**:
+
+   - Open a terminal or command prompt window.
+
+4. **Start Port Forwarding**:
+
+   - To start port forwarding, run the following command:
+     ```
+     ngrok http 5000
+     ```
+     This command starts forwarding traffic from Ngrok's randomly generated public URL to your local server running on port 5000.
+   - Copy the public URL.
+
+`Note: if ngrok command doesnt run try running with admin privileges or sudo privileges`
+
+##### (Step 3.) Flutter Setup :
+
+1. Choose an emulator
+2. Change **serverIp** in `lib/main.dart` file
+   ```
+   const serverIp = "<ngrok-public-url>";
+   example : https://cb4f-103-xxx-xxx-122.ngrok-free.app;
+   ```
+3. Run Command `flutter run`
+
+## Screenshots
+
+##### 1. QuickActions, Login & Register
+
+![ QuickActions, Login & Register](/assets/readme-assets/1.png)
+
+##### 2. Home & AddTodo
+
+![Home & AddTodo](/assets/readme-assets/2.png)
+
+##### 3. Category, Todolist & Translation
+
+![ Category, Todolist & Translation](/assets/readme-assets/3.png)
+
+##### 4. Bluetooth Screens
+
+![Bluetooth Screens](/assets/readme-assets/4.png)
+
+##### 5. Calculator, Currency Converter & Profile
+
+![Calculator, Currency Converter & Profile](/assets/readme-assets/5.png)
+
+##### 6. Emergency SOS Page
+
+![Emergency SOS Page](/assets/readme-assets/6.png)
+
+## Contributing
+
+If you'd like to contribute to this project, please follow these guidelines:
+
+1. Fork the repository.
+2. Create a new branch (`git checkout -b feature`)
+3. Make your changes
+4. Commit your changes (`git commit -am 'Add new feature'`)
+5. Push to the branch (`git push origin feature`)
+6. Create a new Pull Request.

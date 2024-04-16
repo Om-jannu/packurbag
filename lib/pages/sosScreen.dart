@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -24,7 +23,6 @@ class _SosScreenState extends State<SosScreen> {
   bool _isBuzzerOn = false; // Track the state of the buzzer
   bool _isFlashOn = false; // Track the state of the flashlight
   int _currentIndex = 0;
-  final PageController _pageController = PageController(initialPage: 0);
   final player = AudioPlayer();
   final torchController = TorchController();
 
@@ -128,8 +126,7 @@ class _SosScreenState extends State<SosScreen> {
 
   void _startFlashToggle() {
     // Start a timer to toggle the flashlight every 500 milliseconds
-    Timer _flashTimer =
-        Timer.periodic(const Duration(milliseconds: 100), (timer) {
+    Timer.periodic(const Duration(milliseconds: 100), (timer) {
       if (!_isFlashOn) {
         // If flashlight is turned off externally, cancel the timer
         timer.cancel();
