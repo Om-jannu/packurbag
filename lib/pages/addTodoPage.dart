@@ -345,8 +345,9 @@ class _AddTodoPageState extends State<AddTodoPage> {
                       ElevatedButton(
                         onPressed: () => _addCategory(dialogPickerColorLocal),
                         style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10.0),
+                            borderRadius: BorderRadius.circular(50.0),
                           ),
                         ),
                         child: const Text('Add Category'),
@@ -526,6 +527,8 @@ class _AddTodoPageState extends State<AddTodoPage> {
         title: const Text('Add Todo'),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(50))),
         onPressed: () => _showAddCategoryBottomSheet(context),
         icon: const FaIcon(FontAwesomeIcons.layerGroup),
         label: const Text('Add Category'),
