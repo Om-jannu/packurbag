@@ -40,7 +40,7 @@ Tour Buddy is a travel support app designed to enhance your travel experience wi
 
 ## Usage
 
-##### (Step 1.) Server Setup :
+### Server Setup (Step 1.):
 
 1. Create `.env` file inside the server diretory and add :
    (**Note: use appropriate mongo url**)
@@ -57,7 +57,7 @@ npm run dev
 
 Here's a guide for setting up Ngrok and starting port forwarding:
 
-### (Step 2) Ngrok Setup & Installation
+### Ngrok Setup & Installation  (Step 2):
 
 1. **Download Ngrok**:
 
@@ -79,18 +79,18 @@ Here's a guide for setting up Ngrok and starting port forwarding:
      ngrok http 5000
      ```
      This command starts forwarding traffic from Ngrok's randomly generated public URL to your local server running on port 5000.
-   - Copy the public URL.
+5. **Copy the public URL**.
 
-`Note: if ngrok command doesn't work on cmd, try running with admin privileges or sudo privileges`
+`Note: if ngrok command doesn't work on cmd prompt, try running with admin privileges or sudo privileges`
 
-##### (Step 3.) Flutter Setup :
+### Flutter Setup  (Step 3.):
 
 1. Choose an emulator
 2. Change **serverIp** in `lib/main.dart` file
-   ```
-   const serverIp = "<ngrok-public-url>";
-   example : https://cb4f-103-xxx-xxx-122.ngrok-free.app;
-   ```
+```
+const serverIp = "<ngrok-public-url>";
+example : https://cb4f-103-xxx-xxx-122.ngrok-free.app;
+```
 3. Run Command `flutter run`
 
 ## Screenshots
