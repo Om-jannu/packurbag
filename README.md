@@ -81,7 +81,7 @@ Here's a guide for setting up Ngrok and starting port forwarding:
      This command starts forwarding traffic from Ngrok's randomly generated public URL to your local server running on port 5000.
    - Copy the public URL.
 
-`Note: if ngrok command doesnt run try running with admin privileges or sudo privileges`
+`Note: if ngrok command doesn't work on cmd, try running with admin privileges or sudo privileges`
 
 ##### (Step 3.) Flutter Setup :
 
