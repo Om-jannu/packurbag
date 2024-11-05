@@ -64,29 +64,21 @@ Here's a guide for setting up Ngrok and starting port forwarding:
 
    - Go to the [Ngrok website](https://ngrok.com/) and sign up for an account if you haven't already.
    - Download the Ngrok executable suitable for your operating system.
-
-2. **Extract Ngrok**:
-
-   - Extract the Ngrok executable file from the downloaded archive.
-
-3. **Open Terminal/Command Prompt**:
-
+   
+2. **Start Port Forwarding**:
    - Open a terminal or command prompt window.
-
-4. **Start Port Forwarding**:
-
    - To start port forwarding, run the following command:
      ```
      ngrok http 5000
      ```
      This command starts forwarding traffic from Ngrok's randomly generated public URL to your local server running on port 5000.
-5. **Copy the public URL**.
+3. **Copy the public URL**.
 
 `Note: if ngrok command doesn't work on cmd prompt, try running with admin privileges or sudo privileges`
 
 ### Flutter Setup  (Step 3.):
 
-1. Choose an emulator
+1. Choose an android emulator
 2. Change **serverIp** in `lib/main.dart` file
 ```
 const serverIp = "<ngrok-public-url>";
