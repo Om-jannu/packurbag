@@ -84,7 +84,11 @@ Here's a guide for setting up Ngrok and starting port forwarding:
 const serverIp = "<ngrok-public-url>";
 example : https://cb4f-103-xxx-xxx-122.ngrok-free.app;
 ```
-3. Run Command `flutter run`
+3. Run Command
+```
+flutter pub get
+flutter run
+```
 
 ## Screenshots
 
