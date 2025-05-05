@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'ReceiptScannerScreen.dart';
 import 'package:flutter/services.dart';
 import 'UPITransactionScreen.dart';
+import 'ExpenseAnalyticsScreen.dart';
 
 class ExpenseTrackerScreen extends StatefulWidget {
   final String serverIp;
@@ -234,6 +235,20 @@ class _ExpenseTrackerScreenState extends State<ExpenseTrackerScreen> {
       appBar: AppBar(
         title: const Text('Expense Tracker'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.analytics),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ExpenseAnalyticsScreen(
+                    serverIp: widget.serverIp,
+                    userId: widget.userId,
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.receipt_long),
             onPressed: () {

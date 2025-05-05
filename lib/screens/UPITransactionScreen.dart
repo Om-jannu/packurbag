@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:flutter/services.dart';
 
 class UPITransactionScreen extends StatefulWidget {
   final String serverIp;
@@ -28,48 +29,107 @@ class _UPITransactionScreenState extends State<UPITransactionScreen> {
   String? _error;
   double? _extractedAmount;
   String? _selectedCategoryId;
+  String? _rawOcrText;
+  List<double> _detectedAmounts = [];
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
+  static const platform = MethodChannel('com.example.packurbag/shared_content');
 
   @override
   void initState() {
     super.initState();
+    _setupMethodChannel();
     if (widget.sharedData != null) {
       _handleSharedData();
     }
   }
 
-  void _handleSharedData() {
-    // Handle shared image if present
-    if (widget.sharedData!['image'] != null) {
+  void _setupMethodChannel() {
+    platform.setMethodCallHandler((call) async {
+      if (call.method == 'onSharedContent') {
+        final sharedData = Map<String, dynamic>.from(call.arguments);
+        _handleSharedData(sharedData);
+      }
+    });
+  }
+
+  Future<void> _handleSharedImage(String imagePath) async {
+    setState(() {
+      _image = File(imagePath);
+      _isProcessing = true;
+      _error = null;
+      _rawOcrText = null;
+      _detectedAmounts = [];
+    });
+    await _processImage();
+  }
+
+  void _handleSharedText(String text) {
+    print('Received shared text: $text');
+    
+    // Try to extract amount
+    final amountPatterns = [
+      RegExp(r'(?:Rs\.?|₹|INR)\s*(\d+(?:\.\d{2})?)', caseSensitive: false),
+      RegExp(r'(?:paid|sent|transferred)\s*(?:Rs\.?|₹|INR)?\s*(\d+(?:\.\d{2})?)', caseSensitive: false),
+      RegExp(r'amount\s*(?:Rs\.?|₹|INR)?\s*(\d+(?:\.\d{2})?)', caseSensitive: false),
+    ];
+
+    for (var pattern in amountPatterns) {
+      final match = pattern.firstMatch(text);
+      if (match != null) {
+        final amount = double.tryParse(match.group(1)!.replaceAll(RegExp(r'[^\d.]'), ''));
+        if (amount != null) {
+          setState(() {
+            _amountController.text = amount.toStringAsFixed(2);
+            _extractedAmount = amount;
+          });
+          break;
+        }
+      }
+    }
+
+    // Try to extract description
+    final descriptionPatterns = [
+      RegExp(r'(?:paid|sent|to)\s+([^,]+)', caseSensitive: false),
+      RegExp(r'(?:recipient|beneficiary):\s*([^,]+)', caseSensitive: false),
+      RegExp(r'(?:for|purpose):\s*([^,]+)', caseSensitive: false),
+    ];
+
+    for (var pattern in descriptionPatterns) {
+      final match = pattern.firstMatch(text);
+      if (match != null) {
+        setState(() {
+          _descriptionController.text = match.group(1)!.trim();
+        });
+        break;
+      }
+    }
+
+    // Try to extract transaction ID
+    final transactionPattern = RegExp(r'(?:transaction|txn|ref)(?:id|no)?[:\s]+([A-Za-z0-9]+)', caseSensitive: false);
+    final transactionMatch = transactionPattern.firstMatch(text);
+    if (transactionMatch != null) {
       setState(() {
-        _image = File(widget.sharedData!['image']);
+        _descriptionController.text += ' (Txn: ${transactionMatch.group(1)})';
       });
-      _processImage();
+    }
+  }
+
+  void _handleSharedData([Map<String, dynamic>? data]) {
+    final sharedData = data ?? widget.sharedData;
+    if (sharedData == null) return;
+
+    if (sharedData['image'] != null) {
+      _handleSharedImage(sharedData['image']);
     }
 
-    // Handle shared metadata
-    if (widget.sharedData!['amount'] != null) {
-      _amountController.text = widget.sharedData!['amount'].toString();
-      _extractedAmount = double.tryParse(widget.sharedData!['amount'].toString());
-    }
-
-    if (widget.sharedData!['description'] != null) {
-      _descriptionController.text = widget.sharedData!['description'];
-    }
-
-    if (widget.sharedData!['transactionId'] != null) {
-      _descriptionController.text += ' (Txn: ${widget.sharedData!['transactionId']})';
+    if (sharedData['text'] != null) {
+      _handleSharedText(sharedData['text']);
     }
   }
 
   Future<void> _processImage() async {
     if (_image == null) return;
-
-    setState(() {
-      _isProcessing = true;
-      _error = null;
-    });
 
     try {
       final inputImage = InputImage.fromFile(_image!);
@@ -80,12 +140,38 @@ class _UPITransactionScreenState extends State<UPITransactionScreen> {
       print(recognizedText.text);
       print('=== End OCR Results ===');
 
-      // Extract amount if not already set from metadata
+      setState(() {
+        _rawOcrText = recognizedText.text;
+      });
+
+      // Extract amount if not already set
       if (_extractedAmount == null) {
         final List<double> potentialAmounts = _extractAllAmounts(recognizedText.text);
-        if (potentialAmounts.isNotEmpty) {
-          _extractedAmount = potentialAmounts.first;
-          _amountController.text = _extractedAmount!.toStringAsFixed(2);
+        setState(() {
+          _detectedAmounts = potentialAmounts;
+          if (potentialAmounts.isNotEmpty) {
+            _extractedAmount = potentialAmounts.first;
+            _amountController.text = _extractedAmount!.toStringAsFixed(2);
+          }
+        });
+      }
+
+      // Extract description if not already set
+      if (_descriptionController.text.isEmpty) {
+        final descriptionPatterns = [
+          RegExp(r'(?:paid|sent|to)\s+([^,]+)', caseSensitive: false),
+          RegExp(r'(?:recipient|beneficiary):\s*([^,]+)', caseSensitive: false),
+          RegExp(r'(?:for|purpose):\s*([^,]+)', caseSensitive: false),
+        ];
+
+        for (var pattern in descriptionPatterns) {
+          final match = pattern.firstMatch(recognizedText.text);
+          if (match != null) {
+            setState(() {
+              _descriptionController.text = match.group(1)!.trim();
+            });
+            break;
+          }
         }
       }
 
@@ -232,6 +318,76 @@ class _UPITransactionScreenState extends State<UPITransactionScreen> {
                 ),
               ),
             ),
+            if (_rawOcrText != null) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'OCR Results',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: SelectableText(
+                          _rawOcrText!,
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            if (_detectedAmounts.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Detected Amounts',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      ..._detectedAmounts.map((amount) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Text(
+                              '₹ ${amount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: amount == _extractedAmount ? FontWeight.bold : FontWeight.normal,
+                                color: amount == _extractedAmount ? Colors.green : null,
+                              ),
+                            ),
+                            if (amount == _extractedAmount)
+                              const Padding(
+                                padding: EdgeInsets.only(left: 8),
+                                child: Icon(Icons.check_circle, color: Colors.green, size: 16),
+                              ),
+                          ],
+                        ),
+                      )).toList(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Card(
               child: Padding(
