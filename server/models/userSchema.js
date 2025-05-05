@@ -47,6 +47,25 @@ const categorySchema = {
   },
 };
 
+const expenseSchema = {
+  amount: {
+    type: Number,
+    required: true,
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  categoryId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+  },
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+};
+
 const userSchema = {
   username: {
     type: String,
@@ -67,6 +86,10 @@ const userSchema = {
   },
   todos: {
     type: [todoSchema],
+    default: [],
+  },
+  expenses: {
+    type: [expenseSchema],
     default: [],
   },
 };

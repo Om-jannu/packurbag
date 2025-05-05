@@ -4,6 +4,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const axios = require("axios");
 const User = require("./models/userSchema");
+const Expense = require("./models/expenseSchema");
 const app = express();
 
 app.use(cors());
@@ -501,206 +502,140 @@ app.put("/categories/:userId/:categoryName", async (req, res) => {
   }
 });
 
-// // Get categories for a user
-// app.post("/get_categories", async (req, res) => {
-//   const { username } = req.body;
-//   try {
-//     const user = await User.findOne({ username });
-//     console.log(user.categories, user.todos);
-//     if (user && user.categories) {
-//       const categoriesWithCount = await Promise.all(
-//         user.categories.map(async (category) => {
-//           const todosCount =
-//             user.todos && user.todos.get(category)
-//               ? user.todos.get(category).length
-//               : 0;
+// Add expense
+app.post("/expenses/:userId", async (req, res) => {
+  const userId = req.params.userId;
+  const expenseData = req.body;
+  
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
 
-//           return {
-//             category,
-//             todoCount: todosCount,
-//           };
-//         })
-//       );
-//       console.log(categoriesWithCount);
+    // Find the category for the expense
+    const category = user.categories.find(
+      (category) => category.categoryName === expenseData.category
+    );
 
-//       res.json({
-//         success: true,
-//         categories: user.categories,
-//         categorywithcount: categoriesWithCount,
-//         message: "Categories found for the user",
-//       });
-//     } else {
-//       res.json({
-//         success: false,
-//         message: "Categories not found for the user",
-//       });
-//     }
-//   } catch (error) {
-//     console.error("Error fetching categories:", error);
-//     res
-//       .status(500)
-//       .json({ success: false, message: "Error fetching categories" });
-//   }
-// });
+    if (!category) {
+      return res.status(404).json({ success: false, message: "Category not found" });
+    }
 
-// // Add category to user
-// app.post("/add_category", async (req, res) => {
-//   const { username, category } = req.body;
-//   try {
-//     await User.updateOne({ username }, { $addToSet: { categories: category } });
-//     res.json({ success: true, message: "Category added successfully" });
-//   } catch (error) {
-//     console.error("Failed to add category:", error);
-//     res.status(500).json({ success: false, message: "Failed to add category" });
-//   }
-// });
+    const newExpense = new Expense({
+      ...expenseData,
+      categoryColor: category.categoryColor,
+      userId: userId
+    });
 
-// // Delete category
-// app.post("/delete_category", async (req, res) => {
-//   const { username, category } = req.body;
-//   try {
-//     const user = await User.findOneAndUpdate(
-//       { username },
-//       { $pull: { categories: category }, $unset: { [`todos.${category}`]: "" } }
-//     );
-//     if (user) {
-//       res.json({ success: true, message: "Category deleted successfully" });
-//     } else {
-//       res.json({ success: false, message: "User not found" });
-//     }
-//   } catch (error) {
-//     console.error("Failed to delete category:", error);
-//     res
-//       .status(500)
-//       .json({ success: false, message: "Failed to delete category" });
-//   }
-// });
+    await newExpense.save();
+    res.json({ success: true, message: "Expense added successfully", data: newExpense });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error adding expense" });
+  }
+});
 
-// // Edit category
-// app.put("/edit_category", async (req, res) => {
-//   const { username, oldCategory, newCategory } = req.body;
-//   try {
-//     // Find the user and update the category name
-//     const user = await User.findOneAndUpdate(
-//       { username, "categories.categoryName": oldCategory },
-//       { $set: { "categories.$.categoryName": newCategory } }
-//     );
+// Get all expenses for a user
+app.get("/expenses/:userId", async (req, res) => {
+  const userId = req.params.userId;
+  try {
+    const expenses = await Expense.find({ userId }).sort({ date: -1 });
+    res.json({ success: true, data: expenses });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching expenses" });
+  }
+});
 
-//     if (user) {
-//       // Update todos with the old category name to the new category name
-//       await User.updateOne(
-//         { username, "todos.category": oldCategory },
-//         { $set: { "todos.$.category": newCategory } },
-//         { multi: true }
-//       );
+// Get expenses by category
+app.get("/expenses/:userId/category/:categoryId", async (req, res) => {
+  const userId = req.params.userId;
+  const categoryId = req.params.categoryId;
+  
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
 
-//       res.json({ success: true, message: "Category edited successfully" });
-//     } else {
-//       res.json({ success: false, message: "User or category not found" });
-//     }
-//   } catch (error) {
-//     console.error("Failed to edit category:", error);
-//     res
-//       .status(500)
-//       .json({ success: false, message: "Failed to edit category" });
-//   }
-// });
+    const category = user.categories.find((cat) => cat._id == categoryId);
+    if (!category) {
+      return res.status(404).json({ success: false, message: "Category not found" });
+    }
 
-// // Get todos for a category
-// app.get("/get_todos", async (req, res) => {
-//   const userId = req.query.userId;
-//   console.log(userId);
-//   try {
-//     const user = await User.findById(userId);
-//     console.log(user);
-//     if (user && user.todos) {
-//       let allTodos = [];
-//       user.todos.forEach((categoryTodos) => {
-//         allTodos = allTodos.concat(categoryTodos);
-//       });
-//       res.json({
-//         success: true,
-//         todos: allTodos,
-//         message: `Todos found for the user ${user.username}`,
-//       });
-//     } else {
-//       res.json({
-//         success: false,
-//         message: `Todos not found for the user ${user}`,
-//       });
-//     }
-//   } catch (error) {
-//     console.error("Error fetching todos:", error);
-//     res.status(500).json({ success: false, message: "Error fetching todos" });
-//   }
-// });
+    const expenses = await Expense.find({
+      userId,
+      category: category.categoryName
+    }).sort({ date: -1 });
 
-// // Add todo to a category
-// app.post("/add_todo", async (req, res) => {
-//   const { username, category, todo, date } = req.body;
-//   try {
-//     const user = await User.findOneAndUpdate(
-//       { username, categories: category },
-//       {
-//         $addToSet: {
-//           [`todos.${category}`]: {
-//             text: todo,
-//             date: new Date(date),
-//             completed: false,
-//           },
-//         },
-//       }
-//     );
-//     if (user) {
-//       res.json({ success: true, message: "Todo added successfully" });
-//     } else {
-//       res.json({ success: false, message: "User or category not found" });
-//     }
-//   } catch (error) {
-//     console.error("Failed to add todo:", error);
-//     res.status(500).json({ success: false, message: "Failed to add todo" });
-//   }
-// });
+    res.json({ success: true, data: expenses });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error fetching expenses" });
+  }
+});
 
-// // Edit todo text
-// app.put("/edit_todo", async (req, res) => {
-//   const { username, category, oldTodo, newTodo } = req.body;
-//   try {
-//     const user = await User.findOneAndUpdate(
-//       { username, [`todos.${category}.text`]: oldTodo },
-//       { $set: { [`todos.${category}.$[elem].text`]: newTodo } },
-//       { arrayFilters: [{ "elem.text": oldTodo }], new: true }
-//     );
-//     if (user) {
-//       res.json({ success: true, message: "Todo edited successfully" });
-//     } else {
-//       res.json({ success: false, message: "User or todo not found" });
-//     }
-//   } catch (error) {
-//     console.error("Failed to edit todo:", error);
-//     res.status(500).json({ success: false, message: "Failed to edit todo" });
-//   }
-// });
+// Delete expense
+app.delete("/expenses/:userId/:expenseId", async (req, res) => {
+  const userId = req.params.userId;
+  const expenseId = req.params.expenseId;
+  
+  try {
+    const expense = await Expense.findOneAndDelete({
+      _id: expenseId,
+      userId: userId
+    });
 
-// // Delete todo from a category
-// app.delete("/delete_todo", async (req, res) => {
-//   const { username, category, todo } = req.body;
-//   try {
-//     const user = await User.findOneAndUpdate(
-//       { username, [`todos.${category}.text`]: todo },
-//       { $pull: { [`todos.${category}`]: { text: todo } } },
-//       { new: true }
-//     );
-//     if (user) {
-//       res.json({ success: true, message: "Todo deleted successfully" });
-//     } else {
-//       res.json({ success: false, message: "User or todo not found" });
-//     }
-//   } catch (error) {
-//     console.error("Failed to delete todo:", error);
-//     res.status(500).json({ success: false, message: "Failed to delete todo" });
-//   }
-// });
+    if (!expense) {
+      return res.status(404).json({ success: false, message: "Expense not found" });
+    }
+
+    res.json({ success: true, message: "Expense deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error deleting expense" });
+  }
+});
+
+// Update expense
+app.put("/expenses/:userId/:expenseId", async (req, res) => {
+  const userId = req.params.userId;
+  const expenseId = req.params.expenseId;
+  const updatedData = req.body;
+  
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (updatedData.category) {
+      const category = user.categories.find(
+        (category) => category.categoryName === updatedData.category
+      );
+      if (!category) {
+        return res.status(404).json({ success: false, message: "Category not found" });
+      }
+      updatedData.categoryColor = category.categoryColor;
+    }
+
+    const expense = await Expense.findOneAndUpdate(
+      { _id: expenseId, userId: userId },
+      updatedData,
+      { new: true }
+    );
+
+    if (!expense) {
+      return res.status(404).json({ success: false, message: "Expense not found" });
+    }
+
+    res.json({ success: true, message: "Expense updated successfully", data: expense });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Error updating expense" });
+  }
+});
 
 app.post("/generate-image", async (req, res) => {
   try {

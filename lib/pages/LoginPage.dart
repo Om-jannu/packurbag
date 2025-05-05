@@ -34,10 +34,14 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     if (_isLoggedIn) {
+      final userId = prefs.getString('userId');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => const MainScreen(serverIp: serverIp),
+          builder: (context) => MainScreen(
+            serverIp: serverIp,
+            userId: userId ?? '',
+          ),
         ),
       );
     }
@@ -91,7 +95,15 @@ class _LoginPageState extends State<LoginPage> {
         final userData = data['data'];
         await saveUserDetails(
             userData['_id'], userData['username'], userData['userEmail']);
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MainScreen(
+              serverIp: serverIp,
+              userId: userData['_id'],
+            ),
+          ),
+        );
         GlobalSnackbar.show(context, data['message'], success: true);
       } else {
         GlobalSnackbar.show(context, data['message']);

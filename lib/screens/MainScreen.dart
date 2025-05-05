@@ -11,9 +11,16 @@ import 'package:quick_actions/quick_actions.dart';
 import 'GptScreen.dart';
 import 'CategoriesScreen.dart';
 import 'HomeScreen.dart';
+import 'ExpenseTrackerScreen.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key, var serverIp}) : super(key: key);
+  final String serverIp;
+  final String userId;
+  const MainScreen({
+    Key? key,
+    required this.serverIp,
+    required this.userId,
+  }) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -21,16 +28,19 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final quickActions = const QuickActions();
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const CategoriesPage(),
-    const TranslationPage(),
-    const BtScreen(),
-    const ProfilePage(),
-  ];
+  late final List<Widget> _screens;
+  
   @override
   void initState() {
     super.initState();
+    _screens = [
+      const HomeScreen(),
+      const CategoriesPage(),
+      const TranslationPage(),
+      const BtScreen(),
+      const ProfilePage(),
+    ];
+    
     quickActions.setShortcutItems([
       const ShortcutItem(
           type: "translator", localizedTitle: "Translator", icon: "translator"),
@@ -42,7 +52,12 @@ class _MainScreenState extends State<MainScreen> {
           type: "calculator", localizedTitle: "Calculator", icon: "calculator"),
       const ShortcutItem(
           type: "addTodo", localizedTitle: "Add Todo", icon: "add_todo"),
+      const ShortcutItem(
+          type: "expense_tracker",
+          localizedTitle: "Expense Tracker",
+          icon: "expense_tracker"),
     ]);
+    
     quickActions.initialize((type) {
       if (type == "addTodo") {
         Navigator.of(context)
@@ -56,6 +71,14 @@ class _MainScreenState extends State<MainScreen> {
       } else if (type == "translator") {
         Navigator.of(context).push(
             MaterialPageRoute(builder: (context) => const TranslationPage()));
+      } else if (type == "expense_tracker") {
+        Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ExpenseTrackerScreen(
+                userId: widget.userId,
+                serverIp: widget.serverIp,
+              ),
+            ));
       }
     });
   }
@@ -169,6 +192,25 @@ class _MainScreenState extends State<MainScreen> {
                 context,
                 MaterialPageRoute(
                     builder: (context) => const CurrencyConverter()),
+              );
+            },
+          ),
+          SpeedDialChild(
+            child: const FaIcon(
+              FontAwesomeIcons.moneyBill,
+              size: 18,
+            ),
+            shape: const CircleBorder(),
+            label: 'Expense Tracker',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ExpenseTrackerScreen(
+                    userId: widget.userId,
+                    serverIp: widget.serverIp,
+                  ),
+                ),
               );
             },
           ),
