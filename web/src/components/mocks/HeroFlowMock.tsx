@@ -6,8 +6,12 @@ import {
   MapPin,
   Briefcase,
   ArrowLeft,
+  Pencil,
   ChevronRight,
   Plus,
+  Lock,
+  BadgeCheck,
+  Ticket,
 } from "lucide-react";
 
 const STEPS = [
@@ -17,6 +21,7 @@ const STEPS = [
   { scene: "detail", tab: 0, top: 23, left: 15 },
   { scene: "detail", tab: 1, top: 21, left: 32 },
   { scene: "detail", tab: 2, top: 50, left: 50 },
+  { scene: "detail", tab: 3, top: 40, left: 50 },
   { scene: "nearby", top: 19, left: 85 },
   { scene: "nearby", top: 33, left: 50 },
 ] as const;
@@ -146,9 +151,9 @@ function HomeScene({ dayActive, tripsActive }: { dayActive: boolean; tripsActive
 
 function TripsScene({ cardActive }: { cardActive: boolean }) {
   const trips = [
-    { title: "Bali Getaway", place: "Bali, Indonesia", dates: "1 Sep – 10 Sep", status: "In 12 days", color: "bg-coral", badge: "bg-coral/10 text-coral" },
-    { title: "Kerala Backwaters", place: "Kerala, India", dates: "1 Oct – 5 Oct", status: "In 43 days", color: "bg-amber", badge: "bg-amber/10 text-amber" },
-    { title: "Tokyo Adventure", place: "Tokyo, Japan", dates: "12 Dec – 20 Dec", status: "In 106 days", color: "bg-teal", badge: "bg-teal/10 text-teal" },
+    { title: "Bali Getaway", place: "Bali, Indonesia", dates: "1 Sep – 10 Sep", status: "In 12 days", color: "bg-coral", badge: "bg-coral/10 text-coral", spent: 32000, budget: 50000 },
+    { title: "Kerala Backwaters", place: "Kerala, India", dates: "1 Oct – 5 Oct", status: "In 43 days", color: "bg-amber", badge: "bg-amber/10 text-amber", spent: 5000, budget: 25000 },
+    { title: "Tokyo Adventure", place: "Tokyo, Japan", dates: "12 Dec – 20 Dec", status: "In 106 days", color: "bg-teal", badge: "bg-teal/10 text-teal", spent: 4500, budget: 90000 },
   ];
   return (
     <>
@@ -160,11 +165,11 @@ function TripsScene({ cardActive }: { cardActive: boolean }) {
         {trips.map((trip, i) => (
           <div
             key={trip.title}
-            className={`flex items-center gap-2.5 rounded-2xl bg-black/[0.03] p-2.5 transition-all duration-500 ${
+            className={`flex items-start gap-2.5 rounded-2xl bg-black/[0.03] p-2.5 transition-all duration-500 ${
               i === 0 && cardActive ? "ring-1 ring-teal/40" : ""
             }`}
           >
-            <div className={`h-10 w-1.5 shrink-0 rounded-full ${trip.color}`} />
+            <div className={`mt-0.5 h-10 w-1.5 shrink-0 rounded-full ${trip.color}`} />
             <div className="flex-1">
               <p className="text-[11px] font-bold text-teal-dark">{trip.title}</p>
               <div className="mt-0.5 flex items-center gap-1 text-[9px] text-black/50">
@@ -172,6 +177,15 @@ function TripsScene({ cardActive }: { cardActive: boolean }) {
                 {trip.place}
               </div>
               <p className="mt-0.5 text-[8px] text-black/40">{trip.dates}</p>
+              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-black/10">
+                <div
+                  className={`h-full rounded-full ${trip.color}`}
+                  style={{ width: `${Math.min(100, (trip.spent / trip.budget) * 100)}%` }}
+                />
+              </div>
+              <p className="mt-1 text-[7.5px] font-medium text-black/40">
+                {trip.spent} / {trip.budget} INR spent
+              </p>
             </div>
             <span className={`rounded-lg px-2 py-1 text-[8px] font-bold ${trip.badge}`}>
               {trip.status}
@@ -190,7 +204,8 @@ function DetailScene({ tab }: { tab: number }) {
     <>
       <div className="flex items-center gap-2 bg-coral/15 px-3 pb-2.5 pt-9">
         <ArrowLeft size={15} className="text-teal-dark" />
-        <span className="text-[12px] font-extrabold text-teal-dark">Bali Getaway</span>
+        <span className="flex-1 text-[12px] font-extrabold text-teal-dark">Bali Getaway</span>
+        <Pencil size={13} className="text-teal-dark" />
       </div>
       <div className="flex border-b border-black/5">
         {DETAIL_TABS.map((t, i) => (
@@ -268,6 +283,31 @@ function DetailScene({ tab }: { tab: number }) {
               <div className="h-full rounded-full bg-coral transition-[width] duration-[1600ms]" style={{ width: "62%" }} />
             </div>
             <p className="mt-1 text-[8px] text-black/50">19000 INR remaining of 50000</p>
+          </div>
+        </div>
+      )}
+
+      {tab === 3 && (
+        <div className="px-3 pt-2.5">
+          <div className="flex items-center gap-1.5 text-[8px] text-black/40">
+            <Lock size={10} />
+            Stored only on this device — never uploaded.
+          </div>
+          <div className="mt-2 pb-2">
+            <div className="flex items-center gap-2.5 rounded-xl px-1 py-2">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br bg-coral to-black/20">
+                <BadgeCheck size={14} className="text-white" />
+              </span>
+              <span className="flex-1 font-semibold text-teal-dark">Passport</span>
+              <ChevronRight size={13} className="text-black/25" />
+            </div>
+            <div className="flex items-center gap-2.5 rounded-xl px-1 py-2">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-coral/15">
+                <Ticket size={14} className="text-coral" />
+              </span>
+              <span className="flex-1 font-semibold text-teal-dark">Flight ticket</span>
+              <ChevronRight size={13} className="text-black/25" />
+            </div>
           </div>
         </div>
       )}
