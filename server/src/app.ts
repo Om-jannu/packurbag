@@ -29,6 +29,12 @@ export function createApp() {
     return c.json({ success: true, message: "server running" });
   });
 
+  // Hit by an external cron/uptime service to stop Render's free tier from
+  // spinning the instance down after 15 minutes of inactivity. Deliberately
+  // does no DB check (unlike /health) so a Mongo hiccup never turns a
+  // keep-alive ping into a failed request.
+  app.get("/ping", (c) => c.json({ success: true, pong: true }));
+
   app.route("/health", healthRoutes);
   app.route("/", authRoutes);
   app.route("/trips", tripsRoutes);
