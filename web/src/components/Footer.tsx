@@ -1,4 +1,6 @@
 import Image from "next/image";
+import Link from "next/link";
+import BackendStatusBadge from "./BackendStatusBadge";
 
 export default function Footer() {
   return (
@@ -13,13 +15,20 @@ export default function Footer() {
           &copy; {new Date().getFullYear()} Packurbag. All rights reserved.
         </p>
 
-        <div className="flex gap-6 text-sm font-medium text-black/50">
-          <a href="#features" className="transition hover:text-teal">
-            Features
-          </a>
-          <a href="#mockups" className="transition hover:text-teal">
-            App
-          </a>
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium text-black/50">
+          <Link href="/screens" className="transition hover:text-teal">
+            All Screens
+          </Link>
+          <Link href="/changelog" className="transition hover:text-teal">
+            Changelog
+          </Link>
+          <Link href="/privacy" className="transition hover:text-teal">
+            Privacy
+          </Link>
+          <Link href="/terms" className="transition hover:text-teal">
+            Terms
+          </Link>
+          <BackendStatusBadge />
         </div>
       </div>
     </footer>

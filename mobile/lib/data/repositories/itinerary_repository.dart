@@ -9,7 +9,7 @@ class ItineraryRepository {
 
   final ApiClient _client;
 
-  String _base(String userId, String tripId) => '/trips/$userId/$tripId/itinerary';
+  String _base(String userId, String tripId) => '/trips/$tripId/itinerary';
 
   Future<void> addItem({
     required String userId,

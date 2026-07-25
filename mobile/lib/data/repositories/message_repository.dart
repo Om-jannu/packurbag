@@ -11,7 +11,7 @@ class MessageRepository {
     required String userId,
     required String otherUserId,
   }) async {
-    final response = await _client.get('/messages/$userId/$otherUserId');
+    final response = await _client.get('/messages/$otherUserId');
     final data = response['data'];
     if (data is! List) return [];
     return data
@@ -24,8 +24,9 @@ class MessageRepository {
     required String receiverId,
     required String text,
   }) async {
+    // senderId is intentionally not sent — the backend derives it from the
+    // authenticated token, never from a client-supplied value.
     final response = await _client.post('/messages', data: {
-      'senderId': senderId,
       'receiverId': receiverId,
       'text': text,
     });

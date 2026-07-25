@@ -1,8 +1,11 @@
 import { Hono } from "hono";
 import { openai } from "../lib/openai";
+import { requireAuth } from "../middleware/auth";
+import type { AppEnv } from "../types/hono";
 import type { AiChatBody } from "../types/requests";
 
-export const aiRoutes = new Hono();
+export const aiRoutes = new Hono<AppEnv>();
+aiRoutes.use("*", requireAuth);
 
 // Proxies OpenAI so the API key never ships in the client app. Framed as a
 // travel assistant; the client may pass the active trip's destination as context.

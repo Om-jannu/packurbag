@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { env } from "./config/env";
 import { errorHandler } from "./middleware/error-handler";
+import { healthRoutes } from "./routes/health.routes";
 import { authRoutes } from "./routes/auth.routes";
 import { tripsRoutes } from "./routes/trips.routes";
 import { itineraryRoutes } from "./routes/itinerary.routes";
@@ -19,12 +19,17 @@ export function createApp() {
   const app = new Hono();
 
   app.use("*", logger());
-  app.use("*", cors({ origin: env.allowedOrigins }));
+  // The primary client is a native mobile app, which has no fixed origin to
+  // allowlist (and doesn't send/enforce CORS the way a browser does) — auth
+  // is handled entirely by the Bearer token, not by origin, so there's
+  // nothing meaningful an origin restriction would protect here.
+  app.use("*", cors({ origin: "*" }));
 
   app.get("/", async (c) => {
     return c.json({ success: true, message: "server running" });
   });
 
+  app.route("/health", healthRoutes);
   app.route("/", authRoutes);
   app.route("/trips", tripsRoutes);
   app.route("/trips", itineraryRoutes);

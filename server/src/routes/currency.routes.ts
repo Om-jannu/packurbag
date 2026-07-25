@@ -1,7 +1,10 @@
 import { Hono } from "hono";
 import { env } from "../config/env";
+import { requireAuth } from "../middleware/auth";
+import type { AppEnv } from "../types/hono";
 
-export const currencyRoutes = new Hono();
+export const currencyRoutes = new Hono<AppEnv>();
+currencyRoutes.use("*", requireAuth);
 
 // Proxies Open Exchange Rates so the API key never ships in the client app.
 const OPEN_EXCHANGE_RATES_BASE = "https://openexchangerates.org/api";

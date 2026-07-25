@@ -1,12 +1,7 @@
 import Image from "next/image";
-import type { CSSProperties } from "react";
 import { Luggage, Wallet, Users } from "lucide-react";
 import PhoneFrame from "./PhoneFrame";
-import AppWalkthroughMock from "./mocks/AppWalkthroughMock";
-
-interface FloatStyle extends CSSProperties {
-  "--float-rotate"?: string;
-}
+import HeroFlowMock from "./mocks/HeroFlowMock";
 
 export default function Hero() {
   return (
@@ -54,19 +49,16 @@ export default function Hero() {
         </div>
 
         <div className="relative shrink-0">
-          <div
-            className="animate-float drop-shadow-2xl"
-            style={{ "--float-rotate": "-1.5deg" } as FloatStyle}
-          >
+          <div className="drop-shadow-2xl">
             <PhoneFrame>
-              <AppWalkthroughMock />
+              <HeroFlowMock />
             </PhoneFrame>
           </div>
 
-          {/* floating 3D accent cards */}
+          {/* floating 3D accent cards — vertical bob only, no tilt */}
           <div
             className="animate-float-alt absolute -left-10 top-10 z-20 flex items-center gap-2 rounded-2xl bg-white px-3 py-2.5 shadow-xl shadow-black/20 sm:-left-16"
-            style={{ "--float-rotate": "-6deg", animationDelay: "0.4s" } as FloatStyle}
+            style={{ animationDelay: "0.4s" }}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/10">
               <Luggage size={16} className="text-coral" />
@@ -79,7 +71,7 @@ export default function Hero() {
 
           <div
             className="animate-float absolute -right-8 top-1/2 z-20 flex items-center gap-2 rounded-2xl bg-white px-3 py-2.5 shadow-xl shadow-black/20 sm:-right-14"
-            style={{ "--float-rotate": "5deg", animationDelay: "1.1s" } as FloatStyle}
+            style={{ animationDelay: "1.1s" }}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal/10">
               <Users size={16} className="text-teal" />
@@ -92,7 +84,7 @@ export default function Hero() {
 
           <div
             className="animate-float-alt absolute -left-6 bottom-16 z-20 flex items-center gap-2 rounded-2xl bg-white px-3 py-2.5 shadow-xl shadow-black/20 sm:-left-12"
-            style={{ "--float-rotate": "4deg", animationDelay: "0.8s" } as FloatStyle}
+            style={{ animationDelay: "0.8s" }}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber/10">
               <Wallet size={16} className="text-amber" />

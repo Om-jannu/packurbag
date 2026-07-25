@@ -1,16 +1,19 @@
 import { Hono } from "hono";
 import Message from "../models/messageSchema";
+import { requireAuth } from "../middleware/auth";
+import type { AppEnv } from "../types/hono";
 import type { SendMessageBody } from "../types/requests";
 
-export const messagesRoutes = new Hono();
+export const messagesRoutes = new Hono<AppEnv>();
+messagesRoutes.use("*", requireAuth);
 
 function conversationIdFor(userIdA: string, userIdB: string) {
   return [userIdA, userIdB].sort().join("_");
 }
 
-messagesRoutes.get("/:userId/:otherUserId", async (c) => {
+messagesRoutes.get("/:otherUserId", async (c) => {
   try {
-    const conversationId = conversationIdFor(c.req.param("userId"), c.req.param("otherUserId"));
+    const conversationId = conversationIdFor(c.get("userId"), c.req.param("otherUserId"));
     const messages = await Message.find({ conversationId }).sort({ createdAt: 1 });
     return c.json({ success: true, message: "Messages found", data: messages });
   } catch (error) {
@@ -20,9 +23,12 @@ messagesRoutes.get("/:userId/:otherUserId", async (c) => {
 });
 
 messagesRoutes.post("/", async (c) => {
-  const { senderId, receiverId, text } = await c.req.json<SendMessageBody>();
-  if (!senderId || !receiverId || !text) {
-    return c.json({ success: false, message: "senderId, receiverId and text are required" }, 400);
+  // senderId always comes from the authenticated token — never trust a
+  // caller-supplied sender, or anyone could send messages as anyone else.
+  const senderId = c.get("userId");
+  const { receiverId, text } = await c.req.json<Omit<SendMessageBody, "senderId">>();
+  if (!receiverId || !text) {
+    return c.json({ success: false, message: "receiverId and text are required" }, 400);
   }
   try {
     const message = await Message.create({

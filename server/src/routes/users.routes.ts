@@ -1,13 +1,16 @@
 import { Hono } from "hono";
 import User from "../models/userSchema";
+import { requireAuth } from "../middleware/auth";
+import type { AppEnv } from "../types/hono";
 import type { LocationBody } from "../types/requests";
 
-export const usersRoutes = new Hono();
+export const usersRoutes = new Hono<AppEnv>();
+usersRoutes.use("*", requireAuth);
 
-usersRoutes.put("/:userId/location", async (c) => {
+usersRoutes.put("/location", async (c) => {
   const { lat, lng, isDiscoverable } = await c.req.json<LocationBody>();
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     if (!user) {
       return c.json({ success: false, message: "User not found" }, 404);
     }

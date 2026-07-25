@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   ArrowLeft,
+  Pencil,
   Plus,
   MapPin,
   Lock,
@@ -10,6 +11,7 @@ import {
   BadgeCheck,
   ScrollText,
   Ticket,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 
@@ -41,6 +43,7 @@ export interface DocumentData {
   id: string;
   title: string;
   type: "passport" | "visa" | "ticket";
+  hasPhoto?: boolean;
 }
 
 export interface TripDetailData {
@@ -60,30 +63,7 @@ export interface TripDetailData {
 const TABS = ["Itinerary", "Packing", "Budget", "Documents"] as const;
 type Tab = (typeof TABS)[number];
 
-const PACKING_TEMPLATES: Record<string, { text: string; category: string }[]> = {
-  Beach: [
-    { text: "Swimsuit", category: "Clothing" },
-    { text: "Sunscreen", category: "Toiletries" },
-    { text: "Sunglasses", category: "Accessories" },
-    { text: "Flip-flops", category: "Clothing" },
-  ],
-  Hiking: [
-    { text: "Hiking boots", category: "Clothing" },
-    { text: "Backpack", category: "Gear" },
-    { text: "Water bottle", category: "Gear" },
-    { text: "First aid kit", category: "Gear" },
-  ],
-  Business: [
-    { text: "Formal attire", category: "Clothing" },
-    { text: "Laptop", category: "Electronics" },
-    { text: "Chargers", category: "Electronics" },
-  ],
-  General: [
-    { text: "Passport", category: "Documents" },
-    { text: "Phone charger", category: "Electronics" },
-    { text: "Toiletries", category: "Toiletries" },
-  ],
-};
+const PACKING_TEMPLATE_NAMES = ["Beach", "Hiking", "Business", "General"];
 
 const PRIORITY_COLORS = ["bg-slate-400", "bg-blue-400", "bg-amber-400", "bg-orange-400", "bg-red-500"];
 
@@ -99,12 +79,12 @@ const colorClasses = {
   teal: { bg: "bg-teal", text: "text-teal", tint: "bg-teal/15", ring: "ring-teal" },
 };
 
-let localIdCounter = 0;
-function nextId() {
-  localIdCounter += 1;
-  return `local-${localIdCounter}`;
-}
-
+/**
+ * Design-reference mock of the real trip detail screen. Checking items off
+ * is a real (local-only) toggle since there's only ever a handful of them —
+ * but nothing here actually adds, edits, or deletes list content; those
+ * controls stay visible (matching the real screen) without being wired up.
+ */
 export default function TripDetailMock({
   trip,
   onBack,
@@ -115,8 +95,7 @@ export default function TripDetailMock({
   const [tab, setTab] = useState<Tab>("Itinerary");
   const [itinerary, setItinerary] = useState(trip.itinerary);
   const [packing, setPacking] = useState(trip.packing);
-  const [expenses, setExpenses] = useState(trip.expenses);
-  const [documents, setDocuments] = useState(trip.documents);
+  const { expenses, documents } = trip;
 
   const c = colorClasses[trip.color];
 
@@ -125,39 +104,6 @@ export default function TripDetailMock({
 
   const togglePacking = (id: string) =>
     setPacking((prev) => prev.map((i) => (i.id === id ? { ...i, packed: !i.packed } : i)));
-
-  const applyTemplate = (name: string) => {
-    const existing = new Set(packing.map((i) => i.text.trim().toLowerCase()));
-    const fresh = PACKING_TEMPLATES[name].filter((i) => !existing.has(i.text.toLowerCase()));
-    if (fresh.length === 0) return;
-    setPacking((prev) => [...prev, ...fresh.map((i) => ({ ...i, id: nextId(), packed: false }))]);
-  };
-
-  const removeExpense = (id: string) => setExpenses((prev) => prev.filter((e) => e.id !== id));
-  const removeDocument = (id: string) => setDocuments((prev) => prev.filter((d) => d.id !== id));
-
-  const addForCurrentTab = () => {
-    switch (tab) {
-      case "Itinerary":
-        setItinerary((prev) => [
-          ...prev,
-          { id: nextId(), text: "New activity", date: "Tomorrow", completed: false, priority: 2 },
-        ]);
-        break;
-      case "Packing":
-        setPacking((prev) => [...prev, { id: nextId(), text: "New item", category: "General", packed: false }]);
-        break;
-      case "Budget":
-        setExpenses((prev) => [
-          ...prev,
-          { id: nextId(), title: "New expense", amount: 500, currency: trip.budgetCurrency, category: "Other" },
-        ]);
-        break;
-      case "Documents":
-        setDocuments((prev) => [...prev, { id: nextId(), title: "New document", type: "ticket" }]);
-        break;
-    }
-  };
 
   const packedCount = packing.filter((i) => i.packed).length;
   const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -174,7 +120,10 @@ export default function TripDetailMock({
         <button type="button" onClick={onBack} className="flex h-6 w-6 items-center justify-center">
           <ArrowLeft size={15} className="text-teal-dark" />
         </button>
-        <span className="text-[12px] font-extrabold text-teal-dark">{trip.title}</span>
+        <span className="flex-1 text-[12px] font-extrabold text-teal-dark">{trip.title}</span>
+        <button type="button" className="flex h-6 w-6 items-center justify-center">
+          <Pencil size={13} className="text-teal-dark" />
+        </button>
       </div>
 
       {/* tab bar */}
@@ -240,12 +189,11 @@ export default function TripDetailMock({
             <div className="px-3 pt-2.5">
               <p className="text-[9px] font-bold text-black/50">Quick-apply a template</p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {Object.keys(PACKING_TEMPLATES).map((name) => (
+                {PACKING_TEMPLATE_NAMES.map((name) => (
                   <button
                     key={name}
                     type="button"
-                    onClick={() => applyTemplate(name)}
-                    className="rounded-full bg-black/[0.04] px-2.5 py-1 text-[8px] font-semibold text-teal-dark transition hover:bg-black/[0.08]"
+                    className="rounded-full bg-black/[0.04] px-2.5 py-1 text-[8px] font-semibold text-teal-dark"
                   >
                     {name}
                   </button>
@@ -286,7 +234,11 @@ export default function TripDetailMock({
                         >
                           {item.packed && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
                         </span>
-                        <span className={item.packed ? "text-black/40 line-through" : "font-medium"}>
+                        <span
+                          className={
+                            item.packed ? "text-black/40 line-through" : "font-medium text-teal-dark"
+                          }
+                        >
                           {item.text}
                         </span>
                       </button>
@@ -320,19 +272,15 @@ export default function TripDetailMock({
               <div className="mt-2.5 pb-2">
                 {expenses.length === 0 && <EmptyRow text="No expenses logged yet" />}
                 {expenses.map((expense) => (
-                  <div key={expense.id} className="group flex items-center gap-2 py-2">
+                  <div key={expense.id} className="flex items-center gap-2 py-2">
                     <div className="flex-1">
                       <p className="font-semibold text-teal-dark">{expense.title}</p>
                       <p className="text-[8px] text-black/40">{expense.category}</p>
                     </div>
-                    <span className="text-[9px] font-bold">
+                    <span className="text-[9px] font-bold text-teal-dark">
                       {expense.amount.toFixed(0)} {expense.currency}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => removeExpense(expense.id)}
-                      className="text-black/20 transition hover:text-red-500"
-                    >
+                    <button type="button" className="text-black/20">
                       <Trash2 size={11} />
                     </button>
                   </div>
@@ -353,15 +301,20 @@ export default function TripDetailMock({
                   const Icon = DOCUMENT_ICONS[doc.type];
                   return (
                     <div key={doc.id} className="flex items-center gap-2.5 rounded-xl px-1 py-2">
-                      <span className={`flex h-8 w-8 items-center justify-center rounded-full ${c.tint}`}>
-                        <Icon size={14} className={c.text} />
-                      </span>
+                      {doc.hasPhoto ? (
+                        <span
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${c.bg} to-black/20`}
+                        >
+                          <Icon size={14} className="text-white" />
+                        </span>
+                      ) : (
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${c.tint}`}>
+                          <Icon size={14} className={c.text} />
+                        </span>
+                      )}
                       <span className="flex-1 font-semibold text-teal-dark">{doc.title}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeDocument(doc.id)}
-                        className="text-black/20 transition hover:text-red-500"
-                      >
+                      <ChevronRight size={13} className="text-black/25" />
+                      <button type="button" className="text-black/20">
                         <Trash2 size={11} />
                       </button>
                     </div>
@@ -374,8 +327,7 @@ export default function TripDetailMock({
 
         <button
           type="button"
-          onClick={addForCurrentTab}
-          className={`absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full text-white shadow-lg transition active:scale-90 ${c.bg}`}
+          className={`absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full text-white shadow-lg ${c.bg}`}
         >
           <Plus size={16} />
         </button>

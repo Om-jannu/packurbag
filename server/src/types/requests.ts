@@ -14,7 +14,6 @@ export interface TripBody {
   destination: string;
   startDate: string;
   endDate: string;
-  notes?: string;
   coverColor?: string;
   budgetAmount?: number;
   budgetCurrency?: string;

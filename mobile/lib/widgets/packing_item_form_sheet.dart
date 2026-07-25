@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/app_exception.dart';
+import '../models/packing_item.dart';
 import '../providers/repository_providers.dart';
 import '../providers/trip_providers.dart';
+import '../utils.dart';
 import 'app_text_field.dart';
 
 const _packingCategories = [
@@ -16,24 +18,36 @@ const _packingCategories = [
   'Other',
 ];
 
+/// Add/edit form for a single packing item within a trip.
 Future<void> showPackingItemFormSheet(
   BuildContext context, {
   required String userId,
   required String tripId,
+  PackingItem? itemToEdit,
 }) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (context) => PackingItemFormSheet(userId: userId, tripId: tripId),
+    builder: (context) => PackingItemFormSheet(
+      userId: userId,
+      tripId: tripId,
+      itemToEdit: itemToEdit,
+    ),
   );
 }
 
 class PackingItemFormSheet extends ConsumerStatefulWidget {
-  const PackingItemFormSheet({super.key, required this.userId, required this.tripId});
+  const PackingItemFormSheet({
+    super.key,
+    required this.userId,
+    required this.tripId,
+    this.itemToEdit,
+  });
 
   final String userId;
   final String tripId;
+  final PackingItem? itemToEdit;
 
   @override
   ConsumerState<PackingItemFormSheet> createState() => _PackingItemFormSheetState();
@@ -41,9 +55,19 @@ class PackingItemFormSheet extends ConsumerStatefulWidget {
 
 class _PackingItemFormSheetState extends ConsumerState<PackingItemFormSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _textController = TextEditingController();
-  String _category = _packingCategories.first;
+  late final TextEditingController _textController;
+  late String _category;
   bool _isSubmitting = false;
+
+  bool get _isEditing => widget.itemToEdit != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final editing = widget.itemToEdit;
+    _textController = TextEditingController(text: editing?.text ?? '');
+    _category = editing?.category ?? _packingCategories.first;
+  }
 
   @override
   void dispose() {
@@ -54,12 +78,44 @@ class _PackingItemFormSheetState extends ConsumerState<PackingItemFormSheet> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
+    final repo = ref.read(packingRepositoryProvider);
+    final text = capitalizeWords(_textController.text);
     try {
-      await ref.read(packingRepositoryProvider).addItem(
+      if (_isEditing) {
+        await repo.updateItem(
+          userId: widget.userId,
+          tripId: widget.tripId,
+          itemId: widget.itemToEdit!.id,
+          text: text,
+          category: _category,
+        );
+      } else {
+        await repo.addItem(
+          userId: widget.userId,
+          tripId: widget.tripId,
+          text: text,
+          category: _category,
+        );
+      }
+      ref.invalidate(tripsProvider(widget.userId));
+      if (!mounted) return;
+      Navigator.pop(context);
+    } on AppException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _delete() async {
+    setState(() => _isSubmitting = true);
+    try {
+      await ref.read(packingRepositoryProvider).deleteItem(
             userId: widget.userId,
             tripId: widget.tripId,
-            text: _textController.text.trim(),
-            category: _category,
+            itemId: widget.itemToEdit!.id,
           );
       ref.invalidate(tripsProvider(widget.userId));
       if (!mounted) return;
@@ -89,7 +145,7 @@ class _PackingItemFormSheetState extends ConsumerState<PackingItemFormSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Add packing item',
+              _isEditing ? 'Edit packing item' : 'Add packing item',
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
@@ -114,6 +170,17 @@ class _PackingItemFormSheetState extends ConsumerState<PackingItemFormSheet> {
               }).toList(),
             ),
             const SizedBox(height: 20),
+            if (_isEditing) ...[
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                onPressed: _isSubmitting ? null : _delete,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Delete item'),
+              ),
+              const SizedBox(height: 12),
+            ],
             FilledButton(
               onPressed: _isSubmitting ? null : _submit,
               child: _isSubmitting
@@ -122,7 +189,7 @@ class _PackingItemFormSheetState extends ConsumerState<PackingItemFormSheet> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Add item'),
+                  : Text(_isEditing ? 'Save changes' : 'Add item'),
             ),
           ],
         ),

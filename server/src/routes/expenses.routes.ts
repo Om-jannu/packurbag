@@ -1,12 +1,15 @@
 import { Hono } from "hono";
 import User from "../models/userSchema";
+import { requireAuth } from "../middleware/auth";
+import type { AppEnv } from "../types/hono";
 import type { ExpenseBody } from "../types/requests";
 
-export const expensesRoutes = new Hono();
+export const expensesRoutes = new Hono<AppEnv>();
+expensesRoutes.use("*", requireAuth);
 
-expensesRoutes.get("/:userId/:tripId/expenses", async (c) => {
+expensesRoutes.get("/:tripId/expenses", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);
@@ -18,9 +21,9 @@ expensesRoutes.get("/:userId/:tripId/expenses", async (c) => {
   }
 });
 
-expensesRoutes.post("/:userId/:tripId/expenses", async (c) => {
+expensesRoutes.post("/:tripId/expenses", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);
@@ -34,9 +37,29 @@ expensesRoutes.post("/:userId/:tripId/expenses", async (c) => {
   }
 });
 
-expensesRoutes.delete("/:userId/:tripId/expenses/:expenseId", async (c) => {
+expensesRoutes.put("/:tripId/expenses/:expenseId", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
+    const trip = user?.trips.id(c.req.param("tripId"));
+    if (!trip) {
+      return c.json({ success: false, message: "Trip not found" }, 404);
+    }
+    const expense = trip.expenses.id(c.req.param("expenseId"));
+    if (!expense) {
+      return c.json({ success: false, message: "Expense not found" }, 404);
+    }
+    Object.assign(expense, await c.req.json<Partial<ExpenseBody>>());
+    await user!.save();
+    return c.json({ success: true, message: "Expense updated" });
+  } catch (error) {
+    console.error(error);
+    return c.json({ success: false, message: "Error updating expense" }, 500);
+  }
+});
+
+expensesRoutes.delete("/:tripId/expenses/:expenseId", async (c) => {
+  try {
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);

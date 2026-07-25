@@ -44,7 +44,7 @@ interface HomeMockProps {
 export default function HomeMock({ onNavigate }: HomeMockProps) {
   const [selectedDate, setSelectedDate] = useState(13);
   const [activeAction, setActiveAction] = useState("Trips");
-  const [tripCount, setTripCount] = useState(4);
+  const tripCount = 4;
 
   const dayHasTrip = HIGHLIGHTED_DAYS.includes(selectedDate);
 
@@ -73,7 +73,7 @@ export default function HomeMock({ onNavigate }: HomeMockProps) {
           <div className="flex items-center gap-2 rounded-2xl bg-black/[0.03] p-2.5">
             <CloudSun size={18} className="text-amber" />
             <div>
-              <p className="text-[11px] font-bold">29°C in Denpasar</p>
+              <p className="text-[11px] font-bold text-teal-dark">29°C in Denpasar</p>
               <p className="text-[9px] text-black/50">Sunny</p>
             </div>
           </div>
@@ -81,7 +81,7 @@ export default function HomeMock({ onNavigate }: HomeMockProps) {
           {/* currency snippet */}
           <div className="flex items-center gap-2 rounded-2xl bg-black/[0.03] p-2.5">
             <span className="text-[13px]">💱</span>
-            <p className="text-[10px] font-semibold">1 INR ≈ 1.47 IDR</p>
+            <p className="text-[10px] font-semibold text-teal-dark">1 INR ≈ 1.47 IDR</p>
           </div>
 
           {/* quick stats */}
@@ -198,11 +198,7 @@ export default function HomeMock({ onNavigate }: HomeMockProps) {
           </div>
         </div>
 
-        <SpeedDialFab
-          onAction={(action) => {
-            if (action === "newTrip") setTripCount((n) => n + 1);
-          }}
-        />
+        <SpeedDialFab />
       </div>
 
       <PhoneNavBar active="home" enabled={onNavigate ? ["trips", "nearby"] : []} onSelect={onNavigate} />

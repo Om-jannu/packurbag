@@ -49,6 +49,31 @@ class DocumentsRepository {
     return document;
   }
 
+  Future<void> updateDocument({
+    required String userId,
+    required String documentId,
+    required TravelDocumentType type,
+    required String title,
+    String notes = '',
+    XFile? newPhoto,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList(_prefsKey(userId)) ?? [];
+    final newImagePath = newPhoto == null ? null : await _persistImage(newPhoto);
+    final updated = raw.map((entry) {
+      final doc = TravelDocument.fromJson(jsonDecode(entry) as Map<String, dynamic>);
+      if (doc.id != documentId) return entry;
+      final edited = doc.copyWith(
+        type: type,
+        title: title,
+        notes: notes,
+        imagePath: newImagePath,
+      );
+      return jsonEncode(edited.toJson());
+    }).toList();
+    await prefs.setStringList(_prefsKey(userId), updated);
+  }
+
   Future<void> deleteDocument({
     required String userId,
     required String documentId,

@@ -6,7 +6,7 @@ export default function PhoneFrame({ children }: { children: ReactNode }) {
       {/* Dynamic island */}
       <div className="absolute left-1/2 top-0 z-20 h-6 w-28 -translate-x-1/2 rounded-b-2xl bg-[#0b2530]" />
 
-      <div className="relative h-full w-full overflow-hidden rounded-[2.25rem] bg-white">
+      <div className="relative h-full w-full overflow-hidden rounded-[2.25rem] bg-white text-left">
         {children}
       </div>
 

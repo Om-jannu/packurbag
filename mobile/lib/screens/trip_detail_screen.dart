@@ -22,7 +22,9 @@ import '../widgets/empty_state.dart';
 import '../widgets/expense_form_sheet.dart';
 import '../widgets/itinerary_item_form_sheet.dart';
 import '../widgets/packing_item_form_sheet.dart';
+import '../widgets/photo_viewer_page.dart';
 import '../widgets/priority_badge.dart';
+import '../widgets/trip_form_sheet.dart';
 
 class TripDetailScreen extends ConsumerStatefulWidget {
   const TripDetailScreen({super.key, required this.trip});
@@ -87,6 +89,14 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen>
       appBar: AppBar(
         title: Text(liveTrip.title),
         backgroundColor: color.withValues(alpha: 0.2),
+        actions: [
+          if (userId != null)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit trip',
+              onPressed: () => showTripFormSheet(context, userId: userId, tripToEdit: liveTrip),
+            ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
@@ -344,11 +354,18 @@ class _PackingTab extends ConsumerWidget {
                         ),
                       ),
                       for (final item in entry.value)
-                        CheckboxListTile(
-                          value: item.packed,
-                          onChanged: (value) => _togglePacked(ref, item, value ?? false),
-                          activeColor: color,
-                          controlAffinity: ListTileControlAffinity.leading,
+                        ListTile(
+                          onTap: () => showPackingItemFormSheet(
+                            context,
+                            userId: userId,
+                            tripId: trip.id,
+                            itemToEdit: item,
+                          ),
+                          leading: Checkbox(
+                            value: item.packed,
+                            onChanged: (value) => _togglePacked(ref, item, value ?? false),
+                            activeColor: color,
+                          ),
                           title: Text(
                             item.text,
                             style: TextStyle(
@@ -465,7 +482,16 @@ class _BudgetTab extends ConsumerWidget {
                     tripId: trip.id,
                     expenseId: expense.id,
                   ),
-              child: _ExpenseTile(expense: expense),
+              child: _ExpenseTile(
+                expense: expense,
+                onTap: () => showExpenseFormSheet(
+                  context,
+                  userId: userId,
+                  tripId: trip.id,
+                  defaultCurrency: trip.budgetCurrency,
+                  expenseToEdit: expense,
+                ),
+              ),
             ),
       ],
     );
@@ -477,12 +503,14 @@ final _usdRatesProvider = FutureProvider<Map<String, double>>((ref) {
 });
 
 class _ExpenseTile extends StatelessWidget {
-  const _ExpenseTile({required this.expense});
+  const _ExpenseTile({required this.expense, required this.onTap});
   final Expense expense;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      onTap: onTap,
       leading: const Icon(Icons.receipt_outlined),
       title: Text(expense.title),
       subtitle: Text('${expense.category} · ${DateFormat('d MMM').format(expense.date)}'),
@@ -578,14 +606,30 @@ class _DocumentsTab extends ConsumerWidget {
                     child: Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
+                        onTap: () => showDocumentFormSheet(
+                          context,
+                          userId: userId,
+                          tripId: trip.id,
+                          documentToEdit: document,
+                        ),
                         leading: document.imagePath != null && !kIsWeb
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.file(
-                                  File(document.imagePath!),
-                                  width: 44,
-                                  height: 44,
-                                  fit: BoxFit.cover,
+                            ? GestureDetector(
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => PhotoViewerPage(
+                                      imagePath: document.imagePath!,
+                                      title: document.title,
+                                    ),
+                                  ),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.file(
+                                    File(document.imagePath!),
+                                    width: 44,
+                                    height: 44,
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               )
                             : Icon(_documentTypeIcons[document.type], color: color),
@@ -595,6 +639,7 @@ class _DocumentsTab extends ConsumerWidget {
                               ? _documentTypeLabels[document.type]!
                               : '${_documentTypeLabels[document.type]} · ${document.notes}',
                         ),
+                        trailing: const Icon(Icons.chevron_right),
                       ),
                     ),
                   );

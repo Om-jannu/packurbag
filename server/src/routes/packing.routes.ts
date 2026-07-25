@@ -1,12 +1,15 @@
 import { Hono } from "hono";
 import User from "../models/userSchema";
+import { requireAuth } from "../middleware/auth";
+import type { AppEnv } from "../types/hono";
 import type { PackedStatusBody, PackingItemBody } from "../types/requests";
 
-export const packingRoutes = new Hono();
+export const packingRoutes = new Hono<AppEnv>();
+packingRoutes.use("*", requireAuth);
 
-packingRoutes.get("/:userId/:tripId/packing", async (c) => {
+packingRoutes.get("/:tripId/packing", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);
@@ -18,9 +21,9 @@ packingRoutes.get("/:userId/:tripId/packing", async (c) => {
   }
 });
 
-packingRoutes.post("/:userId/:tripId/packing", async (c) => {
+packingRoutes.post("/:tripId/packing", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);
@@ -36,9 +39,9 @@ packingRoutes.post("/:userId/:tripId/packing", async (c) => {
   }
 });
 
-packingRoutes.put("/:userId/:tripId/packing/:itemId", async (c) => {
+packingRoutes.put("/:tripId/packing/:itemId", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);
@@ -56,9 +59,9 @@ packingRoutes.put("/:userId/:tripId/packing/:itemId", async (c) => {
   }
 });
 
-packingRoutes.delete("/:userId/:tripId/packing/:itemId", async (c) => {
+packingRoutes.delete("/:tripId/packing/:itemId", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);
@@ -76,10 +79,10 @@ packingRoutes.delete("/:userId/:tripId/packing/:itemId", async (c) => {
   }
 });
 
-packingRoutes.put("/:userId/:tripId/packing/:itemId/packedStatus", async (c) => {
+packingRoutes.put("/:tripId/packing/:itemId/packedStatus", async (c) => {
   const { packed } = await c.req.json<PackedStatusBody>();
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);

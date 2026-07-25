@@ -21,6 +21,7 @@ class TravelDocument {
   final String? imagePath;
 
   TravelDocument copyWith({
+    TravelDocumentType? type,
     String? title,
     String? notes,
     String? imagePath,
@@ -28,7 +29,7 @@ class TravelDocument {
     return TravelDocument(
       id: id,
       tripId: tripId,
-      type: type,
+      type: type ?? this.type,
       title: title ?? this.title,
       notes: notes ?? this.notes,
       imagePath: imagePath ?? this.imagePath,

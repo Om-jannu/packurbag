@@ -15,7 +15,6 @@ abstract class Trip with _$Trip {
     required String destination,
     required DateTime startDate,
     required DateTime endDate,
-    @Default('') String notes,
     @Default('FF6B4A') String coverColor,
     double? budgetAmount,
     @Default('INR') String budgetCurrency,

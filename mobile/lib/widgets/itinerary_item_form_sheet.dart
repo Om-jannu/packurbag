@@ -6,6 +6,7 @@ import '../data/app_exception.dart';
 import '../models/itinerary_item.dart';
 import '../providers/repository_providers.dart';
 import '../providers/trip_providers.dart';
+import '../utils.dart';
 import 'app_text_field.dart';
 import 'priority_badge.dart';
 
@@ -85,25 +86,27 @@ class _ItineraryItemFormSheetState extends ConsumerState<ItineraryItemFormSheet>
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
     final repo = ref.read(itineraryRepositoryProvider);
+    final text = capitalizeWords(_textController.text);
+    final location = capitalizeWords(_locationController.text);
     try {
       if (_isEditing) {
         await repo.updateItem(
           userId: widget.userId,
           tripId: widget.tripId,
           itemId: widget.itemToEdit!.id,
-          text: _textController.text.trim(),
+          text: text,
           date: _date,
           priority: _priority,
-          location: _locationController.text.trim(),
+          location: location,
         );
       } else {
         await repo.addItem(
           userId: widget.userId,
           tripId: widget.tripId,
-          text: _textController.text.trim(),
+          text: text,
           date: _date,
           priority: _priority,
-          location: _locationController.text.trim(),
+          location: location,
         );
       }
       ref.invalidate(tripsProvider(widget.userId));

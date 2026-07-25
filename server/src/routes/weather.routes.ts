@@ -1,8 +1,12 @@
 import { Hono } from "hono";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { env } from "../config/env";
+import { requireAuth } from "../middleware/auth";
+import type { AppEnv } from "../types/hono";
 import type { OpenWeatherResponse } from "../types/requests";
 
-export const weatherRoutes = new Hono();
+export const weatherRoutes = new Hono<AppEnv>();
+weatherRoutes.use("*", requireAuth);
 
 // Proxies OpenWeatherMap so the API key never ships in the client app.
 weatherRoutes.get("/", async (c) => {
@@ -22,9 +26,11 @@ weatherRoutes.get("/", async (c) => {
     );
     const data = (await response.json()) as OpenWeatherResponse;
     if (!response.ok) {
+      // OpenWeatherMap's documented error codes: 401 invalid API key,
+      // 404 city not found, 429 rate limit exceeded.
       return c.json(
         { success: false, message: data.message || "Weather request failed" },
-        response.status as 400 | 404 | 500
+        response.status as ContentfulStatusCode
       );
     }
     return c.json({

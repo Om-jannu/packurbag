@@ -158,10 +158,18 @@ class _ConversionCardState extends State<ConversionCard> {
               border: OutlineInputBorder(),
               labelText: 'Amount',
             ),
-            keyboardType: TextInputType.number,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             validator: (value) {
-              if (value!.isEmpty) {
+              final trimmed = value?.trim() ?? '';
+              if (trimmed.isEmpty) {
                 return 'Please enter an amount';
+              }
+              final parsed = double.tryParse(trimmed);
+              if (parsed == null) {
+                return 'Enter a valid number';
+              }
+              if (parsed <= 0) {
+                return 'Amount must be greater than 0';
               }
               return null;
             },
@@ -182,10 +190,9 @@ class _ConversionCardState extends State<ConversionCard> {
               IconButton(
                 icon: const Icon(Icons.swap_vert),
                 onPressed: () {
-                  if (amountController.text.isEmpty) {
-                    swapCurrencies();
-                  } else {
-                    swapCurrencies();
+                  swapCurrencies();
+                  if (amountController.text.trim().isEmpty) return;
+                  if (formFieldKey.currentState?.validate() ?? false) {
                     convertAndDisplay();
                   }
                 },

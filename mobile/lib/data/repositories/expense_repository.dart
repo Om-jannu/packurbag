@@ -6,7 +6,7 @@ class ExpenseRepository {
 
   final ApiClient _client;
 
-  String _base(String userId, String tripId) => '/trips/$userId/$tripId/expenses';
+  String _base(String userId, String tripId) => '/trips/$tripId/expenses';
 
   Future<void> addExpense({
     required String userId,
@@ -26,6 +26,26 @@ class ExpenseRepository {
     });
     if (response['success'] == false) {
       throw AppException(response['message'] as String? ?? 'Error adding expense');
+    }
+  }
+
+  Future<void> updateExpense({
+    required String userId,
+    required String tripId,
+    required String expenseId,
+    required String title,
+    required double amount,
+    String currency = 'INR',
+    String category = 'Other',
+  }) async {
+    final response = await _client.put('${_base(userId, tripId)}/$expenseId', data: {
+      'title': title,
+      'amount': amount,
+      'currency': currency,
+      'category': category,
+    });
+    if (response['success'] == false) {
+      throw AppException(response['message'] as String? ?? 'Error updating expense');
     }
   }
 

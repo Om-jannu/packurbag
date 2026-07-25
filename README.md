@@ -52,6 +52,12 @@ Run it:
 npm run dev
 ```
 
+`GET /health` reports service status (and Mongo connectivity) — useful for uptime checks and deploy health gates.
+
+#### Deploying to Render
+
+The repo includes a `render.yaml` Blueprint at the root. In the Render dashboard: **New → Blueprint**, point it at this repo, and Render will pick up `server/` as a Node web service automatically (build: `npm install && npm run build`, start: `npm start`, health check: `/health`). Fill in the secret env vars it prompts for (`MONGO_URL` and the optional third-party keys) — they're intentionally left out of the blueprint so they're never committed.
+
 ### Mobile app (`mobile/`)
 
 The project pins its own Flutter SDK as a git worktree at `mobile/.flutter-sdk` so builds are reproducible regardless of what Flutter version you have installed globally.

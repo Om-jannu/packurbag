@@ -11,8 +11,8 @@ export const metadata: Metadata = {
   title: "Packurbag — Your Travel Companion",
   description:
     "Plan trips with itineraries, packing lists, and budgets, get destination weather, translate on the go, connect with nearby travelers, and reach help fast with emergency SOS.",
-  icons: {
-    icon: "/packurbag-logo.png",
+  appleWebApp: {
+    title: "packurbag",
   },
 };
 

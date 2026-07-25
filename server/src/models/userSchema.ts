@@ -29,7 +29,6 @@ export interface Trip {
   destination: string;
   startDate: Date;
   endDate: Date;
-  notes: string;
   coverColor: string;
   budgetAmount?: number;
   budgetCurrency: string;
@@ -132,10 +131,6 @@ const tripSchema = {
   endDate: {
     type: Date,
     required: true,
-  },
-  notes: {
-    type: String,
-    default: "",
   },
   coverColor: {
     type: String,

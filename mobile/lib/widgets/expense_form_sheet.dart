@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/app_exception.dart';
+import '../models/expense.dart';
 import '../providers/repository_providers.dart';
 import '../providers/trip_providers.dart';
+import '../utils.dart';
 import 'app_text_field.dart';
 
 const _expenseCategories = ['Lodging', 'Food', 'Transport', 'Activities', 'Shopping', 'Other'];
 
+/// Add/edit form for a single expense within a trip.
 Future<void> showExpenseFormSheet(
   BuildContext context, {
   required String userId,
   required String tripId,
   required String defaultCurrency,
+  Expense? expenseToEdit,
 }) {
   return showModalBottomSheet(
     context: context,
@@ -22,6 +26,7 @@ Future<void> showExpenseFormSheet(
       userId: userId,
       tripId: tripId,
       defaultCurrency: defaultCurrency,
+      expenseToEdit: expenseToEdit,
     ),
   );
 }
@@ -32,11 +37,13 @@ class ExpenseFormSheet extends ConsumerStatefulWidget {
     required this.userId,
     required this.tripId,
     required this.defaultCurrency,
+    this.expenseToEdit,
   });
 
   final String userId;
   final String tripId;
   final String defaultCurrency;
+  final Expense? expenseToEdit;
 
   @override
   ConsumerState<ExpenseFormSheet> createState() => _ExpenseFormSheetState();
@@ -44,16 +51,22 @@ class ExpenseFormSheet extends ConsumerStatefulWidget {
 
 class _ExpenseFormSheetState extends ConsumerState<ExpenseFormSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _amountController = TextEditingController();
+  late final TextEditingController _titleController;
+  late final TextEditingController _amountController;
   late final TextEditingController _currencyController;
-  String _category = _expenseCategories.first;
+  late String _category;
   bool _isSubmitting = false;
+
+  bool get _isEditing => widget.expenseToEdit != null;
 
   @override
   void initState() {
     super.initState();
-    _currencyController = TextEditingController(text: widget.defaultCurrency);
+    final editing = widget.expenseToEdit;
+    _titleController = TextEditingController(text: editing?.title ?? '');
+    _amountController = TextEditingController(text: editing?.amount.toStringAsFixed(0) ?? '');
+    _currencyController = TextEditingController(text: editing?.currency ?? widget.defaultCurrency);
+    _category = editing?.category ?? _expenseCategories.first;
   }
 
   @override
@@ -67,14 +80,50 @@ class _ExpenseFormSheetState extends ConsumerState<ExpenseFormSheet> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
+    final repo = ref.read(expenseRepositoryProvider);
+    final title = capitalizeWords(_titleController.text);
+    final amount = double.parse(_amountController.text.trim());
+    final currency = _currencyController.text.trim().toUpperCase();
     try {
-      await ref.read(expenseRepositoryProvider).addExpense(
+      if (_isEditing) {
+        await repo.updateExpense(
+          userId: widget.userId,
+          tripId: widget.tripId,
+          expenseId: widget.expenseToEdit!.id,
+          title: title,
+          amount: amount,
+          currency: currency,
+          category: _category,
+        );
+      } else {
+        await repo.addExpense(
+          userId: widget.userId,
+          tripId: widget.tripId,
+          title: title,
+          amount: amount,
+          currency: currency,
+          category: _category,
+        );
+      }
+      ref.invalidate(tripsProvider(widget.userId));
+      if (!mounted) return;
+      Navigator.pop(context);
+    } on AppException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _delete() async {
+    setState(() => _isSubmitting = true);
+    try {
+      await ref.read(expenseRepositoryProvider).deleteExpense(
             userId: widget.userId,
             tripId: widget.tripId,
-            title: _titleController.text.trim(),
-            amount: double.parse(_amountController.text.trim()),
-            currency: _currencyController.text.trim().toUpperCase(),
-            category: _category,
+            expenseId: widget.expenseToEdit!.id,
           );
       ref.invalidate(tripsProvider(widget.userId));
       if (!mounted) return;
@@ -104,7 +153,7 @@ class _ExpenseFormSheetState extends ConsumerState<ExpenseFormSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Add expense',
+              _isEditing ? 'Edit expense' : 'Add expense',
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
@@ -154,6 +203,17 @@ class _ExpenseFormSheetState extends ConsumerState<ExpenseFormSheet> {
               }).toList(),
             ),
             const SizedBox(height: 20),
+            if (_isEditing) ...[
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.error,
+                ),
+                onPressed: _isSubmitting ? null : _delete,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Delete expense'),
+              ),
+              const SizedBox(height: 12),
+            ],
             FilledButton(
               onPressed: _isSubmitting ? null : _submit,
               child: _isSubmitting
@@ -162,7 +222,7 @@ class _ExpenseFormSheetState extends ConsumerState<ExpenseFormSheet> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Add expense'),
+                  : Text(_isEditing ? 'Save changes' : 'Add expense'),
             ),
           ],
         ),

@@ -9,12 +9,13 @@ interface ChatMessage {
   fromMe: boolean;
 }
 
-const AUTO_REPLIES = [
-  "Hey! Yes, staying near the old town 🙂",
-  "Have you tried the night market yet?",
-  "Nice! Let's grab coffee sometime this week.",
+const FIXED_MESSAGES: ChatMessage[] = [
+  { id: "m1", text: "Hey! Are you around Ubud this week too?", fromMe: false },
+  { id: "m2", text: "Yes! Just got in yesterday 🙂", fromMe: true },
+  { id: "m3", text: "Nice, have you tried the night market yet?", fromMe: false },
 ];
 
+/** Display-only — the conversation is fixed; typing works, sending doesn't append anything. */
 export default function TravelerChatMock({
   name,
   onBack,
@@ -22,23 +23,7 @@ export default function TravelerChatMock({
   name: string;
   onBack: () => void;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
-  const [replyIndex, setReplyIndex] = useState(0);
-
-  const send = () => {
-    const text = draft.trim();
-    if (!text) return;
-    const id = `${Date.now()}-${messages.length}`;
-    setMessages((prev) => [...prev, { id, text, fromMe: true }]);
-    setDraft("");
-
-    const reply = AUTO_REPLIES[replyIndex % AUTO_REPLIES.length];
-    setReplyIndex((i) => i + 1);
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { id: `${id}-reply`, text: reply, fromMe: false }]);
-    }, 1000);
-  };
 
   return (
     <div className="flex h-full flex-col bg-white text-[11px]">
@@ -50,10 +35,7 @@ export default function TravelerChatMock({
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
-        {messages.length === 0 && (
-          <p className="pt-8 text-center text-[9px] text-black/35">Say hi to {name}!</p>
-        )}
-        {messages.map((m) => (
+        {FIXED_MESSAGES.map((m) => (
           <div key={m.id} className={`flex ${m.fromMe ? "justify-end" : "justify-start"}`}>
             <span
               className={`max-w-[75%] rounded-2xl px-3 py-1.5 text-[9.5px] ${
@@ -70,13 +52,11 @@ export default function TravelerChatMock({
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="Message"
-          className="flex-1 rounded-full bg-black/[0.04] px-3 py-2 text-[9.5px] outline-none placeholder:text-black/35"
+          className="flex-1 rounded-full bg-black/[0.04] px-3 py-2 text-[9.5px] text-teal-dark outline-none placeholder:text-black/35"
         />
         <button
           type="button"
-          onClick={send}
           className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-dark text-white"
         >
           <Send size={12} />

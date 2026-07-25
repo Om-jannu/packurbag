@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Trip {
 
-@JsonKey(name: '_id') String get id; String get title; String get destination; DateTime get startDate; DateTime get endDate; String get notes; String get coverColor; double? get budgetAmount; String get budgetCurrency; List<ItineraryItem> get itinerary; List<PackingItem> get packingItems; List<Expense> get expenses;
+@JsonKey(name: '_id') String get id; String get title; String get destination; DateTime get startDate; DateTime get endDate; String get coverColor; double? get budgetAmount; String get budgetCurrency; List<ItineraryItem> get itinerary; List<PackingItem> get packingItems; List<Expense> get expenses;
 /// Create a copy of Trip
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $TripCopyWith<Trip> get copyWith => _$TripCopyWithImpl<Trip>(this as Trip, _$ide
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Trip&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.destination, destination) || other.destination == destination)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.coverColor, coverColor) || other.coverColor == coverColor)&&(identical(other.budgetAmount, budgetAmount) || other.budgetAmount == budgetAmount)&&(identical(other.budgetCurrency, budgetCurrency) || other.budgetCurrency == budgetCurrency)&&const DeepCollectionEquality().equals(other.itinerary, itinerary)&&const DeepCollectionEquality().equals(other.packingItems, packingItems)&&const DeepCollectionEquality().equals(other.expenses, expenses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Trip&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.destination, destination) || other.destination == destination)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.coverColor, coverColor) || other.coverColor == coverColor)&&(identical(other.budgetAmount, budgetAmount) || other.budgetAmount == budgetAmount)&&(identical(other.budgetCurrency, budgetCurrency) || other.budgetCurrency == budgetCurrency)&&const DeepCollectionEquality().equals(other.itinerary, itinerary)&&const DeepCollectionEquality().equals(other.packingItems, packingItems)&&const DeepCollectionEquality().equals(other.expenses, expenses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,destination,startDate,endDate,notes,coverColor,budgetAmount,budgetCurrency,const DeepCollectionEquality().hash(itinerary),const DeepCollectionEquality().hash(packingItems),const DeepCollectionEquality().hash(expenses));
+int get hashCode => Object.hash(runtimeType,id,title,destination,startDate,endDate,coverColor,budgetAmount,budgetCurrency,const DeepCollectionEquality().hash(itinerary),const DeepCollectionEquality().hash(packingItems),const DeepCollectionEquality().hash(expenses));
 
 @override
 String toString() {
-  return 'Trip(id: $id, title: $title, destination: $destination, startDate: $startDate, endDate: $endDate, notes: $notes, coverColor: $coverColor, budgetAmount: $budgetAmount, budgetCurrency: $budgetCurrency, itinerary: $itinerary, packingItems: $packingItems, expenses: $expenses)';
+  return 'Trip(id: $id, title: $title, destination: $destination, startDate: $startDate, endDate: $endDate, coverColor: $coverColor, budgetAmount: $budgetAmount, budgetCurrency: $budgetCurrency, itinerary: $itinerary, packingItems: $packingItems, expenses: $expenses)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $TripCopyWith<$Res>  {
   factory $TripCopyWith(Trip value, $Res Function(Trip) _then) = _$TripCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: '_id') String id, String title, String destination, DateTime startDate, DateTime endDate, String notes, String coverColor, double? budgetAmount, String budgetCurrency, List<ItineraryItem> itinerary, List<PackingItem> packingItems, List<Expense> expenses
+@JsonKey(name: '_id') String id, String title, String destination, DateTime startDate, DateTime endDate, String coverColor, double? budgetAmount, String budgetCurrency, List<ItineraryItem> itinerary, List<PackingItem> packingItems, List<Expense> expenses
 });
 
 
@@ -65,15 +65,14 @@ class _$TripCopyWithImpl<$Res>
 
 /// Create a copy of Trip
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? destination = null,Object? startDate = null,Object? endDate = null,Object? notes = null,Object? coverColor = null,Object? budgetAmount = freezed,Object? budgetCurrency = null,Object? itinerary = null,Object? packingItems = null,Object? expenses = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? destination = null,Object? startDate = null,Object? endDate = null,Object? coverColor = null,Object? budgetAmount = freezed,Object? budgetCurrency = null,Object? itinerary = null,Object? packingItems = null,Object? expenses = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,destination: null == destination ? _self.destination : destination // ignore: cast_nullable_to_non_nullable
 as String,startDate: null == startDate ? _self.startDate : startDate // ignore: cast_nullable_to_non_nullable
 as DateTime,endDate: null == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable
-as DateTime,notes: null == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
-as String,coverColor: null == coverColor ? _self.coverColor : coverColor // ignore: cast_nullable_to_non_nullable
+as DateTime,coverColor: null == coverColor ? _self.coverColor : coverColor // ignore: cast_nullable_to_non_nullable
 as String,budgetAmount: freezed == budgetAmount ? _self.budgetAmount : budgetAmount // ignore: cast_nullable_to_non_nullable
 as double?,budgetCurrency: null == budgetCurrency ? _self.budgetCurrency : budgetCurrency // ignore: cast_nullable_to_non_nullable
 as String,itinerary: null == itinerary ? _self.itinerary : itinerary // ignore: cast_nullable_to_non_nullable
@@ -164,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id,  String title,  String destination,  DateTime startDate,  DateTime endDate,  String notes,  String coverColor,  double? budgetAmount,  String budgetCurrency,  List<ItineraryItem> itinerary,  List<PackingItem> packingItems,  List<Expense> expenses)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id,  String title,  String destination,  DateTime startDate,  DateTime endDate,  String coverColor,  double? budgetAmount,  String budgetCurrency,  List<ItineraryItem> itinerary,  List<PackingItem> packingItems,  List<Expense> expenses)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Trip() when $default != null:
-return $default(_that.id,_that.title,_that.destination,_that.startDate,_that.endDate,_that.notes,_that.coverColor,_that.budgetAmount,_that.budgetCurrency,_that.itinerary,_that.packingItems,_that.expenses);case _:
+return $default(_that.id,_that.title,_that.destination,_that.startDate,_that.endDate,_that.coverColor,_that.budgetAmount,_that.budgetCurrency,_that.itinerary,_that.packingItems,_that.expenses);case _:
   return orElse();
 
 }
@@ -185,10 +184,10 @@ return $default(_that.id,_that.title,_that.destination,_that.startDate,_that.end
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id,  String title,  String destination,  DateTime startDate,  DateTime endDate,  String notes,  String coverColor,  double? budgetAmount,  String budgetCurrency,  List<ItineraryItem> itinerary,  List<PackingItem> packingItems,  List<Expense> expenses)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id,  String title,  String destination,  DateTime startDate,  DateTime endDate,  String coverColor,  double? budgetAmount,  String budgetCurrency,  List<ItineraryItem> itinerary,  List<PackingItem> packingItems,  List<Expense> expenses)  $default,) {final _that = this;
 switch (_that) {
 case _Trip():
-return $default(_that.id,_that.title,_that.destination,_that.startDate,_that.endDate,_that.notes,_that.coverColor,_that.budgetAmount,_that.budgetCurrency,_that.itinerary,_that.packingItems,_that.expenses);case _:
+return $default(_that.id,_that.title,_that.destination,_that.startDate,_that.endDate,_that.coverColor,_that.budgetAmount,_that.budgetCurrency,_that.itinerary,_that.packingItems,_that.expenses);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +204,10 @@ return $default(_that.id,_that.title,_that.destination,_that.startDate,_that.end
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: '_id')  String id,  String title,  String destination,  DateTime startDate,  DateTime endDate,  String notes,  String coverColor,  double? budgetAmount,  String budgetCurrency,  List<ItineraryItem> itinerary,  List<PackingItem> packingItems,  List<Expense> expenses)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: '_id')  String id,  String title,  String destination,  DateTime startDate,  DateTime endDate,  String coverColor,  double? budgetAmount,  String budgetCurrency,  List<ItineraryItem> itinerary,  List<PackingItem> packingItems,  List<Expense> expenses)?  $default,) {final _that = this;
 switch (_that) {
 case _Trip() when $default != null:
-return $default(_that.id,_that.title,_that.destination,_that.startDate,_that.endDate,_that.notes,_that.coverColor,_that.budgetAmount,_that.budgetCurrency,_that.itinerary,_that.packingItems,_that.expenses);case _:
+return $default(_that.id,_that.title,_that.destination,_that.startDate,_that.endDate,_that.coverColor,_that.budgetAmount,_that.budgetCurrency,_that.itinerary,_that.packingItems,_that.expenses);case _:
   return null;
 
 }
@@ -220,7 +219,7 @@ return $default(_that.id,_that.title,_that.destination,_that.startDate,_that.end
 @JsonSerializable()
 
 class _Trip implements Trip {
-  const _Trip({@JsonKey(name: '_id') required this.id, required this.title, required this.destination, required this.startDate, required this.endDate, this.notes = '', this.coverColor = 'FF6B4A', this.budgetAmount, this.budgetCurrency = 'INR', final  List<ItineraryItem> itinerary = const [], final  List<PackingItem> packingItems = const [], final  List<Expense> expenses = const []}): _itinerary = itinerary,_packingItems = packingItems,_expenses = expenses;
+  const _Trip({@JsonKey(name: '_id') required this.id, required this.title, required this.destination, required this.startDate, required this.endDate, this.coverColor = 'FF6B4A', this.budgetAmount, this.budgetCurrency = 'INR', final  List<ItineraryItem> itinerary = const [], final  List<PackingItem> packingItems = const [], final  List<Expense> expenses = const []}): _itinerary = itinerary,_packingItems = packingItems,_expenses = expenses;
   factory _Trip.fromJson(Map<String, dynamic> json) => _$TripFromJson(json);
 
 @override@JsonKey(name: '_id') final  String id;
@@ -228,7 +227,6 @@ class _Trip implements Trip {
 @override final  String destination;
 @override final  DateTime startDate;
 @override final  DateTime endDate;
-@override@JsonKey() final  String notes;
 @override@JsonKey() final  String coverColor;
 @override final  double? budgetAmount;
 @override@JsonKey() final  String budgetCurrency;
@@ -267,16 +265,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Trip&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.destination, destination) || other.destination == destination)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.coverColor, coverColor) || other.coverColor == coverColor)&&(identical(other.budgetAmount, budgetAmount) || other.budgetAmount == budgetAmount)&&(identical(other.budgetCurrency, budgetCurrency) || other.budgetCurrency == budgetCurrency)&&const DeepCollectionEquality().equals(other._itinerary, _itinerary)&&const DeepCollectionEquality().equals(other._packingItems, _packingItems)&&const DeepCollectionEquality().equals(other._expenses, _expenses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Trip&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.destination, destination) || other.destination == destination)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.coverColor, coverColor) || other.coverColor == coverColor)&&(identical(other.budgetAmount, budgetAmount) || other.budgetAmount == budgetAmount)&&(identical(other.budgetCurrency, budgetCurrency) || other.budgetCurrency == budgetCurrency)&&const DeepCollectionEquality().equals(other._itinerary, _itinerary)&&const DeepCollectionEquality().equals(other._packingItems, _packingItems)&&const DeepCollectionEquality().equals(other._expenses, _expenses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,destination,startDate,endDate,notes,coverColor,budgetAmount,budgetCurrency,const DeepCollectionEquality().hash(_itinerary),const DeepCollectionEquality().hash(_packingItems),const DeepCollectionEquality().hash(_expenses));
+int get hashCode => Object.hash(runtimeType,id,title,destination,startDate,endDate,coverColor,budgetAmount,budgetCurrency,const DeepCollectionEquality().hash(_itinerary),const DeepCollectionEquality().hash(_packingItems),const DeepCollectionEquality().hash(_expenses));
 
 @override
 String toString() {
-  return 'Trip(id: $id, title: $title, destination: $destination, startDate: $startDate, endDate: $endDate, notes: $notes, coverColor: $coverColor, budgetAmount: $budgetAmount, budgetCurrency: $budgetCurrency, itinerary: $itinerary, packingItems: $packingItems, expenses: $expenses)';
+  return 'Trip(id: $id, title: $title, destination: $destination, startDate: $startDate, endDate: $endDate, coverColor: $coverColor, budgetAmount: $budgetAmount, budgetCurrency: $budgetCurrency, itinerary: $itinerary, packingItems: $packingItems, expenses: $expenses)';
 }
 
 
@@ -287,7 +285,7 @@ abstract mixin class _$TripCopyWith<$Res> implements $TripCopyWith<$Res> {
   factory _$TripCopyWith(_Trip value, $Res Function(_Trip) _then) = __$TripCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: '_id') String id, String title, String destination, DateTime startDate, DateTime endDate, String notes, String coverColor, double? budgetAmount, String budgetCurrency, List<ItineraryItem> itinerary, List<PackingItem> packingItems, List<Expense> expenses
+@JsonKey(name: '_id') String id, String title, String destination, DateTime startDate, DateTime endDate, String coverColor, double? budgetAmount, String budgetCurrency, List<ItineraryItem> itinerary, List<PackingItem> packingItems, List<Expense> expenses
 });
 
 
@@ -304,15 +302,14 @@ class __$TripCopyWithImpl<$Res>
 
 /// Create a copy of Trip
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? destination = null,Object? startDate = null,Object? endDate = null,Object? notes = null,Object? coverColor = null,Object? budgetAmount = freezed,Object? budgetCurrency = null,Object? itinerary = null,Object? packingItems = null,Object? expenses = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? destination = null,Object? startDate = null,Object? endDate = null,Object? coverColor = null,Object? budgetAmount = freezed,Object? budgetCurrency = null,Object? itinerary = null,Object? packingItems = null,Object? expenses = null,}) {
   return _then(_Trip(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,destination: null == destination ? _self.destination : destination // ignore: cast_nullable_to_non_nullable
 as String,startDate: null == startDate ? _self.startDate : startDate // ignore: cast_nullable_to_non_nullable
 as DateTime,endDate: null == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable
-as DateTime,notes: null == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
-as String,coverColor: null == coverColor ? _self.coverColor : coverColor // ignore: cast_nullable_to_non_nullable
+as DateTime,coverColor: null == coverColor ? _self.coverColor : coverColor // ignore: cast_nullable_to_non_nullable
 as String,budgetAmount: freezed == budgetAmount ? _self.budgetAmount : budgetAmount // ignore: cast_nullable_to_non_nullable
 as double?,budgetCurrency: null == budgetCurrency ? _self.budgetCurrency : budgetCurrency // ignore: cast_nullable_to_non_nullable
 as String,itinerary: null == itinerary ? _self._itinerary : itinerary // ignore: cast_nullable_to_non_nullable

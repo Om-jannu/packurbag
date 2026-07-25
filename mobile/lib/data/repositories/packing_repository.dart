@@ -6,7 +6,7 @@ class PackingRepository {
 
   final ApiClient _client;
 
-  String _base(String userId, String tripId) => '/trips/$userId/$tripId/packing';
+  String _base(String userId, String tripId) => '/trips/$tripId/packing';
 
   Future<void> addItem({
     required String userId,
@@ -34,6 +34,22 @@ class PackingRepository {
     ]);
     if (response['success'] == false) {
       throw AppException(response['message'] as String? ?? 'Error adding packing items');
+    }
+  }
+
+  Future<void> updateItem({
+    required String userId,
+    required String tripId,
+    required String itemId,
+    required String text,
+    required String category,
+  }) async {
+    final response = await _client.put('${_base(userId, tripId)}/$itemId', data: {
+      'text': text,
+      'category': category,
+    });
+    if (response['success'] == false) {
+      throw AppException(response['message'] as String? ?? 'Error updating packing item');
     }
   }
 

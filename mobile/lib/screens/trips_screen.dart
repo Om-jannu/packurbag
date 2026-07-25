@@ -142,6 +142,10 @@ class _TripCard extends StatelessWidget {
             ? 'In $daysUntil day${daysUntil == 1 ? '' : 's'}'
             : 'Past trip';
 
+    final budget = trip.budgetAmount;
+    final spent = trip.expenses.fold<double>(0, (sum, expense) => sum + expense.amount);
+    final isOverBudget = budget != null && spent > budget;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
@@ -191,9 +195,34 @@ class _TripCard extends StatelessWidget {
                         '${DateFormat('d MMM').format(trip.startDate)} – ${DateFormat('d MMM yyyy').format(trip.endDate)}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
+                      if (budget != null) ...[
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: (spent / budget).clamp(0, 1),
+                            minHeight: 5,
+                            color: isOverBudget ? Theme.of(context).colorScheme.error : color,
+                            backgroundColor: color.withValues(alpha: 0.15),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          isOverBudget
+                              ? '${spent.toStringAsFixed(0)} / ${budget.toStringAsFixed(0)} ${trip.budgetCurrency} · over budget'
+                              : '${spent.toStringAsFixed(0)} / ${budget.toStringAsFixed(0)} ${trip.budgetCurrency} spent',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: isOverBudget
+                                    ? Theme.of(context).colorScheme.error
+                                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                                fontWeight: isOverBudget ? FontWeight.w600 : null,
+                              ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(

@@ -1,12 +1,15 @@
 import { Hono } from "hono";
 import User from "../models/userSchema";
+import { requireAuth } from "../middleware/auth";
+import type { AppEnv } from "../types/hono";
 
-export const travelersRoutes = new Hono();
+export const travelersRoutes = new Hono<AppEnv>();
+travelersRoutes.use("*", requireAuth);
 
-travelersRoutes.get("/nearby/:userId", async (c) => {
+travelersRoutes.get("/nearby", async (c) => {
   const radiusKm = Number(c.req.query("radiusKm")) || 50;
   try {
-    const me = await User.findById(c.req.param("userId"));
+    const me = await User.findById(c.get("userId"));
     if (!me) {
       return c.json({ success: false, message: "User not found" }, 404);
     }

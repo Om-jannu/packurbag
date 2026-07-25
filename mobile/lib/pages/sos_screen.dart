@@ -193,27 +193,47 @@ class _SosScreenState extends State<SosScreen> {
   }
 
   void _showAddContactDialog() {
-    String name = '';
-    String phone = '';
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final phonePattern = RegExp(r'^[0-9+\-\s]{7,15}$');
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Add Emergency Contact'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              TextField(
-                decoration: const InputDecoration(labelText: 'Name'),
-                onChanged: (value) => name = value,
-              ),
-              TextField(
-                decoration: const InputDecoration(labelText: 'Phone'),
-                onChanged: (value) => phone = value,
-                keyboardType: const TextInputType.numberWithOptions(),
-              ),
-            ],
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                  textCapitalization: TextCapitalization.words,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter a name';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(labelText: 'Phone'),
+                  keyboardType: const TextInputType.numberWithOptions(),
+                  validator: (value) {
+                    final trimmed = value?.trim() ?? '';
+                    if (trimmed.isEmpty) return 'Please enter a phone number';
+                    if (!phonePattern.hasMatch(trimmed)) {
+                      return 'Enter a valid phone number';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
           ),
           actions: <Widget>[
             TextButton(
@@ -225,8 +245,12 @@ class _SosScreenState extends State<SosScreen> {
             TextButton(
               child: const Text('Save'),
               onPressed: () {
+                if (!formKey.currentState!.validate()) return;
                 setState(() {
-                  _emergencyContacts.add({'name': name, 'phone': phone});
+                  _emergencyContacts.add({
+                    'name': nameController.text.trim(),
+                    'phone': phoneController.text.trim(),
+                  });
                   _saveEmergencyContacts();
                 });
                 Navigator.of(context).pop();
@@ -347,6 +371,7 @@ class _SosScreenState extends State<SosScreen> {
             if (_isCancelled)
               Expanded(
                 child: ReorderableListView(
+                  buildDefaultDragHandles: false,
                   onReorderItem: (oldIndex, newIndex) {
                     setState(() {
                       final item = _emergencyContacts.removeAt(oldIndex);
@@ -360,9 +385,12 @@ class _SosScreenState extends State<SosScreen> {
                       .map(
                         (entry) => ListTile(
                           key: ValueKey(entry.key),
-                          leading: const FaIcon(
-                            FontAwesomeIcons.gripVertical,
-                            size: 15,
+                          leading: ReorderableDragStartListener(
+                            index: entry.key,
+                            child: const FaIcon(
+                              FontAwesomeIcons.gripVertical,
+                              size: 15,
+                            ),
                           ),
                           title: Row(
                             children: [

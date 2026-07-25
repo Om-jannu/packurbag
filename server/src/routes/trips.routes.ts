@@ -1,13 +1,16 @@
 import { Hono } from "hono";
 import User from "../models/userSchema";
+import { requireAuth } from "../middleware/auth";
+import type { AppEnv } from "../types/hono";
 import type { TripBody } from "../types/requests";
 
-export const tripsRoutes = new Hono();
+export const tripsRoutes = new Hono<AppEnv>();
+tripsRoutes.use("*", requireAuth);
 
 // Fetch trips
-tripsRoutes.get("/:userId", async (c) => {
+tripsRoutes.get("/", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     if (!user) {
       return c.json({ success: false, message: "User not found" }, 404);
     }
@@ -19,15 +22,15 @@ tripsRoutes.get("/:userId", async (c) => {
 });
 
 // Add trip
-tripsRoutes.post("/:userId", async (c) => {
-  const { title, destination, startDate, endDate, notes, coverColor, budgetAmount, budgetCurrency } =
+tripsRoutes.post("/", async (c) => {
+  const { title, destination, startDate, endDate, coverColor, budgetAmount, budgetCurrency } =
     await c.req.json<TripBody>();
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     if (!user) {
       return c.json({ success: false, message: "User not found" }, 404);
     }
-    user.trips.push({ title, destination, startDate, endDate, notes, coverColor, budgetAmount, budgetCurrency } as never);
+    user.trips.push({ title, destination, startDate, endDate, coverColor, budgetAmount, budgetCurrency } as never);
     await user.save();
     return c.json({ success: true, message: "Trip added successfully" }, 201);
   } catch (error) {
@@ -37,9 +40,9 @@ tripsRoutes.post("/:userId", async (c) => {
 });
 
 // Edit trip
-tripsRoutes.put("/:userId/:tripId", async (c) => {
+tripsRoutes.put("/:tripId", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     if (!user) {
       return c.json({ success: false, message: "User not found" }, 404);
     }
@@ -57,9 +60,9 @@ tripsRoutes.put("/:userId/:tripId", async (c) => {
 });
 
 // Delete trip
-tripsRoutes.delete("/:userId/:tripId", async (c) => {
+tripsRoutes.delete("/:tripId", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     if (!user) {
       return c.json({ success: false, message: "User not found" }, 404);
     }

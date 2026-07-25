@@ -34,7 +34,7 @@ class Weather {
 }
 
 /// Proxied through the backend so the weather API key never ships in the
-/// client — see server/server.js `/weather`.
+/// client — see server/src/routes/weather.routes.ts.
 class WeatherRepository {
   WeatherRepository(this._client);
 

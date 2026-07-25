@@ -17,14 +17,22 @@ interface PhoneNavBarProps {
   /** Tabs this instance can actually switch to. Others render inert (real, but non-functional). */
   enabled?: NavTab[];
   onSelect?: (tab: NavTab) => void;
+  /** Renders with dark surface colors, e.g. when the Profile mock is previewing dark mode. */
+  dark?: boolean;
 }
 
-export default function PhoneNavBar({ active, enabled = [], onSelect }: PhoneNavBarProps) {
+export default function PhoneNavBar({ active, enabled = [], onSelect, dark = false }: PhoneNavBarProps) {
   return (
-    <div className="flex shrink-0 justify-around border-t border-black/5 bg-white px-1 pb-1 pt-1.5">
+    <div
+      className={`flex shrink-0 justify-around border-t px-1 pb-1 pt-1.5 ${
+        dark ? "border-white/10 bg-[#0f2328]" : "border-black/5 bg-white"
+      }`}
+    >
       {NAV_ITEMS.map(({ tab, icon: Icon, label }) => {
         const isActive = active === tab;
         const isEnabled = enabled.includes(tab);
+        const activeColor = dark ? "text-amber" : "text-teal-dark";
+        const inactiveColor = dark ? "text-white/35" : "text-black/35";
         return (
           <button
             key={tab}
@@ -35,12 +43,8 @@ export default function PhoneNavBar({ active, enabled = [], onSelect }: PhoneNav
               isEnabled ? "cursor-pointer" : "cursor-default"
             }`}
           >
-            <Icon size={14} className={isActive ? "text-teal-dark" : "text-black/35"} />
-            <span
-              className={`text-[6.5px] ${
-                isActive ? "font-bold text-teal-dark" : "font-medium text-black/35"
-              }`}
-            >
+            <Icon size={14} className={isActive ? activeColor : inactiveColor} />
+            <span className={`text-[6.5px] font-medium ${isActive ? `font-bold ${activeColor}` : inactiveColor}`}>
               {label}
             </span>
           </button>

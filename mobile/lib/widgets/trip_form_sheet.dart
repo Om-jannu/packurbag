@@ -7,6 +7,7 @@ import '../data/app_exception.dart';
 import '../models/trip.dart';
 import '../providers/repository_providers.dart';
 import '../providers/trip_providers.dart';
+import '../utils.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/category_color.dart';
 
@@ -38,7 +39,6 @@ class _TripFormSheetState extends ConsumerState<TripFormSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _destinationController;
-  late final TextEditingController _notesController;
   late final TextEditingController _budgetController;
   late final TextEditingController _budgetCurrencyController;
   late DateTime _startDate;
@@ -54,7 +54,6 @@ class _TripFormSheetState extends ConsumerState<TripFormSheet> {
     final editing = widget.tripToEdit;
     _titleController = TextEditingController(text: editing?.title ?? '');
     _destinationController = TextEditingController(text: editing?.destination ?? '');
-    _notesController = TextEditingController(text: editing?.notes ?? '');
     _budgetController =
         TextEditingController(text: editing?.budgetAmount?.toStringAsFixed(0) ?? '');
     _budgetCurrencyController =
@@ -68,7 +67,6 @@ class _TripFormSheetState extends ConsumerState<TripFormSheet> {
   void dispose() {
     _titleController.dispose();
     _destinationController.dispose();
-    _notesController.dispose();
     _budgetController.dispose();
     _budgetCurrencyController.dispose();
     super.dispose();
@@ -121,16 +119,17 @@ class _TripFormSheetState extends ConsumerState<TripFormSheet> {
     final budgetCurrency = _budgetCurrencyController.text.trim().isEmpty
         ? 'INR'
         : _budgetCurrencyController.text.trim().toUpperCase();
+    final title = capitalizeWords(_titleController.text);
+    final destination = capitalizeWords(_destinationController.text);
     try {
       if (_isEditing) {
         await repo.updateTrip(
           userId: widget.userId,
           tripId: widget.tripToEdit!.id,
-          title: _titleController.text.trim(),
-          destination: _destinationController.text.trim(),
+          title: title,
+          destination: destination,
           startDate: _startDate,
           endDate: _endDate,
-          notes: _notesController.text.trim(),
           coverColor: _coverColor.hex,
           budgetAmount: budget,
           budgetCurrency: budgetCurrency,
@@ -138,11 +137,10 @@ class _TripFormSheetState extends ConsumerState<TripFormSheet> {
       } else {
         await repo.addTrip(
           userId: widget.userId,
-          title: _titleController.text.trim(),
-          destination: _destinationController.text.trim(),
+          title: title,
+          destination: destination,
           startDate: _startDate,
           endDate: _endDate,
-          notes: _notesController.text.trim(),
           coverColor: _coverColor.hex,
           budgetAmount: budget,
           budgetCurrency: budgetCurrency,
@@ -241,11 +239,6 @@ class _TripFormSheetState extends ConsumerState<TripFormSheet> {
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                controller: _notesController,
-                label: 'Notes (optional)',
               ),
               const SizedBox(height: 20),
               FilledButton(

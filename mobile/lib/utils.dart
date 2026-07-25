@@ -30,3 +30,13 @@ String formattedDate(String? dateString) {
   return formatter.format(dateTime);
 }
 
+/// Capitalizes the first letter of each word, so freeform input like
+/// "new york trip" is shown as "New York Trip" wherever it's displayed.
+String capitalizeWords(String input) {
+  final trimmed = input.trim();
+  if (trimmed.isEmpty) return trimmed;
+  return trimmed.split(RegExp(r'\s+')).map((word) {
+    return word[0].toUpperCase() + word.substring(1);
+  }).join(' ');
+}
+

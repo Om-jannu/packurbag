@@ -13,7 +13,7 @@ class DiscoveryRepository {
     double? lng,
     bool? isDiscoverable,
   }) async {
-    final response = await _client.put('/users/$userId/location', data: {
+    final response = await _client.put('/users/location', data: {
       'lat': ?lat,
       'lng': ?lng,
       'isDiscoverable': ?isDiscoverable,
@@ -30,7 +30,7 @@ class DiscoveryRepository {
     required String userId,
     double radiusKm = 50,
   }) async {
-    final response = await _client.get('/travelers/nearby/$userId', query: {
+    final response = await _client.get('/travelers/nearby', query: {
       'radiusKm': radiusKm,
     });
     final data = response['data'];

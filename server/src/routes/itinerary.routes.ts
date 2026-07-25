@@ -1,12 +1,15 @@
 import { Hono } from "hono";
 import User from "../models/userSchema";
+import { requireAuth } from "../middleware/auth";
+import type { AppEnv } from "../types/hono";
 import type { CompletedStatusBody, ItineraryItemBody } from "../types/requests";
 
-export const itineraryRoutes = new Hono();
+export const itineraryRoutes = new Hono<AppEnv>();
+itineraryRoutes.use("*", requireAuth);
 
-itineraryRoutes.get("/:userId/:tripId/itinerary", async (c) => {
+itineraryRoutes.get("/:tripId/itinerary", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);
@@ -18,9 +21,9 @@ itineraryRoutes.get("/:userId/:tripId/itinerary", async (c) => {
   }
 });
 
-itineraryRoutes.post("/:userId/:tripId/itinerary", async (c) => {
+itineraryRoutes.post("/:tripId/itinerary", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);
@@ -34,9 +37,9 @@ itineraryRoutes.post("/:userId/:tripId/itinerary", async (c) => {
   }
 });
 
-itineraryRoutes.put("/:userId/:tripId/itinerary/:itemId", async (c) => {
+itineraryRoutes.put("/:tripId/itinerary/:itemId", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);
@@ -54,9 +57,9 @@ itineraryRoutes.put("/:userId/:tripId/itinerary/:itemId", async (c) => {
   }
 });
 
-itineraryRoutes.delete("/:userId/:tripId/itinerary/:itemId", async (c) => {
+itineraryRoutes.delete("/:tripId/itinerary/:itemId", async (c) => {
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);
@@ -74,10 +77,10 @@ itineraryRoutes.delete("/:userId/:tripId/itinerary/:itemId", async (c) => {
   }
 });
 
-itineraryRoutes.put("/:userId/:tripId/itinerary/:itemId/completedStatus", async (c) => {
+itineraryRoutes.put("/:tripId/itinerary/:itemId/completedStatus", async (c) => {
   const { completed } = await c.req.json<CompletedStatusBody>();
   try {
-    const user = await User.findById(c.req.param("userId"));
+    const user = await User.findById(c.get("userId"));
     const trip = user?.trips.id(c.req.param("tripId"));
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);

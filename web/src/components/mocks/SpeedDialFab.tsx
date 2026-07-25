@@ -13,13 +13,13 @@ const OPTIONS: { action: SpeedDialAction; icon: LucideIcon; label: string; dange
 ];
 
 const TOAST_TEXT: Record<SpeedDialAction, string> = {
-  newTrip: "Trip added!",
+  newTrip: "Opening New Trip…",
   currency: "Opening Currency Converter…",
   aiChat: "Opening AI Assistant…",
   sos: "Opening emergency SOS…",
 };
 
-export default function SpeedDialFab({ onAction }: { onAction?: (action: SpeedDialAction) => void }) {
+export default function SpeedDialFab() {
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -32,7 +32,6 @@ export default function SpeedDialFab({ onAction }: { onAction?: (action: SpeedDi
   const handleAction = (action: SpeedDialAction) => {
     setOpen(false);
     setToast(TOAST_TEXT[action]);
-    onAction?.(action);
   };
 
   return (
