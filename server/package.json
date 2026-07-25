@@ -2,25 +2,29 @@
   "name": "server",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.ts",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.5.1",
-    "body-parser": "^1.20.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.18.2",
-    "mongodb": "^6.1.0",
-    "mongoose": "^8.2.2",
-    "nodemon": "^3.0.1",
-    "openai": "^4.11.1",
-    "uuid": "^9.0.1"
+    "@hono/node-server": "^2.0.11",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "hono": "^4.12.32",
+    "mongoose": "^9.8.0",
+    "openai": "^6.49.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
   }
 }

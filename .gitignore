@@ -16,31 +16,51 @@ migrate_working_dir/
 *.iws
 .idea/
 
+# ==========================================================================
+# mobile/ (Flutter app)
+# ==========================================================================
+mobile/.flutter-sdk/
+
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
-#.vscode/
+#mobile/.vscode/
 
 # Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
+mobile/**/doc/api/
+mobile/ios/Flutter/.last_build_id
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
 .pub-cache/
 .pub/
-/build/
+mobile/build/
 
 # Symbolication related
-app.*.symbols
+mobile/app.*.symbols
 
 # Obfuscation related
-app.*.map.json
+mobile/app.*.map.json
 
 # Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+mobile/android/app/debug
+mobile/android/app/profile
+mobile/android/app/release
+
+# ==========================================================================
+# server/ (Node backend)
+# ==========================================================================
+server/node_modules/
+server/.env
+server/dist/
+
+# ==========================================================================
+# web/ (Next.js marketing site)
+# ==========================================================================
+web/node_modules/
+web/.next/
+web/out/
+web/.env*.local
 
 .env

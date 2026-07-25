@@ -1,0 +1,42 @@
+import '../app_exception.dart';
+import '../api_client.dart';
+
+class ExpenseRepository {
+  ExpenseRepository(this._client);
+
+  final ApiClient _client;
+
+  String _base(String userId, String tripId) => '/trips/$userId/$tripId/expenses';
+
+  Future<void> addExpense({
+    required String userId,
+    required String tripId,
+    required String title,
+    required double amount,
+    String currency = 'INR',
+    String category = 'Other',
+    DateTime? date,
+  }) async {
+    final response = await _client.post(_base(userId, tripId), data: {
+      'title': title,
+      'amount': amount,
+      'currency': currency,
+      'category': category,
+      'date': (date ?? DateTime.now()).toIso8601String(),
+    });
+    if (response['success'] == false) {
+      throw AppException(response['message'] as String? ?? 'Error adding expense');
+    }
+  }
+
+  Future<void> deleteExpense({
+    required String userId,
+    required String tripId,
+    required String expenseId,
+  }) async {
+    final response = await _client.delete('${_base(userId, tripId)}/$expenseId');
+    if (response['success'] == false) {
+      throw AppException(response['message'] as String? ?? 'Error deleting expense');
+    }
+  }
+}

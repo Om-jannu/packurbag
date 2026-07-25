@@ -1,124 +1,82 @@
-# Tour Buddy
+# Packurbag
 
-Tour Buddy is a travel support app designed to enhance your travel experience with various features including category-based to-do task lists, currency converter, calculator, language translation, and emergency SOS.
+Packurbag is your travel companion — plan trips with itineraries, packing lists, and budgets, get destination weather, translate on the go, connect with nearby travelers, and reach help fast with emergency SOS.
+
+## Repo layout
+
+This is a monorepo with three independent projects:
+
+```
+mobile/   Flutter app (iOS, Android, web, desktop)
+server/   Node backend (Hono + MongoDB)
+web/      Next.js marketing site
+```
 
 ## Features
 
-- **Category-based To-Do Task List**: Organize your tasks by categories such as sightseeing, dining, accommodation, etc., to stay organized during your travels.
-- **Currency Converter**: Easily convert currencies to help you manage your expenses and budget effectively in different countries.
-- **Calculator**: Perform quick calculations while on the go, whether it's budgeting or splitting bills with friends.
-- **Language Translation**: Overcome language barriers with built-in translation features, helping you communicate effectively in foreign countries.
-- **Emergency SOS**: Access emergency assistance quickly with the SOS feature, providing peace of mind during your travels.
+- **Trips**: plan trips with destinations, dates, notes, and a budget
+- **Itinerary**: day-by-day activities per trip, with priority and location
+- **Packing lists**: checklists with quick-apply templates (Beach, Hiking, Business, General)
+- **Budget tracking**: log expenses in any currency, converted automatically
+- **Travel documents vault**: passport/visa/ticket/insurance references, stored only on-device
+- **Destination weather** and a **home currency snapshot** on the dashboard
+- **Nearby Travelers**: opt-in geolocation discovery of other registered travelers, with 1:1 chat
+- **AI Travel Assistant**: destination-aware trip advice
+- **Currency Converter** and **Language Translation**
+- **Emergency SOS**: countdown, slide-to-cancel, auto-dial + location-sharing SMS to your emergency contact
 
-## Installation
+## Getting started
 
-1. Clone the repository:
+### Backend (`server/`)
 
-   ```bash
-   git clone https://github.com/Om-jannu/packurbag.git
-   ```
+```bash
+cd server
+npm install
+```
 
-2. Navigate into the project directory:
-
-   ```bash
-   cd packurbag
-   ```
-
-3. Install dependencies for flutter:
-   ```bash
-   flutter pub get
-   ```
-4. Install dependencies for server:
-
-   ```bash
-   cd server
-   ```
-
-   ```bash
-   npm install
-   ```
-
-## Usage
-
-### Server Setup (Step 1.):
-
-1. Create `.env` file inside the server diretory and add :
-   (**Note: use appropriate mongo url**)
+Create a `.env` file in `server/`:
 
 ```
-MONGO_URL="mongodb+srv://<username>:<password>@beyondthebasics.abcde.mongodb.net/test"
+MONGO_URL="mongodb+srv://<username>:<password>@<cluster>.mongodb.net/packurbag"
 PORT=5000
+OPEN_EXCHANGE_RATES_APP_ID=""
+OPENAI_API_KEY=""
+WEATHER_API_KEY=""
 ```
 
-1. Run server:
+The last three are optional — currency conversion, the AI Travel Assistant, and destination weather each degrade gracefully with a clear "not configured" message if their key is missing.
+
+Run it:
 
 ```bash
 npm run dev
 ```
 
-Here's a guide for setting up Ngrok and starting port forwarding:
+### Mobile app (`mobile/`)
 
-### Ngrok Setup & Installation  (Step 2):
+The project pins its own Flutter SDK as a git worktree at `mobile/.flutter-sdk` so builds are reproducible regardless of what Flutter version you have installed globally.
 
-1. **Download Ngrok**:
-
-   - Go to the [Ngrok website](https://ngrok.com/) and sign up for an account if you haven't already.
-   - Download the Ngrok executable suitable for your operating system.
-   
-2. **Start Port Forwarding**:
-   - Open a terminal or command prompt window.
-   - To start port forwarding, run the following command:
-     ```
-     ngrok http 5000
-     ```
-     This command starts forwarding traffic from Ngrok's randomly generated public URL to your local server running on port 5000.
-3. **Copy the public URL**.
-
-`Note: if ngrok command doesn't work on cmd prompt, try running with admin privileges or sudo privileges`
-
-### Flutter Setup  (Step 3.):
-
-1. Choose an android emulator
-2. Change **serverIp** in `lib/main.dart` file
-```
-const serverIp = "<ngrok-public-url>";
-example : https://cb4f-103-xxx-xxx-122.ngrok-free.app;
-```
-3. Run Command
-```
-flutter pub get
-flutter run
+```bash
+cd mobile
+./.flutter-sdk/bin/flutter pub get
+./.flutter-sdk/bin/flutter run -d chrome
 ```
 
-## Screenshots
+Point it at a different backend (e.g. a real device hitting a local server via ngrok) with:
 
-##### 1. QuickActions, Login & Register
+```bash
+./.flutter-sdk/bin/flutter run --dart-define=API_BASE_URL=https://your-server
+```
 
-![ QuickActions, Login & Register](/assets/readme-assets/1.png)
+### Marketing site (`web/`)
 
-##### 2. Home & AddTodo
-
-![Home & AddTodo](/assets/readme-assets/2.png)
-
-##### 3. Category, Todolist & Translation
-
-![ Category, Todolist & Translation](/assets/readme-assets/3.png)
-
-##### 4. Bluetooth Screens
-
-![Bluetooth Screens](/assets/readme-assets/4.png)
-
-##### 5. Calculator, Currency Converter & Profile
-
-![Calculator, Currency Converter & Profile](/assets/readme-assets/5.png)
-
-##### 6. Emergency SOS Page
-
-![Emergency SOS Page](/assets/readme-assets/6.png)
+```bash
+cd web
+npm install
+npm run dev
+```
 
 ## Contributing
-
-If you'd like to contribute to this project, please follow these guidelines:
 
 1. Fork the repository.
 2. Create a new branch (`git checkout -b feature`)

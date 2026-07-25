@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0b2530;
+
+  /* Brand palette, sampled directly from the Packurbag logo. */
+  --color-teal: #075e72;
+  --color-teal-dark: #043a47;
+  --color-amber: #f9a624;
+  --color-coral: #ef533a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-teal: var(--color-teal);
+  --color-teal-dark: var(--color-teal-dark);
+  --color-amber: var(--color-amber);
+  --color-coral: var(--color-coral);
+  --font-sans: var(--font-plus-jakarta);
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-alt: float-alt 7s ease-in-out infinite;
+  --animate-fade-in: fadeIn 0.4s ease-out both;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--float-rotate, 0deg));
+  }
+  50% {
+    transform: translateY(-16px) rotate(var(--float-rotate, 0deg));
+  }
+}
+
+@keyframes float-alt {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--float-rotate, 0deg));
+  }
+  50% {
+    transform: translateY(12px) rotate(var(--float-rotate, 0deg));
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
