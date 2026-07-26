@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { openai } from "../lib/openai";
+import { groq, GROQ_MODEL } from "../lib/groq";
 import { requireAuth } from "../middleware/auth";
 import type { AppEnv } from "../types/hono";
 import type { AiChatBody } from "../types/requests";
@@ -7,10 +7,10 @@ import type { AiChatBody } from "../types/requests";
 export const aiRoutes = new Hono<AppEnv>();
 aiRoutes.use("*", requireAuth);
 
-// Proxies OpenAI so the API key never ships in the client app. Framed as a
+// Proxies Groq so the API key never ships in the client app. Framed as a
 // travel assistant; the client may pass the active trip's destination as context.
 aiRoutes.post("/chat", async (c) => {
-  if (!openai) {
+  if (!groq) {
     return c.json({ success: false, message: "AI chat is not configured on this server" }, 503);
   }
 
@@ -30,8 +30,8 @@ aiRoutes.post("/chat", async (c) => {
       { role: "user" as const, content: message },
     ];
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    const completion = await groq.chat.completions.create({
+      model: GROQ_MODEL,
       messages,
     });
 
@@ -40,7 +40,7 @@ aiRoutes.post("/chat", async (c) => {
       message: completion.choices[0]?.message?.content ?? "",
     });
   } catch (error) {
-    console.error("Error calling OpenAI:", error);
+    console.error("Error calling Groq:", error);
     return c.json({ success: false, message: "AI chat request failed" }, 500);
   }
 });

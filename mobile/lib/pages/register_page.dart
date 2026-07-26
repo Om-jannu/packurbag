@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../components/global_snackbar.dart';
 import '../data/app_exception.dart';
 import '../providers/auth_provider.dart';
+import '../theme/app_theme.dart';
 import '../widgets/app_text_field.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
@@ -59,76 +61,105 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create account')),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(8, 12, 16, 12),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppTheme.borderMuted(context))),
+              ),
+              child: Row(
                 children: [
-                  const SizedBox(height: 8),
+                  IconButton(
+                    icon: Icon(LucideIcons.arrowLeft, size: 20, color: AppTheme.textPrimary(context)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                   Text(
-                    'Create your account',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                  const SizedBox(height: 32),
-                  AppTextField(
-                    controller: _usernameController,
-                    label: 'Username',
-                    prefixIcon: Icons.person_outline,
-                    textInputAction: TextInputAction.next,
-                    validator: (value) =>
-                        Validators.required(value, field: 'Username'),
-                  ),
-                  const SizedBox(height: 16),
-                  AppTextField(
-                    controller: _emailController,
-                    label: 'Email',
-                    keyboardType: TextInputType.emailAddress,
-                    prefixIcon: Icons.email_outlined,
-                    textInputAction: TextInputAction.next,
-                    validator: Validators.email,
-                  ),
-                  const SizedBox(height: 16),
-                  AppTextField(
-                    controller: _passwordController,
-                    label: 'Password',
-                    obscureText: true,
-                    prefixIcon: Icons.lock_outline,
-                    textInputAction: TextInputAction.next,
-                    validator: (value) =>
-                        Validators.minLength(value, 5, field: 'Password'),
-                  ),
-                  const SizedBox(height: 16),
-                  AppTextField(
-                    controller: _confirmPasswordController,
-                    label: 'Confirm password',
-                    obscureText: true,
-                    prefixIcon: Icons.lock_outline,
-                    textInputAction: TextInputAction.done,
-                    validator: (value) =>
-                        Validators.required(value, field: 'Confirm password'),
-                  ),
-                  const SizedBox(height: 32),
-                  FilledButton(
-                    onPressed: _isSubmitting ? null : _register,
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Register'),
+                    'Create account',
+                    style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
                   ),
                 ],
               ),
             ),
-          ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Create your account',
+                        style: AppTextStyles.display(color: AppTheme.textPrimary(context)),
+                      ),
+                      const SizedBox(height: 24),
+                      AppTextField(
+                        controller: _usernameController,
+                        label: 'Username',
+                        prefixIcon: LucideIcons.user,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) =>
+                            Validators.required(value, field: 'Username'),
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        controller: _emailController,
+                        label: 'Email',
+                        keyboardType: TextInputType.emailAddress,
+                        prefixIcon: LucideIcons.mail,
+                        textInputAction: TextInputAction.next,
+                        validator: Validators.email,
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        controller: _passwordController,
+                        label: 'Password',
+                        obscureText: true,
+                        showVisibilityToggle: true,
+                        prefixIcon: LucideIcons.lock,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) =>
+                            Validators.minLength(value, 5, field: 'Password'),
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        controller: _confirmPasswordController,
+                        label: 'Confirm password',
+                        obscureText: true,
+                        showVisibilityToggle: true,
+                        prefixIcon: LucideIcons.lock,
+                        textInputAction: TextInputAction.done,
+                        validator: (value) =>
+                            Validators.required(value, field: 'Confirm password'),
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.accentStrong(context),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                          ),
+                        ),
+                        onPressed: _isSubmitting ? null : _register,
+                        child: _isSubmitting
+                            ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: AppTheme.onAccentStrong(context)),
+                              )
+                            : Text('Register',
+                                style: AppTextStyles.bodyBold(color: AppTheme.onAccentStrong(context))),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

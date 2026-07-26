@@ -18,6 +18,89 @@ class AppTheme {
   static const amber = _amberSeed;
   static const coral = _coralSeed;
 
+  /// Corner radii matching the design reference's flat card language
+  /// (Tailwind's rounded-2xl / rounded-xl), used directly by widgets instead
+  /// of the Material [CardThemeData] so surfaces read as flat tinted blocks
+  /// rather than elevated Material cards.
+  static const radiusLg = 16.0;
+  static const radiusMd = 12.0;
+
+  /// A faint tinted surface for grouped content (trip cards, stat tiles,
+  /// calendar, quick actions) — the design reference's `bg-black/[0.03]` in
+  /// light mode, `bg-white/[0.06]` in dark mode.
+  static Color surfaceMuted(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.03);
+  }
+
+  /// A slightly stronger tint for interactive surfaces (inputs, pills) — the
+  /// design reference's `bg-black/[0.04]`/`bg-black/[0.05]`.
+  static Color surfaceInput(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.04);
+  }
+
+  /// Hairline dividers/borders — the design reference's `border-black/5`.
+  static Color borderMuted(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark
+        ? Colors.white.withValues(alpha: 0.1)
+        : Colors.black.withValues(alpha: 0.05);
+  }
+
+  /// Primary heading color — flat brand teal-dark rather than a Material
+  /// tonal surface color, matching every mock's `text-teal-dark`.
+  static Color textPrimary(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? Colors.white : tealDark;
+  }
+
+  /// Muted secondary/caption text — the design reference's `text-black/40`
+  /// (light) / `text-white/40` (dark) — ProfileMock.tsx uses the *same*
+  /// opacity value in both themes, so [opacity] applies unscaled to either.
+  static Color textMuted(BuildContext context, {double opacity = 0.5}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark
+        ? Colors.white.withValues(alpha: opacity)
+        : Colors.black.withValues(alpha: opacity);
+  }
+
+  /// Dark mode swaps the teal accent for amber — teal reads poorly against
+  /// the dark navy background (`#0F2328` sits close in luminosity to
+  /// teal-dark). Mirrors ProfileMock.tsx's `accent = isDark ? "text-amber"
+  /// : "text-teal"`, used here for every interactive brand accent across
+  /// the app (icons on tinted circles, selected states, links).
+  static Color accent(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? amber : teal;
+  }
+
+  /// Same swap for elements whose light-mode color is teal-dark rather than
+  /// teal — solid CTA/FAB backgrounds and the nav bar's active state.
+  /// Mirrors PhoneNavBar.tsx's dark `activeColor = "text-amber"`.
+  static Color accentStrong(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? amber : tealDark;
+  }
+
+  /// The foreground color to pair with [accentStrong] — white text/icons
+  /// read fine on a teal-dark background (light mode), but need to flip to
+  /// a dark ink once that background becomes amber (dark mode).
+  static Color onAccentStrong(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? tealDark : Colors.white;
+  }
+
+  /// A flat, borderless tinted container decoration — the reusable
+  /// `rounded-2xl bg-black/[0.03]` card look used throughout every mock.
+  static BoxDecoration flatCard(BuildContext context, {double radius = radiusLg, Color? color}) {
+    return BoxDecoration(
+      color: color ?? surfaceMuted(context),
+      borderRadius: BorderRadius.circular(radius),
+    );
+  }
+
   static ThemeData light() => _themeFrom(Brightness.light);
   static ThemeData dark() => _themeFrom(Brightness.dark);
 
@@ -49,10 +132,12 @@ class AppTheme {
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.surface,
+      // The design reference uses a flat literal white/near-black background
+      // on every screen, not Material's seed-tinted `colorScheme.surface`.
+      scaffoldBackgroundColor: brightness == Brightness.dark ? const Color(0xFF0F2328) : Colors.white,
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: brightness == Brightness.dark ? const Color(0xFF0F2328) : Colors.white,
         foregroundColor: colorScheme.onSurface,
         surfaceTintColor: colorScheme.surfaceTint,
         elevation: 0,
@@ -158,4 +243,43 @@ class AppTheme {
       ),
     );
   }
+}
+
+/// Semantic type scale matching the design reference's typographic
+/// hierarchy (Plus Jakarta Sans throughout), sized up from the reference's
+/// phone-mock proportions to real device density. Screens ported from the
+/// design reference use these directly instead of Material's default
+/// [TextTheme] slots, whose sizes run larger and don't match the reference.
+class AppTextStyles {
+  AppTextStyles._();
+
+  static TextStyle _f(double size, FontWeight weight, {Color? color, double? height}) =>
+      GoogleFonts.plusJakartaSans(fontSize: size, fontWeight: weight, color: color, height: height);
+
+  /// Splash brand name, "Welcome back", "Create your account".
+  static TextStyle display({Color? color}) => _f(22, FontWeight.w800, color: color);
+
+  /// Custom thin app-bar titles, trip/card titles.
+  static TextStyle appBarTitle({Color? color}) => _f(18, FontWeight.w800, color: color);
+
+  /// Section headers ("Trip calendar", "Quick actions").
+  static TextStyle sectionTitle({Color? color}) => _f(15, FontWeight.w800, color: color);
+
+  /// Default readable body text (list rows, input text).
+  static TextStyle body({Color? color, FontWeight weight = FontWeight.w500}) => _f(15, weight, color: color);
+
+  /// Buttons and other bold body-sized text.
+  static TextStyle bodyBold({Color? color}) => _f(15, FontWeight.w700, color: color);
+
+  /// Secondary labels — destination lines, dates, field labels.
+  static TextStyle label({Color? color, FontWeight weight = FontWeight.w600}) => _f(13, weight, color: color);
+
+  /// Muted captions and helper text.
+  static TextStyle caption({Color? color}) => _f(12, FontWeight.w500, color: color);
+
+  /// Small pill/badge text (status chips, tags).
+  static TextStyle tag({Color? color}) => _f(11, FontWeight.w700, color: color, height: 1.2);
+
+  /// Tiniest labels — nav bar labels, calendar day numbers, stat sub-labels.
+  static TextStyle micro({Color? color, FontWeight weight = FontWeight.w600}) => _f(10, weight, color: color);
 }

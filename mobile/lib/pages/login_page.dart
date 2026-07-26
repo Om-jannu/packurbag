@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lottie/lottie.dart';
 
 import '../components/global_snackbar.dart';
 import '../providers/auth_provider.dart';
+import '../theme/app_theme.dart';
 import '../widgets/app_text_field.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -18,7 +19,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _userEmailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isPasswordVisible = false;
   bool _isSubmitting = false;
 
   @override
@@ -52,89 +52,86 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: SingleChildScrollView(
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Lottie.asset(
-                      height: 260,
-                      'assets/animations/login.json',
+                  const SizedBox(height: 48),
+                  Container(
+                    height: 168,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent(context).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
                     ),
+                    alignment: Alignment.center,
+                    child: Image.asset('assets/packurbag-logo.png', width: 66, height: 66),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   Text(
                     'Welcome back',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                    style: AppTextStyles.display(color: AppTheme.textPrimary(context)),
                   ),
                   const SizedBox(height: 32),
                   AppTextField(
                     controller: _userEmailController,
                     label: 'Email',
                     keyboardType: TextInputType.emailAddress,
-                    prefixIcon: Icons.email_outlined,
+                    prefixIcon: LucideIcons.mail,
                     textInputAction: TextInputAction.next,
                     validator: Validators.email,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   AppTextField(
                     controller: _passwordController,
                     label: 'Password',
-                    obscureText: !_isPasswordVisible,
-                    prefixIcon: Icons.lock_outline,
+                    obscureText: true,
+                    showVisibilityToggle: true,
+                    prefixIcon: LucideIcons.lock,
                     textInputAction: TextInputAction.done,
                     validator: (value) =>
                         Validators.required(value, field: 'Password'),
                   ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: () => setState(
-                          () => _isPasswordVisible = !_isPasswordVisible),
-                      icon: Icon(
-                        _isPasswordVisible
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        size: 18,
-                      ),
-                      label: Text(_isPasswordVisible ? 'Hide' : 'Show'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.accentStrong(context),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                      ),
+                    ),
                     onPressed: _isSubmitting ? null : _signIn,
                     child: _isSubmitting
-                        ? const SizedBox(
+                        ? SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: AppTheme.onAccentStrong(context)),
                           )
-                        : const Text('Sign In'),
+                        : Text('Sign In',
+                            style: AppTextStyles.bodyBold(color: AppTheme.onAccentStrong(context))),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Don't have an account?",
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                        "Don't have an account? ",
+                        style: AppTextStyles.caption(color: AppTheme.textMuted(context)),
                       ),
-                      TextButton(
-                        onPressed: () => context.push('/register'),
-                        child: const Text('Register'),
+                      GestureDetector(
+                        onTap: () => context.push('/register'),
+                        child: Text(
+                          'Register',
+                          style: AppTextStyles.caption(color: AppTheme.accent(context)).copyWith(fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../data/api_client.dart';
+import '../theme/app_theme.dart';
 
 class ConversionCard extends StatefulWidget {
   final Map<String, double> rates;
@@ -59,51 +61,94 @@ class _ConversionCardState extends State<ConversionCard> {
           builder: (BuildContext context, StateSetter setState) {
             return SizedBox(
               height: MediaQuery.of(context).size.height * 0.7,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: TextField(
-                      decoration: const InputDecoration(
-                        hintText: 'Search currencies',
-                        prefixIcon: Icon(Icons.search),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppTheme.surfaceInput(context),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: TextField(
+                              autofocus: true,
+                              style: AppTextStyles.body(color: AppTheme.textPrimary(context)),
+                              decoration: InputDecoration(
+                                hintText: 'Search currencies',
+                                hintStyle: AppTextStyles.body(color: AppTheme.textMuted(context)),
+                                prefixIcon: Icon(LucideIcons.search, size: 18, color: AppTheme.textMuted(context)),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  searchQuery = value.toLowerCase();
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(LucideIcons.x, size: 18, color: AppTheme.textMuted(context, opacity: 0.4)),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: widget.currencies.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          String currencyCode =
+                              widget.currencies.keys.elementAt(index);
+                          String currencyName = widget.currencies[currencyCode]!;
+
+                          // Filter currencies based on search query
+                          if (searchQuery != null &&
+                              !currencyCode
+                                  .toLowerCase()
+                                  .contains(searchQuery!) &&
+                              !currencyName
+                                  .toLowerCase()
+                                  .contains(searchQuery!)) {
+                            return Container();
+                          }
+
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                            title: Row(
+                              children: [
+                                Text(
+                                  currencyCode,
+                                  style: AppTextStyles.label(
+                                    color: AppTheme.textPrimary(context),
+                                    weight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    currencyName,
+                                    style: AppTextStyles.caption(color: AppTheme.textMuted(context)),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            onTap: () {
+                              Navigator.pop(context, currencyCode);
+                            },
+                          );
+                        },
                       ),
-                      onChanged: (value) {
-                        setState(() {
-                          searchQuery = value.toLowerCase();
-                        });
-                      },
                     ),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: widget.currencies.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        String currencyCode =
-                            widget.currencies.keys.elementAt(index);
-                        String currencyName = widget.currencies[currencyCode]!;
-
-                        // Filter currencies based on search query
-                        if (searchQuery != null &&
-                            !currencyCode
-                                .toLowerCase()
-                                .contains(searchQuery!) &&
-                            !currencyName
-                                .toLowerCase()
-                                .contains(searchQuery!)) {
-                          return Container();
-                        }
-
-                        return ListTile(
-                          title: Text('$currencyCode - $currencyName'),
-                          onTap: () {
-                            Navigator.pop(context, currencyCode);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -149,14 +194,33 @@ class _ConversionCardState extends State<ConversionCard> {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            'Amount',
+            style: AppTextStyles.caption(color: AppTheme.textMuted(context)).copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
           TextFormField(
             key: formFieldKey,
             controller: amountController,
-            decoration: const InputDecoration(
+            style: AppTextStyles.body(weight: FontWeight.w700, color: AppTheme.textPrimary(context)),
+            decoration: InputDecoration(
               hintText: 'Enter Amount',
-              border: OutlineInputBorder(),
-              labelText: 'Amount',
+              filled: false,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                borderSide: BorderSide(color: AppTheme.borderMuted(context)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                borderSide: BorderSide(color: AppTheme.borderMuted(context)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                borderSide: BorderSide(color: AppTheme.accent(context), width: 1.5),
+              ),
             ),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             validator: (value) {
@@ -187,16 +251,28 @@ class _ConversionCardState extends State<ConversionCard> {
                   },
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.swap_vert),
-                onPressed: () {
+              const SizedBox(width: 8),
+              InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: () {
                   swapCurrencies();
                   if (amountController.text.trim().isEmpty) return;
                   if (formFieldKey.currentState?.validate() ?? false) {
                     convertAndDisplay();
                   }
                 },
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppTheme.borderMuted(context),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(LucideIcons.arrowUpDown, size: 16, color: AppTheme.textPrimary(context)),
+                ),
               ),
+              const SizedBox(width: 8),
               Expanded(
                 child: DropdownRow(
                   label: 'To:',
@@ -211,6 +287,15 @@ class _ConversionCardState extends State<ConversionCard> {
           ),
           const SizedBox(height: 20),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentStrong(context),
+              foregroundColor: AppTheme.onAccentStrong(context),
+              elevation: 0,
+              minimumSize: const Size.fromHeight(52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              ),
+            ),
             onPressed: () {
               if (formFieldKey.currentState!.validate()) {
                 startLoading();
@@ -219,16 +304,20 @@ class _ConversionCardState extends State<ConversionCard> {
               }
             },
             child: isLoading
-                ? const CircularProgressIndicator()
-                : const Text('Convert'),
+                ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppTheme.onAccentStrong(context)),
+                  )
+                : Text('Convert', style: AppTextStyles.bodyBold(color: AppTheme.onAccentStrong(context))),
           ),
           const SizedBox(height: 20),
           Text(
             conversion,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
             textAlign: TextAlign.center,
           ),
-          const Spacer(),
         ],
       ),
     );
@@ -251,28 +340,25 @@ class DropdownRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: InkWell(
-            onTap: () {
-              onChanged(value);
-            },
-            child: InputDecorator(
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(value),
-                  const Icon(Icons.arrow_drop_down),
-                ],
-              ),
-            ),
-          ),
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+      onTap: () {
+        onChanged(value);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+          border: Border.all(color: AppTheme.borderMuted(context)),
         ),
-      ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(value, style: AppTextStyles.bodyBold(color: AppTheme.textPrimary(context))),
+            Icon(LucideIcons.chevronDown, size: 18, color: AppTheme.textMuted(context)),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -363,36 +449,60 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: const Text('Currency Converter'),
-      ),
-      body: FutureBuilder<RatesModel>(
-        future: ratesModel,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          } else {
-            return FutureBuilder<Map>(
-              future: currenciesModel,
-              builder: (context, index) {
-                if (index.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                } else if (index.hasError) {
-                  return Center(child: Text('Error: ${index.error}'));
-                } else {
-                  return ConversionCard(
-                    rates: snapshot.data!.rates,
-                    currencies: index.data!,
-                  );
-                }
-              },
-            );
-          }
-        },
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(8, 12, 16, 12),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppTheme.borderMuted(context))),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(LucideIcons.arrowLeft, size: 20, color: AppTheme.textPrimary(context)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  Text(
+                    'Currency Converter',
+                    style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: FutureBuilder<RatesModel>(
+                future: ratesModel,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  } else {
+                    return FutureBuilder<Map>(
+                      future: currenciesModel,
+                      builder: (context, index) {
+                        if (index.connectionState == ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        } else if (index.hasError) {
+                          return Center(child: Text('Error: ${index.error}'));
+                        } else {
+                          return ConversionCard(
+                            rates: snapshot.data!.rates,
+                            currencies: index.data!,
+                          );
+                        }
+                      },
+                    );
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

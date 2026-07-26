@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -191,7 +192,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: _pickPhoto,
-                icon: const Icon(Icons.photo_camera_outlined),
+                icon: const Icon(LucideIcons.camera),
                 label: Text(_newPhoto == null ? 'Attach photo (optional)' : 'New photo selected'),
               ),
               if (_newPhoto != null && !kIsWeb) ...[
@@ -214,7 +215,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                     foregroundColor: Theme.of(context).colorScheme.error,
                   ),
                   onPressed: _isSubmitting ? null : _delete,
-                  icon: const Icon(Icons.delete_outline),
+                  icon: const Icon(LucideIcons.trash2),
                   label: const Text('Delete document'),
                 ),
                 const SizedBox(height: 12),

@@ -45,5 +45,13 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Packurbag uses the microphone for voice input in the translator and AI assistant.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Packurbag uses your location to find nearby travelers and to share your location during an SOS alert.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Packurbag needs photo library access so you can attach a photo to a travel document.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Packurbag uses speech recognition to convert your voice to text in the translator.</string>
 </dict>
 </plist>

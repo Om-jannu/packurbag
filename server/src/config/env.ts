@@ -14,7 +14,7 @@ export const env = {
   mongoUrl: required("MONGO_URL"),
   jwtSecret: required("JWT_SECRET"),
   openExchangeRatesAppId: process.env.OPEN_EXCHANGE_RATES_APP_ID,
-  openaiApiKey: process.env.OPENAI_API_KEY,
+  groqApiKey: process.env.GROQ_API_KEY,
   weatherApiKey: process.env.WEATHER_API_KEY,
 };
 

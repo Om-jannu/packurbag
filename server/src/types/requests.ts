@@ -65,6 +65,12 @@ export interface AiChatBody {
   destination?: string;
 }
 
+export interface TranslateBody {
+  text: string;
+  from: string;
+  to: string;
+}
+
 export interface OpenWeatherResponse {
   message?: string;
   main?: { temp: number; feels_like: number };

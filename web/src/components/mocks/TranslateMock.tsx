@@ -1,10 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeftRight, Mic, MicOff, X } from "lucide-react";
+import { ArrowLeftRight, Mic, MicOff, Search, Volume2, X } from "lucide-react";
 import PhoneNavBar, { type NavTab } from "./PhoneNavBar";
 
-const LANGUAGES = ["English", "French", "Spanish", "Hindi", "Japanese", "German"];
+const LANGUAGES = [
+  "English",
+  "French",
+  "Spanish",
+  "Hindi",
+  "Japanese",
+  "German",
+  "Italian",
+  "Portuguese",
+  "Arabic",
+  "Korean",
+];
 
 const CANNED_TRANSLATIONS: Record<string, string> = {
   French: "Où est l'hôtel le plus proche ?",
@@ -26,6 +37,8 @@ export default function TranslateMock({ onNavigate }: TranslateMockProps) {
   const [input, setInput] = useState("Where is the nearest hotel?");
   const [output, setOutput] = useState(CANNED_TRANSLATIONS.French);
   const [listening, setListening] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [search, setSearch] = useState("");
 
   const swap = () => {
     setSource(target);
@@ -36,6 +49,18 @@ export default function TranslateMock({ onNavigate }: TranslateMockProps) {
   const translate = () => {
     setOutput(CANNED_TRANSLATIONS[target] ?? input);
   };
+
+  // Playback is a deliberate tap now — the app used to speak the result
+  // automatically the moment it arrived, but the user should stay in
+  // control of when audio plays.
+  const speak = () => {
+    setSpeaking(true);
+    setTimeout(() => setSpeaking(false), 1200);
+  };
+
+  const filteredLanguages = LANGUAGES.filter((lang) =>
+    lang.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="flex h-full flex-col bg-white text-[11px]">
@@ -87,10 +112,22 @@ export default function TranslateMock({ onNavigate }: TranslateMockProps) {
 
           {output && (
             <div className="mt-3 rounded-2xl bg-black/[0.03] p-2.5">
-              <p className="mb-1 text-[8px] font-bold uppercase tracking-wide text-black/40">
-                Translated text
-              </p>
-              <p className="text-[10.5px] font-medium text-teal-dark">{output}</p>
+              <div className="flex items-center justify-between">
+                <p className="text-[8px] font-bold uppercase tracking-wide text-black/40">
+                  Translated text
+                </p>
+                <button
+                  type="button"
+                  onClick={speak}
+                  className="relative flex h-6 w-6 items-center justify-center rounded-full text-teal"
+                >
+                  {speaking && (
+                    <span className="absolute inset-0 animate-ping rounded-full bg-teal/20" />
+                  )}
+                  <Volume2 size={13} />
+                </button>
+              </div>
+              <p className="mt-1 text-[10.5px] font-medium text-teal-dark">{output}</p>
             </div>
           )}
         </div>
@@ -99,12 +136,28 @@ export default function TranslateMock({ onNavigate }: TranslateMockProps) {
           <div className="absolute inset-0 z-30 flex flex-col bg-white">
             <div className="flex items-center justify-between border-b border-black/5 px-3 py-2.5">
               <span className="text-[10px] font-bold text-teal-dark">Choose a language</span>
-              <button type="button" onClick={() => setPicking(null)}>
+              <button
+                type="button"
+                onClick={() => {
+                  setPicking(null);
+                  setSearch("");
+                }}
+              >
                 <X size={14} className="text-black/40" />
               </button>
             </div>
+            <div className="flex items-center gap-2 border-b border-black/5 px-3 py-2.5">
+              <Search size={13} className="text-black/40" />
+              <input
+                autoFocus
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search language"
+                className="w-full bg-transparent text-[10.5px] text-teal-dark outline-none placeholder:text-black/35"
+              />
+            </div>
             <div className="flex-1 overflow-y-auto">
-              {LANGUAGES.map((lang) => (
+              {filteredLanguages.map((lang) => (
                 <button
                   key={lang}
                   type="button"
@@ -112,6 +165,7 @@ export default function TranslateMock({ onNavigate }: TranslateMockProps) {
                     if (picking === "source") setSource(lang);
                     else setTarget(lang);
                     setPicking(null);
+                    setSearch("");
                     setOutput("");
                   }}
                   className="flex w-full items-center px-4 py-2.5 text-left text-[10.5px] font-medium text-teal-dark hover:bg-black/[0.03]"

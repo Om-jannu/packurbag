@@ -102,8 +102,9 @@ export default function StatusPage() {
 
         <p className="mt-6 text-xs text-black/40">
           Auto-refreshes every 30 seconds. This page checks{" "}
-          <code className="text-black/50">GET {API_BASE_URL}/health</code> directly from your
-          browser.
+          <code className="text-black/50">GET {API_BASE_URL}/health</code>, proxied through this
+          site&apos;s own server so ad blockers and privacy shields don&apos;t flag the
+          cross-origin request as tracking.
         </p>
       </div>
       <Footer />

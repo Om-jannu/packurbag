@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  ArrowLeft,
   TriangleAlert,
   X,
   UserPlus,
@@ -89,6 +90,7 @@ export default function SosMock() {
   return (
     <div className="flex h-full flex-col bg-white text-[11px]">
       <div className="flex items-center gap-2 border-b border-black/5 px-4 pb-3 pt-9">
+        <ArrowLeft size={15} className="text-teal-dark" />
         <TriangleAlert size={15} className="text-red-500" />
         <span className="text-[12px] font-extrabold text-teal-dark">Emergency SOS</span>
       </div>

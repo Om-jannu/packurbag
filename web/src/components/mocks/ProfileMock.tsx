@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UserCircle, Mail, Mic, LogOut } from "lucide-react";
+import { UserCircle, Mail, Mic, MapPin, Image, LogOut } from "lucide-react";
 import PhoneNavBar, { type NavTab } from "./PhoneNavBar";
 import SpeedDialFab from "./SpeedDialFab";
 
@@ -11,9 +11,15 @@ interface ProfileMockProps {
   onNavigate?: (tab: NavTab) => void;
 }
 
+const PERMISSIONS = [
+  { key: "microphone", label: "Microphone", icon: Mic },
+  { key: "location", label: "Location", icon: MapPin },
+  { key: "photos", label: "Photos", icon: Image },
+] as const;
+
 export default function ProfileMock({ onNavigate }: ProfileMockProps) {
   const [theme, setTheme] = useState<ThemeChoice>("system");
-  const [micGranted, setMicGranted] = useState(false);
+  const [grantedPermissions, setGrantedPermissions] = useState<Set<string>>(new Set());
 
   // "system" previews as light — there's no ambient OS preference to read in a static mock.
   const isDark = theme === "dark";
@@ -87,21 +93,31 @@ export default function ProfileMock({ onNavigate }: ProfileMockProps) {
           <p className={`mt-4 text-[9px] font-bold uppercase tracking-wide ${sectionLabel}`}>
             Permissions
           </p>
-          <div className={`mt-1.5 flex items-center justify-between rounded-2xl px-3 py-2.5 ${card}`}>
-            <div className="flex items-center gap-2">
-              <Mic size={14} className={iconMuted} />
-              <span className={`text-[10px] font-medium ${primaryText}`}>Microphone</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setMicGranted(true)}
-              disabled={micGranted}
-              className={`rounded-full px-2.5 py-1 text-[8px] font-bold ${accent} ${
-                micGranted ? "" : isDark ? "bg-amber/10" : "bg-teal/10"
-              }`}
-            >
-              {micGranted ? "Granted" : "Request"}
-            </button>
+          <div className="mt-1.5 space-y-1.5">
+            {PERMISSIONS.map(({ key, label, icon: Icon }) => {
+              const granted = grantedPermissions.has(key);
+              return (
+                <div
+                  key={key}
+                  className={`flex items-center justify-between rounded-2xl px-3 py-2.5 ${card}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon size={14} className={iconMuted} />
+                    <span className={`text-[10px] font-medium ${primaryText}`}>{label}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setGrantedPermissions((prev) => new Set(prev).add(key))}
+                    disabled={granted}
+                    className={`rounded-full px-2.5 py-1 text-[8px] font-bold ${accent} ${
+                      granted ? "" : isDark ? "bg-amber/10" : "bg-teal/10"
+                    }`}
+                  >
+                    {granted ? "Granted" : "Request"}
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           <button

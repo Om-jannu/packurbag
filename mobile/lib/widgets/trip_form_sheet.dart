@@ -1,5 +1,6 @@
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -191,13 +192,13 @@ class _TripFormSheetState extends ConsumerState<TripFormSheet> {
               AppTextField(
                 controller: _destinationController,
                 label: 'Destination',
-                prefixIcon: Icons.place_outlined,
+                prefixIcon: LucideIcons.mapPin,
                 validator: (v) => Validators.required(v, field: 'Destination'),
               ),
               const SizedBox(height: 16),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.date_range_outlined),
+                leading: const Icon(LucideIcons.calendarRange),
                 title: Text(
                   '${DateFormat('d MMM yyyy').format(_startDate)} — ${DateFormat('d MMM yyyy').format(_endDate)}',
                 ),
@@ -208,7 +209,7 @@ class _TripFormSheetState extends ConsumerState<TripFormSheet> {
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.palette_outlined),
+                leading: const Icon(LucideIcons.palette),
                 title: const Text('Cover color'),
                 trailing: ColorIndicator(
                   width: 36,
@@ -228,7 +229,7 @@ class _TripFormSheetState extends ConsumerState<TripFormSheet> {
                       controller: _budgetController,
                       label: 'Budget (optional)',
                       keyboardType: TextInputType.number,
-                      prefixIcon: Icons.account_balance_wallet_outlined,
+                      prefixIcon: LucideIcons.wallet,
                     ),
                   ),
                   const SizedBox(width: 12),

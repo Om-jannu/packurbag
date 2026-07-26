@@ -1,16 +1,15 @@
-import 'package:translator/translator.dart';
-
 import '../app_exception.dart';
+import '../api_client.dart';
 
-/// Wraps the `translator` package behind an interface. That package scrapes
-/// Google Translate's public endpoint rather than using an official, paid
-/// API — pub.dev's own listing calls it "educational purposes only" and
-/// warns it can break at any time. Isolating it here means swapping to an
-/// official API later only touches this one file.
+/// Proxies translation through the backend's Groq-backed `/translate` route
+/// — replaces the old direct dependency on the `translator` package, which
+/// scraped Google Translate's public web endpoint rather than calling a
+/// real API and could break at any time. The API key never lives in the
+/// client — see server/src/routes/translate.routes.ts.
 class TranslationRepository {
-  TranslationRepository() : _translator = GoogleTranslator();
+  TranslationRepository(this._client);
 
-  final GoogleTranslator _translator;
+  final ApiClient _client;
 
   Future<String> translate({
     required String text,
@@ -18,16 +17,17 @@ class TranslationRepository {
     required String toLanguageCode,
   }) async {
     if (text.trim().isEmpty) return '';
-    try {
-      final translation = await _translator.translate(
-        text,
-        from: fromLanguageCode,
-        to: toLanguageCode,
-      );
-      return translation.text;
-    } catch (_) {
-      throw const AppException(
-          'Translation is temporarily unavailable. Please try again.');
+
+    final response = await _client.post('/translate', data: {
+      'text': text,
+      'from': fromLanguageCode,
+      'to': toLanguageCode,
+    });
+
+    if (response['success'] != true) {
+      throw AppException(
+          response['message'] as String? ?? 'Translation is temporarily unavailable. Please try again.');
     }
+    return response['translated'] as String? ?? '';
   }
 }

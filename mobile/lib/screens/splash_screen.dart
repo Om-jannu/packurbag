@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../models/user.dart';
 import '../providers/auth_provider.dart';
+import '../theme/app_theme.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -74,9 +75,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             const SizedBox(height: 24),
             Text(
               'Packurbag',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+              style: AppTextStyles.display(color: AppTheme.textPrimary(context)),
             ),
           ],
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
 
 import '../models/trip.dart';
@@ -34,59 +35,95 @@ class TripCalendarCard extends StatelessWidget {
     final daysInMonth = DateTime(focusedMonth.year, focusedMonth.month + 1, 0).day;
     final leadingBlanks = firstOfMonth.weekday - 1; // Monday-start week
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () =>
-                      onMonthChanged(DateTime(focusedMonth.year, focusedMonth.month - 1)),
-                ),
-                Text(
-                  DateFormat('MMMM yyyy').format(focusedMonth),
-                  style:
-                      Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: () =>
-                      onMonthChanged(DateTime(focusedMonth.year, focusedMonth.month + 1)),
-                ),
-              ],
-            ),
-            Row(
-              children: const ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-                  .map((d) => Expanded(
-                        child: Center(
-                          child: Text(
-                            d,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.black.withValues(alpha: 0.4),
-                            ),
-                          ),
+    final activeDay = selectedDay ?? focusedMonth;
+    final dayTrips = tripsOnDay(activeDay);
+
+    return Container(
+      decoration: AppTheme.flatCard(context),
+      padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: Icon(LucideIcons.chevronLeft, color: AppTheme.textPrimary(context)),
+                onPressed: () =>
+                    onMonthChanged(DateTime(focusedMonth.year, focusedMonth.month - 1)),
+              ),
+              Text(
+                DateFormat('MMMM yyyy').format(focusedMonth),
+                style: AppTextStyles.label(color: AppTheme.textPrimary(context)),
+              ),
+              IconButton(
+                icon: Icon(LucideIcons.chevronRight, color: AppTheme.textPrimary(context)),
+                onPressed: () =>
+                    onMonthChanged(DateTime(focusedMonth.year, focusedMonth.month + 1)),
+              ),
+            ],
+          ),
+          Row(
+            children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                .map((d) => Expanded(
+                      child: Center(
+                        child: Text(
+                          d,
+                          style: AppTextStyles.micro(color: AppTheme.textMuted(context, opacity: 0.4)),
                         ),
-                      ))
-                  .toList(),
-            ),
-            const SizedBox(height: 4),
-            GridView.count(
-              crossAxisCount: 7,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                for (var i = 0; i < leadingBlanks; i++) const SizedBox.shrink(),
-                for (var day = 1; day <= daysInMonth; day++) _buildDay(context, day),
-              ],
-            ),
+                      ),
+                    ))
+                .toList(),
+          ),
+          const SizedBox(height: 4),
+          GridView.count(
+            crossAxisCount: 7,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              for (var i = 0; i < leadingBlanks; i++) const SizedBox.shrink(),
+              for (var day = 1; day <= daysInMonth; day++) _buildDay(context, day),
+            ],
+          ),
+          if (dayTrips.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            for (final trip in dayTrips)
+              Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: parseCategoryColor(trip.coverColor),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        trip.title.isNotEmpty ? trip.title[0] : '?',
+                        style: AppTextStyles.micro(color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(trip.title, style: AppTextStyles.label(color: AppTheme.textPrimary(context))),
+                          Text(trip.destination, style: AppTextStyles.micro(color: AppTheme.textMuted(context, opacity: 0.4))),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -107,7 +144,7 @@ class TripCalendarCard extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isSelected ? AppTheme.tealDark : tripColor,
+            color: isSelected ? AppTheme.accentStrong(context) : tripColor,
             border: isSelected && tripColor != null
                 ? Border.all(color: tripColor, width: 2)
                 : null,
@@ -117,9 +154,11 @@ class TripCalendarCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: highlighted ? FontWeight.w700 : FontWeight.w500,
-              color: highlighted
-                  ? Colors.white
-                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+              color: isSelected
+                  ? AppTheme.onAccentStrong(context)
+                  : highlighted
+                      ? Colors.white
+                      : AppTheme.textMuted(context, opacity: 0.8),
             ),
           ),
         ),

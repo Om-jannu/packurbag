@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/app_exception.dart';
@@ -7,6 +8,7 @@ import '../models/trip.dart';
 import '../providers/auth_provider.dart';
 import '../providers/repository_providers.dart';
 import '../providers/trip_providers.dart';
+import '../theme/app_theme.dart';
 import '../widgets/chat_bubble_tile.dart';
 
 /// AI travel assistant, proxied through the backend's `/ai/chat` route so
@@ -58,103 +60,261 @@ class _GptScreenState extends ConsumerState<GptScreen> {
     }
   }
 
+  Future<void> _showTripPicker(List<Trip> trips) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: AppTheme.borderMuted(context))),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Ask about a specific trip',
+                        style: AppTextStyles.bodyBold(color: AppTheme.textPrimary(context)),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(LucideIcons.x, color: AppTheme.textMuted(context, opacity: 0.4)),
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    _TripPickerOption(
+                      label: 'General travel advice',
+                      selected: _selectedTrip == null,
+                      onTap: () {
+                        setState(() => _selectedTrip = null);
+                        Navigator.of(sheetContext).pop();
+                      },
+                    ),
+                    for (final trip in trips)
+                      _TripPickerOption(
+                        label: '${trip.title} · ${trip.destination}',
+                        selected: _selectedTrip?.id == trip.id,
+                        onTap: () {
+                          setState(() => _selectedTrip = trip);
+                          Navigator.of(sheetContext).pop();
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final userId = ref.watch(authProvider).value?.id;
     final tripsAsync = userId == null ? null : ref.watch(tripsProvider(userId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Travel Assistant')),
-      body: Column(
-        children: [
-          if (tripsAsync != null)
-            tripsAsync.maybeWhen(
-              data: (trips) => trips.isEmpty
-                  ? const SizedBox.shrink()
-                  : Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                      child: DropdownButtonFormField<Trip?>(
-                        initialValue: _selectedTrip,
-                        decoration: const InputDecoration(
-                          labelText: 'Ask about a specific trip (optional)',
-                        ),
-                        items: [
-                          const DropdownMenuItem<Trip?>(
-                              value: null, child: Text('General travel advice')),
-                          for (final trip in trips)
-                            DropdownMenuItem<Trip?>(
-                              value: trip,
-                              child: Text('${trip.title} · ${trip.destination}'),
-                            ),
-                        ],
-                        onChanged: (trip) => setState(() => _selectedTrip = trip),
-                      ),
-                    ),
-              orElse: () => const SizedBox.shrink(),
-            ),
-          if (_error != null)
+      body: SafeArea(
+        child: Column(
+          children: [
             Container(
-              width: double.infinity,
-              color: colorScheme.errorContainer,
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                _error!,
-                style: TextStyle(color: colorScheme.onErrorContainer),
+              padding: const EdgeInsets.fromLTRB(4, 8, 16, 12),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppTheme.borderMuted(context))),
               ),
-            ),
-          Expanded(
-            child: _messages.isEmpty
-                ? Center(
-                    child: Text(
-                      _selectedTrip == null
-                          ? 'Ask me for destination ideas, itinerary tips, or local advice.'
-                          : 'Ask me anything about ${_selectedTrip!.destination}.',
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
-                      textAlign: TextAlign.center,
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      final message = _messages[index];
-                      final isUser = message.role == 'user';
-                      return ChatBubbleTile(text: message.content, isMe: isUser);
-                    },
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(LucideIcons.arrowLeft, color: AppTheme.textPrimary(context)),
+                    onPressed: () => Navigator.of(context).maybePop(),
                   ),
-          ),
-          if (_isSending)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: SizedBox(
-                height: 18,
-                width: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                  Text(
+                    'Travel Assistant',
+                    style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
+                  ),
+                ],
               ),
             ),
-          SafeArea(
-            child: Padding(
+            if (tripsAsync != null)
+              tripsAsync.maybeWhen(
+                data: (trips) => trips.isEmpty
+                    ? const SizedBox.shrink()
+                    : InkWell(
+                        onTap: () => _showTripPicker(trips),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            border: Border(bottom: BorderSide(color: AppTheme.borderMuted(context))),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Ask about',
+                                style: AppTextStyles.label(color: AppTheme.textMuted(context)),
+                              ),
+                              Flexible(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        _selectedTrip?.title ?? 'General travel advice',
+                                        style: AppTextStyles.label(
+                                          color: AppTheme.textPrimary(context),
+                                          weight: FontWeight.w700,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Icon(LucideIcons.chevronDown,
+                                        size: 18, color: AppTheme.textPrimary(context)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                orElse: () => const SizedBox.shrink(),
+              ),
+            if (_error != null)
+              Container(
+                width: double.infinity,
+                color: AppTheme.coral.withValues(alpha: 0.15),
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  _error!,
+                  style: AppTextStyles.label(color: AppTheme.coral),
+                ),
+              ),
+            Expanded(
+              child: _messages.isEmpty
+                  ? Center(
+                      child: Text(
+                        _selectedTrip == null
+                            ? 'Ask me for destination ideas, itinerary tips, or local advice.'
+                            : 'Ask me anything about ${_selectedTrip!.destination}.',
+                        style: AppTextStyles.body(color: AppTheme.textMuted(context)),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, index) {
+                        final message = _messages[index];
+                        final isUser = message.role == 'user';
+                        if (isUser) {
+                          return ChatBubbleTile(text: message.content, isMe: true);
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(left: 12),
+                              width: 26,
+                              height: 26,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: AppTheme.accent(context).withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(LucideIcons.bot, size: 14, color: AppTheme.accent(context)),
+                            ),
+                            Expanded(
+                              child: ChatBubbleTile(text: message.content, isMe: false),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+            ),
+            if (_isSending)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accentStrong(context)),
+                ),
+              ),
+            Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      decoration: const InputDecoration(hintText: 'Message'),
+                      style: AppTextStyles.body(color: AppTheme.textPrimary(context)),
+                      decoration: InputDecoration(
+                        hintText: 'Message',
+                        hintStyle: AppTextStyles.body(color: AppTheme.textMuted(context, opacity: 0.35)),
+                        filled: true,
+                        fillColor: AppTheme.surfaceInput(context),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(999),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
                       onSubmitted: (_) => _send(),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton.filled(
+                    style: IconButton.styleFrom(backgroundColor: AppTheme.accentStrong(context)),
                     onPressed: _isSending ? null : _send,
-                    icon: const Icon(Icons.send),
+                    icon: Icon(LucideIcons.send, color: AppTheme.onAccentStrong(context)),
                   ),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TripPickerOption extends StatelessWidget {
+  const _TripPickerOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Text(
+          label,
+          style: AppTextStyles.body(
+            color: selected ? AppTheme.textPrimary(context) : AppTheme.textMuted(context, opacity: 0.7),
+            weight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
-        ],
+        ),
       ),
     );
   }

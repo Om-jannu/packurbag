@@ -1,8 +1,8 @@
 import '../app_exception.dart';
 import '../api_client.dart';
 
-/// A single turn in an AI chat conversation, matching the OpenAI
-/// `{role, content}` message shape the backend forwards verbatim.
+/// A single turn in an AI chat conversation, matching the chat-completion
+/// `{role, content}` message shape the backend forwards verbatim to Groq.
 class ChatMessage {
   final String role;
   final String content;
@@ -17,10 +17,10 @@ class AiRepository {
 
   final ApiClient _client;
 
-  /// Sends [message] plus prior [history] to the server-side OpenAI proxy,
+  /// Sends [message] plus prior [history] to the server-side Groq proxy,
   /// framed as a travel assistant. Passing [destination] (e.g. the active
   /// trip's destination) scopes the system prompt to that place.
-  /// The API key never lives in the client — see server/server.js `/ai/chat`.
+  /// The API key never lives in the client — see server/src/routes/ai.routes.ts.
   Future<String> sendChatMessage({
     required String message,
     List<ChatMessage> history = const [],

@@ -512,14 +512,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  font_awesome_flutter:
-    dependency: "direct main"
-    description:
-      name: font_awesome_flutter
-      sha256: "09dcde8ab90ffae1a7d65ff2ef96fc62a17ad9d0ce7c127b317ded676b0d5935"
-      url: "https://pub.dev"
-    source: hosted
-    version: "11.0.0"
   freezed:
     dependency: "direct dev"
     description:
@@ -848,6 +840,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.5.1"
+  lucide_icons_flutter:
+    dependency: "direct main"
+    description:
+      name: lucide_icons_flutter
+      sha256: "234155b10641b8ef7bab8a077b93ea6c92fe849c06740cf89dcd86dcf350934f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.15"
   matcher:
     dependency: transitive
     description:
@@ -1405,14 +1405,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.1"
-  translator:
-    dependency: "direct main"
-    description:
-      name: translator
-      sha256: fb28ada8b29931f5142907bac62dda375b14a60a57ec72ed37b78e3e97a7047b
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.4+1"
   typed_data:
     dependency: transitive
     description:

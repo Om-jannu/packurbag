@@ -48,6 +48,8 @@ mobile/android/app/debug
 mobile/android/app/profile
 mobile/android/app/release
 
+mobile/node_modules/
+
 # ==========================================================================
 # server/ (Node backend)
 # ==========================================================================

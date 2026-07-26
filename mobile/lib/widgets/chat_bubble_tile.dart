@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 /// A plain rounded message bubble — replaces the flutter_chat_bubble
 /// package's speech-tail clipper with the simpler pill shape used across
 /// the app's chat surfaces (traveler chat, AI assistant).
@@ -11,8 +13,6 @@ class ChatBubbleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -20,13 +20,13 @@ class ChatBubbleTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          color: isMe ? colorScheme.primaryContainer : colorScheme.surfaceContainerHigh,
+          color: isMe ? AppTheme.accent(context).withValues(alpha: 0.15) : AppTheme.surfaceInput(context),
           borderRadius: BorderRadius.circular(18),
         ),
         child: Text(
           text,
-          style: TextStyle(
-            color: isMe ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+          style: AppTextStyles.body(
+            color: isMe ? AppTheme.textPrimary(context) : AppTheme.textMuted(context, opacity: 0.8),
           ),
         ),
       ),

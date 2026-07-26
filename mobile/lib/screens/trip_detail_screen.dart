@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -16,6 +17,7 @@ import '../providers/auth_provider.dart';
 import '../providers/documents_providers.dart';
 import '../providers/repository_providers.dart';
 import '../providers/trip_providers.dart';
+import '../theme/app_theme.dart';
 import '../widgets/category_color.dart';
 import '../widgets/document_form_sheet.dart';
 import '../widgets/empty_state.dart';
@@ -86,49 +88,123 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen>
     final color = parseCategoryColor(liveTrip.coverColor);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(liveTrip.title),
-        backgroundColor: color.withValues(alpha: 0.2),
-        actions: [
-          if (userId != null)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Edit trip',
-              onPressed: () => showTripFormSheet(context, userId: userId, tripToEdit: liveTrip),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              color: color.withValues(alpha: 0.15),
+              padding: const EdgeInsets.fromLTRB(4, 8, 12, 12),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(LucideIcons.arrowLeft, color: AppTheme.textPrimary(context)),
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
+                  Expanded(
+                    child: Text(
+                      liveTrip.title,
+                      style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (userId != null)
+                    IconButton(
+                      icon: Icon(LucideIcons.pencil, color: AppTheme.textPrimary(context)),
+                      tooltip: 'Edit trip',
+                      onPressed: () =>
+                          showTripFormSheet(context, userId: userId, tripToEdit: liveTrip),
+                    ),
+                ],
+              ),
             ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          indicatorColor: color,
-          labelColor: color,
-          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-          tabs: const [
-            Tab(text: 'Itinerary'),
-            Tab(text: 'Packing'),
-            Tab(text: 'Budget'),
-            Tab(text: 'Documents'),
+            Container(
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppTheme.borderMuted(context))),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicatorColor: color,
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelColor: color,
+                unselectedLabelColor: AppTheme.textMuted(context, opacity: 0.4),
+                labelStyle: AppTextStyles.label(weight: FontWeight.w700),
+                unselectedLabelStyle: AppTextStyles.label(weight: FontWeight.w700),
+                tabs: const [
+                  Tab(text: 'Itinerary'),
+                  Tab(text: 'Packing'),
+                  Tab(text: 'Budget'),
+                  Tab(text: 'Documents'),
+                ],
+              ),
+            ),
+            Expanded(
+              child: userId == null
+                  ? const SizedBox.shrink()
+                  : TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _ItineraryTab(userId: userId, trip: liveTrip, color: color),
+                        _PackingTab(userId: userId, trip: liveTrip, color: color),
+                        _BudgetTab(userId: userId, trip: liveTrip, color: color),
+                        _DocumentsTab(userId: userId, trip: liveTrip, color: color),
+                      ],
+                    ),
+            ),
           ],
         ),
       ),
-      body: userId == null
-          ? const SizedBox.shrink()
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _ItineraryTab(userId: userId, trip: liveTrip, color: color),
-                _PackingTab(userId: userId, trip: liveTrip, color: color),
-                _BudgetTab(userId: userId, trip: liveTrip, color: color),
-                _DocumentsTab(userId: userId, trip: liveTrip, color: color),
-              ],
-            ),
       floatingActionButton: userId == null
           ? null
           : FloatingActionButton(
               backgroundColor: color,
+              shape: const CircleBorder(),
               onPressed: () => _addForCurrentTab(context, userId, liveTrip),
-              child: const Icon(Icons.add),
+              child: const Icon(LucideIcons.plus),
             ),
+    );
+  }
+}
+
+/// A plain filled dot/dash toggle — replaces Material's `Checkbox` (which
+/// always renders a checkmark glyph) with the design reference's exact
+/// look: an outlined circle/rounded-square that fills solid with a small
+/// centered white dot when checked, no checkmark icon at all.
+class _DotToggle extends StatelessWidget {
+  const _DotToggle({
+    required this.value,
+    required this.color,
+    required this.onChanged,
+    this.shape = BoxShape.circle,
+  });
+
+  final bool value;
+  final Color color;
+  final BoxShape shape;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: Container(
+        width: 22,
+        height: 22,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: shape,
+          borderRadius: shape == BoxShape.rectangle ? BorderRadius.circular(6) : null,
+          color: value ? color : Colors.transparent,
+          border: value ? null : Border.all(color: AppTheme.textMuted(context, opacity: 0.3), width: 2),
+        ),
+        child: value
+            ? Container(
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              )
+            : null,
+      ),
     );
   }
 }
@@ -158,7 +234,7 @@ class _ItineraryTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (trip.itinerary.isEmpty) {
       return const EmptyState(
-        icon: Icons.checklist_rtl,
+        icon: LucideIcons.listChecks,
         title: 'No itinerary items yet',
         message: 'Tap the + button to plan your first activity.',
       );
@@ -184,9 +260,10 @@ class _ItineraryTab extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
               child: Text(
                 DateFormat('EEEE, d MMMM').format(DateTime.parse(dateKey)),
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                style: AppTextStyles.label(
+                  weight: FontWeight.w700,
+                  color: AppTheme.textMuted(context, opacity: 0.5),
+                ),
               ),
             ),
             for (final item in items)
@@ -197,24 +274,20 @@ class _ItineraryTab extends ConsumerWidget {
                   tripId: trip.id,
                   itemToEdit: item,
                 ),
-                leading: Transform.scale(
-                  scale: 1.15,
-                  child: Checkbox(
-                    shape: const CircleBorder(),
-                    side: BorderSide(color: color),
-                    activeColor: color,
-                    value: item.completed,
-                    onChanged: (value) => _toggleCompleted(ref, item, value ?? false),
-                  ),
+                leading: _DotToggle(
+                  value: item.completed,
+                  color: color,
+                  shape: BoxShape.circle,
+                  onChanged: (value) => _toggleCompleted(ref, item, value),
                 ),
                 title: Text(
                   item.text,
-                  style: TextStyle(
-                    decoration: item.completed ? TextDecoration.lineThrough : null,
+                  style: AppTextStyles.body(
+                    weight: FontWeight.w600,
                     color: item.completed
-                        ? Theme.of(context).colorScheme.onSurfaceVariant
-                        : null,
-                  ),
+                        ? AppTheme.textMuted(context, opacity: 0.4)
+                        : AppTheme.textPrimary(context),
+                  ).copyWith(decoration: item.completed ? TextDecoration.lineThrough : null),
                 ),
                 subtitle: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -222,11 +295,14 @@ class _ItineraryTab extends ConsumerWidget {
                     PriorityBadge(priority: item.priority, compact: true),
                     if (item.location.isNotEmpty) ...[
                       const SizedBox(width: 8),
-                      Icon(Icons.place_outlined,
+                      Icon(LucideIcons.mapPin,
                           size: 14,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          color: AppTheme.textMuted(context, opacity: 0.4)),
                       const SizedBox(width: 2),
-                      Text(item.location, style: Theme.of(context).textTheme.bodySmall),
+                      Text(
+                        item.location,
+                        style: AppTextStyles.caption(color: AppTheme.textMuted(context, opacity: 0.4)),
+                      ),
                     ],
                   ],
                 ),
@@ -304,7 +380,10 @@ class _PackingTab extends ConsumerWidget {
             children: [
               Text(
                 'Quick-apply a template',
-                style: Theme.of(context).textTheme.labelLarge,
+                style: AppTextStyles.label(
+                  weight: FontWeight.w700,
+                  color: AppTheme.textMuted(context, opacity: 0.5),
+                ),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -313,21 +392,34 @@ class _PackingTab extends ConsumerWidget {
                 children: packingTemplates.keys.map((name) {
                   return ActionChip(
                     label: Text(name),
+                    labelStyle: AppTextStyles.label(
+                      weight: FontWeight.w600,
+                      color: AppTheme.textPrimary(context),
+                    ),
+                    backgroundColor: AppTheme.surfaceInput(context),
+                    side: BorderSide.none,
+                    shape: const StadiumBorder(),
+                    elevation: 0,
+                    pressElevation: 0,
                     onPressed: () => _applyTemplate(ref, context, name),
                   );
                 }).toList(),
               ),
               if (trip.packingItems.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                LinearProgressIndicator(
-                  value: packedCount / trip.packingItems.length,
-                  color: color,
-                  backgroundColor: color.withValues(alpha: 0.15),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: packedCount / trip.packingItems.length,
+                    minHeight: 6,
+                    color: color,
+                    backgroundColor: color.withValues(alpha: 0.15),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '$packedCount of ${trip.packingItems.length} packed',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: AppTextStyles.caption(color: AppTheme.textMuted(context, opacity: 0.5)),
                 ),
               ],
             ],
@@ -336,7 +428,7 @@ class _PackingTab extends ConsumerWidget {
         Expanded(
           child: trip.packingItems.isEmpty
               ? const EmptyState(
-                  icon: Icons.luggage_outlined,
+                  icon: LucideIcons.luggage,
                   title: 'Nothing on your packing list yet',
                   message: 'Apply a template above or tap + to add items.',
                 )
@@ -348,9 +440,10 @@ class _PackingTab extends ConsumerWidget {
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                         child: Text(
                           entry.key,
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
+                          style: AppTextStyles.label(
+                            weight: FontWeight.w700,
+                            color: AppTheme.textMuted(context, opacity: 0.4),
+                          ),
                         ),
                       ),
                       for (final item in entry.value)
@@ -361,16 +454,20 @@ class _PackingTab extends ConsumerWidget {
                             tripId: trip.id,
                             itemToEdit: item,
                           ),
-                          leading: Checkbox(
+                          leading: _DotToggle(
                             value: item.packed,
-                            onChanged: (value) => _togglePacked(ref, item, value ?? false),
-                            activeColor: color,
+                            color: color,
+                            shape: BoxShape.rectangle,
+                            onChanged: (value) => _togglePacked(ref, item, value),
                           ),
                           title: Text(
                             item.text,
-                            style: TextStyle(
-                              decoration: item.packed ? TextDecoration.lineThrough : null,
-                            ),
+                            style: AppTextStyles.body(
+                              weight: FontWeight.w600,
+                              color: item.packed
+                                  ? AppTheme.textMuted(context, opacity: 0.4)
+                                  : AppTheme.textPrimary(context),
+                            ).copyWith(decoration: item.packed ? TextDecoration.lineThrough : null),
                           ),
                         ),
                     ],
@@ -419,40 +516,46 @@ class _BudgetTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Spent so far', style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: 4),
-                Text(
-                  '${totalInBudgetCurrency.toStringAsFixed(2)} ${trip.budgetCurrency}',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w800),
+        Container(
+          decoration: AppTheme.flatCard(context, color: color.withValues(alpha: 0.15)),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Spent so far',
+                style: AppTextStyles.label(
+                  weight: FontWeight.w700,
+                  color: AppTheme.textMuted(context, opacity: 0.5),
                 ),
-                if (budget != null) ...[
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${totalInBudgetCurrency.toStringAsFixed(2)} ${trip.budgetCurrency}',
+                style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
+              ),
+              if (budget != null) ...[
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
                     value: (totalInBudgetCurrency / budget).clamp(0, 1),
+                    minHeight: 6,
                     color: (remaining ?? 0) < 0
                         ? Theme.of(context).colorScheme.error
                         : color,
                     backgroundColor: color.withValues(alpha: 0.15),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    remaining != null && remaining < 0
-                        ? '${(-remaining).toStringAsFixed(2)} ${trip.budgetCurrency} over budget'
-                        : '${remaining?.toStringAsFixed(2)} ${trip.budgetCurrency} remaining of ${budget.toStringAsFixed(0)}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  remaining != null && remaining < 0
+                      ? '${(-remaining).toStringAsFixed(2)} ${trip.budgetCurrency} over budget'
+                      : '${remaining?.toStringAsFixed(2)} ${trip.budgetCurrency} remaining of ${budget.toStringAsFixed(0)}',
+                  style: AppTextStyles.caption(color: AppTheme.textMuted(context, opacity: 0.5)),
+                ),
               ],
-            ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
@@ -460,38 +563,27 @@ class _BudgetTab extends ConsumerWidget {
           const Padding(
             padding: EdgeInsets.only(top: 32),
             child: EmptyState(
-              icon: Icons.receipt_long_outlined,
+              icon: LucideIcons.receipt,
               title: 'No expenses logged yet',
               message: 'Tap + to log your first expense.',
             ),
           )
         else
           for (final expense in [...trip.expenses]..sort((a, b) => b.date.compareTo(a.date)))
-            Dismissible(
-              key: ValueKey(expense.id),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                color: Theme.of(context).colorScheme.errorContainer,
-                child: Icon(Icons.delete_outline,
-                    color: Theme.of(context).colorScheme.onErrorContainer),
+            _ExpenseTile(
+              expense: expense,
+              onTap: () => showExpenseFormSheet(
+                context,
+                userId: userId,
+                tripId: trip.id,
+                defaultCurrency: trip.budgetCurrency,
+                expenseToEdit: expense,
               ),
-              onDismissed: (_) => ref.read(expenseRepositoryProvider).deleteExpense(
+              onDelete: () => ref.read(expenseRepositoryProvider).deleteExpense(
                     userId: userId,
                     tripId: trip.id,
                     expenseId: expense.id,
                   ),
-              child: _ExpenseTile(
-                expense: expense,
-                onTap: () => showExpenseFormSheet(
-                  context,
-                  userId: userId,
-                  tripId: trip.id,
-                  defaultCurrency: trip.budgetCurrency,
-                  expenseToEdit: expense,
-                ),
-              ),
             ),
       ],
     );
@@ -503,20 +595,44 @@ final _usdRatesProvider = FutureProvider<Map<String, double>>((ref) {
 });
 
 class _ExpenseTile extends StatelessWidget {
-  const _ExpenseTile({required this.expense, required this.onTap});
+  const _ExpenseTile({required this.expense, required this.onTap, required this.onDelete});
   final Expense expense;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      leading: const Icon(Icons.receipt_outlined),
-      title: Text(expense.title),
-      subtitle: Text('${expense.category} · ${DateFormat('d MMM').format(expense.date)}'),
-      trailing: Text(
-        '${expense.amount.toStringAsFixed(2)} ${expense.currency}',
-        style: const TextStyle(fontWeight: FontWeight.w700),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: AppTheme.flatCard(context, radius: AppTheme.radiusMd),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          onTap: onTap,
+          leading: Icon(LucideIcons.receipt, color: AppTheme.textMuted(context, opacity: 0.4)),
+          title: Text(
+            expense.title,
+            style: AppTextStyles.body(weight: FontWeight.w600, color: AppTheme.textPrimary(context)),
+          ),
+          subtitle: Text(
+            '${expense.category} · ${DateFormat('d MMM').format(expense.date)}',
+            style: AppTextStyles.caption(color: AppTheme.textMuted(context, opacity: 0.4)),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${expense.amount.toStringAsFixed(2)} ${expense.currency}',
+                style: AppTextStyles.bodyBold(color: AppTheme.textPrimary(context)),
+              ),
+              IconButton(
+                icon: Icon(LucideIcons.trash2, size: 18, color: AppTheme.textMuted(context, opacity: 0.4)),
+                onPressed: onDelete,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -531,11 +647,11 @@ const _documentTypeLabels = {
 };
 
 const _documentTypeIcons = {
-  TravelDocumentType.passport: Icons.badge_outlined,
-  TravelDocumentType.visa: Icons.assignment_ind_outlined,
-  TravelDocumentType.ticket: Icons.confirmation_number_outlined,
-  TravelDocumentType.insurance: Icons.health_and_safety_outlined,
-  TravelDocumentType.other: Icons.description_outlined,
+  TravelDocumentType.passport: LucideIcons.badgeCheck,
+  TravelDocumentType.visa: LucideIcons.scrollText,
+  TravelDocumentType.ticket: LucideIcons.ticket,
+  TravelDocumentType.insurance: LucideIcons.shieldCheck,
+  TravelDocumentType.other: LucideIcons.fileText,
 };
 
 class _DocumentsTab extends ConsumerWidget {
@@ -556,14 +672,12 @@ class _DocumentsTab extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Row(
             children: [
-              Icon(Icons.lock_outline, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              Icon(LucideIcons.lock, size: 14, color: AppTheme.textMuted(context, opacity: 0.4)),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   'Stored only on this device — never uploaded.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                  style: AppTextStyles.caption(color: AppTheme.textMuted(context, opacity: 0.4)),
                 ),
               ),
             ],
@@ -576,7 +690,7 @@ class _DocumentsTab extends ConsumerWidget {
             data: (documents) {
               if (documents.isEmpty) {
                 return const EmptyState(
-                  icon: Icons.folder_shared_outlined,
+                  icon: LucideIcons.folderOpen,
                   title: 'No travel documents yet',
                   message: 'Tap + to save a passport, visa, ticket, or insurance reference.',
                 );
@@ -586,60 +700,75 @@ class _DocumentsTab extends ConsumerWidget {
                 itemCount: documents.length,
                 itemBuilder: (context, index) {
                   final document = documents[index];
-                  return Dismissible(
-                    key: ValueKey(document.id),
-                    direction: DismissDirection.endToStart,
-                    background: Container(
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Icon(Icons.delete_outline,
-                          color: Theme.of(context).colorScheme.onErrorContainer),
-                    ),
-                    onDismissed: (_) => ref
-                        .read(documentsRepositoryProvider)
-                        .deleteDocument(userId: userId, documentId: document.id)
-                        .then((_) => ref.invalidate(documentsProvider(ids))),
-                    child: Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: AppTheme.flatCard(context, radius: AppTheme.radiusMd),
+                    clipBehavior: Clip.antiAlias,
+                    child: Material(
+                      color: Colors.transparent,
                       child: ListTile(
-                        onTap: () => showDocumentFormSheet(
-                          context,
-                          userId: userId,
-                          tripId: trip.id,
-                          documentToEdit: document,
-                        ),
-                        leading: document.imagePath != null && !kIsWeb
-                            ? GestureDetector(
-                                onTap: () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => PhotoViewerPage(
-                                      imagePath: document.imagePath!,
-                                      title: document.title,
-                                    ),
+                      onTap: () => showDocumentFormSheet(
+                        context,
+                        userId: userId,
+                        tripId: trip.id,
+                        documentToEdit: document,
+                      ),
+                      leading: document.imagePath != null && !kIsWeb
+                          ? GestureDetector(
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => PhotoViewerPage(
+                                    imagePath: document.imagePath!,
+                                    title: document.title,
                                   ),
                                 ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.file(
-                                    File(document.imagePath!),
-                                    width: 44,
-                                    height: 44,
-                                    fit: BoxFit.cover,
-                                  ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(
+                                  File(document.imagePath!),
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.cover,
                                 ),
-                              )
-                            : Icon(_documentTypeIcons[document.type], color: color),
-                        title: Text(document.title),
-                        subtitle: Text(
-                          document.notes.isEmpty
-                              ? _documentTypeLabels[document.type]!
-                              : '${_documentTypeLabels[document.type]} · ${document.notes}',
+                              ),
+                            )
+                          : Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(_documentTypeIcons[document.type], color: color),
+                            ),
+                      title: Text(
+                        document.title,
+                        style: AppTextStyles.body(
+                          weight: FontWeight.w600,
+                          color: AppTheme.textPrimary(context),
                         ),
-                        trailing: const Icon(Icons.chevron_right),
+                      ),
+                      subtitle: Text(
+                        document.notes.isEmpty
+                            ? _documentTypeLabels[document.type]!
+                            : '${_documentTypeLabels[document.type]} · ${document.notes}',
+                        style: AppTextStyles.caption(color: AppTheme.textMuted(context, opacity: 0.4)),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(LucideIcons.trash2,
+                                size: 18, color: AppTheme.textMuted(context, opacity: 0.4)),
+                            onPressed: () => ref
+                                .read(documentsRepositoryProvider)
+                                .deleteDocument(userId: userId, documentId: document.id)
+                                .then((_) => ref.invalidate(documentsProvider(ids))),
+                          ),
+                          Icon(LucideIcons.chevronRight, color: AppTheme.textMuted(context, opacity: 0.3)),
+                        ],
+                      ),
                       ),
                     ),
                   );

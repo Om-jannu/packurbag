@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -9,6 +10,7 @@ import '../models/trip.dart';
 import '../providers/auth_provider.dart';
 import '../providers/repository_providers.dart';
 import '../providers/trip_providers.dart';
+import '../theme/app_theme.dart';
 import '../widgets/category_color.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/trip_calendar_card.dart';
@@ -70,136 +72,130 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final tripsAsync = userId == null ? null : ref.watch(tripsProvider(userId));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Image.asset('assets/packurbag-logo.png', height: 32),
-            const SizedBox(width: 8),
-            const Text('Packurbag'),
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppTheme.borderMuted(context))),
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: Image.asset('assets/packurbag-logo.png', width: 26, height: 26),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('Packurbag', style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context))),
+                ],
+              ),
+            ),
+            Expanded(
+              child: tripsAsync == null
+                  ? const SizedBox.shrink()
+                  : tripsAsync.when(
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (error, _) => Center(child: Text('$error')),
+                      data: (trips) {
+                        final nextTrip = _nextTrip(trips);
+                        final upcomingItinerary = _upcomingItinerary(trips);
+                        final ongoingCount = trips
+                            .where((t) => _tripsOnDay([t], DateTime.now()).isNotEmpty)
+                            .length;
+
+                        return ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            if (nextTrip == null)
+                              EmptyState(
+                                icon: LucideIcons.briefcase,
+                                title: 'No upcoming trips',
+                                message: 'Plan your next adventure to see it here.',
+                                action: FilledButton.icon(
+                                  onPressed: () => showTripFormSheet(context, userId: userId!),
+                                  icon: const Icon(LucideIcons.plus),
+                                  label: const Text('Plan a trip'),
+                                ),
+                              )
+                            else ...[
+                              _CountdownCard(trip: nextTrip),
+                              const SizedBox(height: 12),
+                              _WeatherCard(destination: nextTrip.destination),
+                              const SizedBox(height: 12),
+                              _CurrencySnippetCard(targetCurrency: nextTrip.budgetCurrency),
+                            ],
+                            const SizedBox(height: 20),
+                            _QuickStatsRow(
+                              tripCount: trips.length,
+                              ongoingCount: ongoingCount,
+                              nextTrip: nextTrip,
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              'Trip calendar',
+                              style: AppTextStyles.sectionTitle(color: AppTheme.textPrimary(context)),
+                            ),
+                            const SizedBox(height: 8),
+                            TripCalendarCard(
+                              focusedMonth: _focusedDay,
+                              selectedDay: _selectedDay,
+                              tripsOnDay: (day) => _tripsOnDay(trips, day),
+                              onDaySelected: (day) => setState(() {
+                                _selectedDay = day;
+                                _focusedDay = day;
+                              }),
+                              onMonthChanged: (month) => setState(() => _focusedDay = month),
+                            ),
+                            if (upcomingItinerary.isNotEmpty) ...[
+                              const SizedBox(height: 20),
+                              Text(
+                                'Coming up this week',
+                                style: AppTextStyles.sectionTitle(color: AppTheme.textPrimary(context)),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                decoration: AppTheme.flatCard(context),
+                                clipBehavior: Clip.antiAlias,
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: Column(
+                                    children: [
+                                      for (final entry in upcomingItinerary)
+                                        ListTile(
+                                          leading: Icon(LucideIcons.calendarClock,
+                                              color: parseCategoryColor(entry.trip.coverColor)),
+                                          title: Text(entry.item.text,
+                                              style: AppTextStyles.label(color: AppTheme.textPrimary(context))),
+                                          subtitle: Text(
+                                            '${entry.trip.title} · ${DateFormat('E, d MMM').format(entry.item.date)}',
+                                            style: AppTextStyles.micro(color: AppTheme.textMuted(context, opacity: 0.4)),
+                                          ),
+                                          onTap: () =>
+                                              context.push('/trips/detail', extra: entry.trip),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 20),
+                            Text(
+                              'Quick actions',
+                              style: AppTextStyles.sectionTitle(color: AppTheme.textPrimary(context)),
+                            ),
+                            const SizedBox(height: 8),
+                            const _QuickActionsRow(),
+                          ],
+                        );
+                      },
+                    ),
+            ),
           ],
         ),
       ),
-      body: tripsAsync == null
-          ? const SizedBox.shrink()
-          : tripsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(child: Text('$error')),
-              data: (trips) {
-                final nextTrip = _nextTrip(trips);
-                final selectedDayTrips =
-                    _tripsOnDay(trips, _selectedDay ?? _focusedDay);
-                final upcomingItinerary = _upcomingItinerary(trips);
-                final ongoingCount =
-                    trips.where((t) => _tripsOnDay([t], DateTime.now()).isNotEmpty).length;
-
-                return ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    if (nextTrip == null)
-                      EmptyState(
-                        icon: Icons.card_travel,
-                        title: 'No upcoming trips',
-                        message: 'Plan your next adventure to see it here.',
-                        action: FilledButton.icon(
-                          onPressed: () => showTripFormSheet(context, userId: userId!),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Plan a trip'),
-                        ),
-                      )
-                    else ...[
-                      _CountdownCard(trip: nextTrip),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(child: _WeatherCard(destination: nextTrip.destination)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _CurrencySnippetCard(targetCurrency: nextTrip.budgetCurrency),
-                    ],
-                    const SizedBox(height: 20),
-                    _QuickStatsRow(
-                      tripCount: trips.length,
-                      ongoingCount: ongoingCount,
-                      nextTrip: nextTrip,
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Trip calendar',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 8),
-                    TripCalendarCard(
-                      focusedMonth: _focusedDay,
-                      selectedDay: _selectedDay,
-                      tripsOnDay: (day) => _tripsOnDay(trips, day),
-                      onDaySelected: (day) => setState(() {
-                        _selectedDay = day;
-                        _focusedDay = day;
-                      }),
-                      onMonthChanged: (month) => setState(() => _focusedDay = month),
-                    ),
-                    if (selectedDayTrips.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      for (final trip in selectedDayTrips)
-                        Card(
-                          margin: const EdgeInsets.only(top: 4),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: parseCategoryColor(trip.coverColor),
-                            ),
-                            title: Text(trip.title),
-                            subtitle: Text(trip.destination),
-                            onTap: () => context.push('/trips/detail', extra: trip),
-                          ),
-                        ),
-                    ],
-                    if (upcomingItinerary.isNotEmpty) ...[
-                      const SizedBox(height: 20),
-                      Text(
-                        'Coming up this week',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 8),
-                      Card(
-                        child: Column(
-                          children: [
-                            for (final entry in upcomingItinerary)
-                              ListTile(
-                                leading: Icon(Icons.event_outlined,
-                                    color: parseCategoryColor(entry.trip.coverColor)),
-                                title: Text(entry.item.text),
-                                subtitle: Text(
-                                  '${entry.trip.title} · ${DateFormat('E, d MMM').format(entry.item.date)}',
-                                ),
-                                onTap: () =>
-                                    context.push('/trips/detail', extra: entry.trip),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-                    Text(
-                      'Quick actions',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 8),
-                    const _QuickActionsRow(),
-                  ],
-                );
-              },
-            ),
     );
   }
 }
@@ -216,43 +212,38 @@ class _CountdownCard extends StatelessWidget {
     final isOngoing = !now.isBefore(trip.startDate) && !now.isAfter(trip.endDate);
     final daysUntil = trip.startDate.difference(today).inDays;
 
-    return Card(
+    return Material(
       color: color.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
         onTap: () => context.push('/trips/detail', extra: trip),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                isOngoing ? "You're in ${trip.destination}!" : 'Next up',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: color),
+                (isOngoing ? "You're in ${trip.destination}!" : 'Next up').toUpperCase(),
+                style: AppTextStyles.tag(color: color),
               ),
               const SizedBox(height: 6),
               Text(
                 trip.title,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
               ),
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(Icons.place_outlined, size: 16, color: color),
+                  Icon(LucideIcons.mapPin, size: 15, color: color),
                   const SizedBox(width: 4),
-                  Text(trip.destination),
+                  Text(trip.destination, style: AppTextStyles.label(color: AppTheme.textMuted(context, opacity: 0.7))),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Text(
                 isOngoing ? 'Enjoy your trip!' : 'In $daysUntil day${daysUntil == 1 ? '' : 's'}',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700, color: color),
+                style: AppTextStyles.bodyBold(color: color),
               ),
             ],
           ),
@@ -270,54 +261,49 @@ class _WeatherCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final weatherAsync = ref.watch(_weatherByCityProvider(destination));
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: weatherAsync.when(
-          loading: () => const SizedBox(
-            height: 48,
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          ),
-          error: (error, _) => Row(
-            children: [
-              Icon(Icons.cloud_off_outlined,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Weather unavailable for $destination',
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                ),
+    return Container(
+      decoration: AppTheme.flatCard(context),
+      padding: const EdgeInsets.all(14),
+      child: weatherAsync.when(
+        loading: () => const SizedBox(
+          height: 32,
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        error: (error, _) => Row(
+          children: [
+            Icon(LucideIcons.cloudOff, color: AppTheme.textMuted(context)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Weather unavailable for $destination',
+                style: AppTextStyles.label(color: AppTheme.textMuted(context)),
               ),
-            ],
-          ),
-          data: (weather) => Row(
-            children: [
-              Image.network(weather.iconUrl, width: 48, height: 48,
-                  errorBuilder: (_, _, _) {
-                return const Icon(Icons.wb_sunny_outlined, size: 32);
-              }),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${weather.tempCelsius.round()}°C in ${weather.cityName}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    Text(
-                      weather.description,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
+            ),
+          ],
+        ),
+        data: (weather) => Row(
+          children: [
+            Image.network(weather.iconUrl, width: 34, height: 34,
+                errorBuilder: (_, _, _) {
+              return Icon(LucideIcons.cloudSun, size: 26, color: AppTheme.amber);
+            }),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${weather.tempCelsius.round()}°C in ${weather.cityName}',
+                    style: AppTextStyles.label(color: AppTheme.textPrimary(context)),
+                  ),
+                  Text(
+                    weather.description,
+                    style: AppTextStyles.micro(color: AppTheme.textMuted(context, opacity: 0.4)),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -333,40 +319,39 @@ class _CurrencySnippetCard extends ConsumerWidget {
     if (targetCurrency == 'INR') return const SizedBox.shrink();
     final ratesAsync = ref.watch(_inrRatesProvider);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ratesAsync.when(
-          loading: () => const SizedBox(
-            height: 24,
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          ),
-          error: (error, _) => Text(
-            'Currency rates unavailable',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-          data: (rates) {
-            if (!rates.containsKey('INR') || !rates.containsKey(targetCurrency)) {
-              return const SizedBox.shrink();
-            }
-            final converted = ref.read(currencyRepositoryProvider).convert(
-                  amount: 1,
-                  from: 'INR',
-                  to: targetCurrency,
-                  usdBaseRates: rates,
-                );
-            return Row(
-              children: [
-                Icon(Icons.currency_exchange, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 12),
-                Text(
-                  '1 INR ≈ ${converted.toStringAsFixed(4)} $targetCurrency',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ],
-            );
-          },
+    return Container(
+      decoration: AppTheme.flatCard(context),
+      padding: const EdgeInsets.all(14),
+      child: ratesAsync.when(
+        loading: () => const SizedBox(
+          height: 20,
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
+        error: (error, _) => Text(
+          'Currency rates unavailable',
+          style: AppTextStyles.label(color: AppTheme.textMuted(context)),
+        ),
+        data: (rates) {
+          if (!rates.containsKey('INR') || !rates.containsKey(targetCurrency)) {
+            return const SizedBox.shrink();
+          }
+          final converted = ref.read(currencyRepositoryProvider).convert(
+                amount: 1,
+                from: 'INR',
+                to: targetCurrency,
+                usdBaseRates: rates,
+              );
+          return Row(
+            children: [
+              Text('💱', style: AppTextStyles.appBarTitle()),
+              const SizedBox(width: 10),
+              Text(
+                '1 INR ≈ ${converted.toStringAsFixed(4)} $targetCurrency',
+                style: AppTextStyles.label(color: AppTheme.textPrimary(context)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -392,7 +377,7 @@ class _QuickStatsRow extends StatelessWidget {
       children: [
         Expanded(
           child: _StatTile(
-            icon: Icons.card_travel,
+            icon: LucideIcons.briefcase,
             label: 'Trips',
             value: '$tripCount',
           ),
@@ -400,7 +385,7 @@ class _QuickStatsRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _StatTile(
-            icon: Icons.flight_takeoff,
+            icon: LucideIcons.plane,
             label: 'Ongoing',
             value: '$ongoingCount',
           ),
@@ -408,7 +393,7 @@ class _QuickStatsRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _StatTile(
-            icon: Icons.luggage_outlined,
+            icon: LucideIcons.luggage,
             label: 'Packed',
             value: totalPacking == 0 ? '—' : '$packed/$totalPacking',
           ),
@@ -427,19 +412,16 @@ class _StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        child: Column(
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 6),
-            Text(value,
-                style:
-                    Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-            Text(label, style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
+    return Container(
+      decoration: AppTheme.flatCard(context),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: AppTheme.accent(context)),
+          const SizedBox(height: 6),
+          Text(value, style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context))),
+          Text(label, style: AppTextStyles.micro(color: AppTheme.textMuted(context, opacity: 0.4))),
+        ],
       ),
     );
   }
@@ -450,37 +432,34 @@ class _QuickActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _QuickActionTile(
-            icon: Icons.card_travel,
+    return Container(
+      decoration: AppTheme.flatCard(context),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _QuickActionTile(
+            icon: LucideIcons.briefcase,
             label: 'Trips',
             onTap: () => context.go('/trips'),
           ),
-        ),
-        Expanded(
-          child: _QuickActionTile(
-            icon: Icons.translate,
+          _QuickActionTile(
+            icon: LucideIcons.globe,
             label: 'Translate',
             onTap: () => context.go('/translate'),
           ),
-        ),
-        Expanded(
-          child: _QuickActionTile(
-            icon: Icons.smart_toy_outlined,
+          _QuickActionTile(
+            icon: LucideIcons.bot,
             label: 'Assistant',
             onTap: () => context.push('/ai-chat'),
           ),
-        ),
-        Expanded(
-          child: _QuickActionTile(
-            icon: Icons.warning_amber_rounded,
+          _QuickActionTile(
+            icon: LucideIcons.triangleAlert,
             label: 'SOS',
             onTap: () => context.push('/sos'),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -495,20 +474,24 @@ class _QuickActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(999),
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Column(
-          children: [
-            CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              child: Icon(icon, color: Theme.of(context).colorScheme.onPrimaryContainer),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTheme.accent(context).withValues(alpha: 0.1),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 6),
-            Text(label, style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
+            child: Icon(icon, size: 19, color: AppTheme.accent(context)),
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: AppTextStyles.micro(color: AppTheme.textMuted(context, opacity: 0.5))),
+        ],
       ),
     );
   }

@@ -14,6 +14,7 @@ import { usersRoutes } from "./routes/users.routes";
 import { travelersRoutes } from "./routes/travelers.routes";
 import { messagesRoutes } from "./routes/messages.routes";
 import { aiRoutes } from "./routes/ai.routes";
+import { translateRoutes } from "./routes/translate.routes";
 
 export function createApp() {
   const app = new Hono();
@@ -47,6 +48,7 @@ export function createApp() {
   app.route("/travelers", travelersRoutes);
   app.route("/messages", messagesRoutes);
   app.route("/ai", aiRoutes);
+  app.route("/translate", translateRoutes);
 
   app.onError(errorHandler);
 

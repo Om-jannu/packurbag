@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:quick_actions/quick_actions.dart';
 
@@ -58,72 +58,112 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     return Scaffold(
       body: widget.navigationShell,
       floatingActionButton: (index == 2 || index == 3) ? null : _buildSpeedDial(),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: (i) => widget.navigationShell.goBranch(
-          i,
-          initialLocation: i == widget.navigationShell.currentIndex,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          border: Border(top: BorderSide(color: AppTheme.borderMuted(context))),
         ),
-        destinations: const [
-          NavigationDestination(
-            icon: FaIcon(FontAwesomeIcons.rectangleList, size: 18),
-            label: 'Home',
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              children: [
+                _NavItem(icon: LucideIcons.layoutList, label: 'Home', index: 0, current: index),
+                _NavItem(icon: LucideIcons.briefcase, label: 'Trips', index: 1, current: index),
+                _NavItem(icon: LucideIcons.globe, label: 'Translate', index: 2, current: index),
+                _NavItem(icon: LucideIcons.mapPin, label: 'Nearby', index: 3, current: index),
+                _NavItem(icon: LucideIcons.user, label: 'Profile', index: 4, current: index),
+              ].map((item) {
+                return Expanded(
+                  child: InkWell(
+                    onTap: () => widget.navigationShell.goBranch(
+                      item.index,
+                      initialLocation: item.index == widget.navigationShell.currentIndex,
+                    ),
+                    child: item,
+                  ),
+                );
+              }).toList(),
+            ),
           ),
-          NavigationDestination(
-            icon: FaIcon(FontAwesomeIcons.suitcaseRolling, size: 18),
-            label: 'Trips',
-          ),
-          NavigationDestination(
-            icon: FaIcon(FontAwesomeIcons.earthAmericas, size: 18),
-            label: 'Translate',
-          ),
-          NavigationDestination(
-            icon: FaIcon(FontAwesomeIcons.locationDot, size: 18),
-            label: 'Nearby',
-          ),
-          NavigationDestination(
-            icon: FaIcon(FontAwesomeIcons.user, size: 18),
-            label: 'Profile',
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildSpeedDial() {
+    final labelStyle = AppTextStyles.label(
+      color: AppTheme.textPrimary(context),
+      weight: FontWeight.w700,
+    );
     return SpeedDial(
-      icon: Icons.add,
-      activeIcon: Icons.close,
-      backgroundColor: AppTheme.tealDark,
-      foregroundColor: Colors.white,
+      icon: LucideIcons.plus,
+      activeIcon: LucideIcons.x,
+      backgroundColor: AppTheme.accentStrong(context),
+      foregroundColor: AppTheme.onAccentStrong(context),
       children: [
         SpeedDialChild(
-          child: const FaIcon(FontAwesomeIcons.suitcaseRolling, size: 18, color: AppTheme.teal),
+          child: const Icon(LucideIcons.briefcase, size: 18, color: AppTheme.teal),
           backgroundColor: Colors.white,
           shape: const CircleBorder(),
           label: 'New Trip',
+          labelStyle: labelStyle,
           onTap: _openNewTrip,
         ),
         SpeedDialChild(
-          child: const FaIcon(FontAwesomeIcons.wallet, size: 18, color: AppTheme.teal),
+          child: const Icon(LucideIcons.wallet, size: 18, color: AppTheme.teal),
           backgroundColor: Colors.white,
           shape: const CircleBorder(),
           label: 'Currency Converter',
+          labelStyle: labelStyle,
           onTap: () => context.push('/currency-converter'),
         ),
         SpeedDialChild(
-          child: const FaIcon(FontAwesomeIcons.robot, size: 18, color: AppTheme.teal),
+          child: const Icon(LucideIcons.bot, size: 18, color: AppTheme.teal),
           backgroundColor: Colors.white,
           shape: const CircleBorder(),
           label: 'AI Chat',
+          labelStyle: labelStyle,
           onTap: () => context.push('/ai-chat'),
         ),
         SpeedDialChild(
-          child: const FaIcon(FontAwesomeIcons.triangleExclamation, size: 18, color: Colors.white),
+          child: const Icon(LucideIcons.triangleAlert, size: 18, color: Colors.white),
           shape: const CircleBorder(),
           backgroundColor: AppTheme.coral,
           label: 'SOS',
+          labelStyle: labelStyle,
           onTap: () => context.push('/sos'),
+        ),
+      ],
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.index,
+    required this.current,
+  });
+
+  final IconData icon;
+  final String label;
+  final int index;
+  final int current;
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = index == current;
+    final color = isActive ? AppTheme.accentStrong(context) : AppTheme.textMuted(context, opacity: 0.35);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 23, color: color),
+        const SizedBox(height: 5),
+        Text(
+          label,
+          style: AppTextStyles.micro(color: color, weight: isActive ? FontWeight.w700 : FontWeight.w500),
         ),
       ],
     );

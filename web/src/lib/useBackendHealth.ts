@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { API_BASE_URL, type HealthResponse } from "./api";
+import type { HealthResponse } from "./api";
 
 export type HealthState =
   | { state: "checking" }
@@ -16,7 +16,7 @@ export function useBackendHealth() {
   const check = useCallback(async () => {
     const started = performance.now();
     try {
-      const res = await fetch(`${API_BASE_URL}/health`, { cache: "no-store" });
+      const res = await fetch("/api/health", { cache: "no-store" });
       const latencyMs = Math.round(performance.now() - started);
       if (!res.ok) {
         setHealth({ state: "offline", checkedAt: new Date() });

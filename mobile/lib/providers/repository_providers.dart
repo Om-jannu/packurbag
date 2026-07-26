@@ -61,5 +61,5 @@ final aiRepositoryProvider = Provider<AiRepository>(
 );
 
 final translationRepositoryProvider = Provider<TranslationRepository>(
-  (ref) => TranslationRepository(),
+  (ref) => TranslationRepository(ref.watch(apiClientProvider)),
 );

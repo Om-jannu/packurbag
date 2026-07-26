@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -173,7 +174,7 @@ class _ItineraryItemFormSheetState extends ConsumerState<ItineraryItemFormSheet>
             AppTextField(
               controller: _locationController,
               label: 'Location (optional)',
-              prefixIcon: Icons.place_outlined,
+              prefixIcon: LucideIcons.mapPin,
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -190,7 +191,7 @@ class _ItineraryItemFormSheetState extends ConsumerState<ItineraryItemFormSheet>
             const SizedBox(height: 16),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.calendar_today_outlined),
+              leading: const Icon(LucideIcons.calendarClock),
               title: Text(DateFormat('EEE, d MMM yyyy').format(_date)),
               trailing: TextButton(onPressed: _pickDate, child: const Text('Change')),
             ),
@@ -201,7 +202,7 @@ class _ItineraryItemFormSheetState extends ConsumerState<ItineraryItemFormSheet>
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
                 onPressed: _isSubmitting ? null : _delete,
-                icon: const Icon(Icons.delete_outline),
+                icon: const Icon(LucideIcons.trash2),
                 label: const Text('Delete item'),
               ),
               const SizedBox(height: 12),

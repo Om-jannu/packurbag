@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/app_exception.dart';
@@ -176,7 +177,7 @@ class _PackingItemFormSheetState extends ConsumerState<PackingItemFormSheet> {
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),
                 onPressed: _isSubmitting ? null : _delete,
-                icon: const Icon(Icons.delete_outline),
+                icon: const Icon(LucideIcons.trash2),
                 label: const Text('Delete item'),
               ),
               const SizedBox(height: 12),

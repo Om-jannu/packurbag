@@ -1,14 +1,22 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:slide_to_act/slide_to_act.dart';
 import 'package:torch_controller/torch_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vibration/vibration.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../theme/app_theme.dart';
+
+/// Literal reds matching the design reference's `red-500`/`red-100` (this
+/// screen reads as an alert, so it intentionally uses a literal red rather
+/// than the brand's coral/teal roles).
+const _sosRed = Color(0xFFEF4444);
+const _sosRedTrack = Color(0xFFFEE2E2);
 
 class SosScreen extends StatefulWidget {
   const SosScreen({super.key});
@@ -61,7 +69,7 @@ class _SosScreenState extends State<SosScreen> {
       if (!_isCancelled) {
         setState(() {
           _progress = timer.tick / _durationInSeconds;
-          Vibration.vibrate();
+          Vibration.vibrate().catchError((_) {});
           if (timer.tick == _durationInSeconds) {
             _triggerSOS();
           }
@@ -108,7 +116,7 @@ class _SosScreenState extends State<SosScreen> {
   }
 
   void _triggerSOS() {
-    Vibration.vibrate();
+    Vibration.vibrate().catchError((_) {});
 
     if (_emergencyContacts.isNotEmpty) {
       final phone = _emergencyContacts[0]['phone']!;
@@ -294,171 +302,219 @@ class _SosScreenState extends State<SosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final remaining =
+        (_durationInSeconds - (_progress * _durationInSeconds)).floor();
+
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Icon(
-              Icons.warning,
-              size: 20,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(width: 8),
-            const Text('Emergency SOS'),
-          ],
-        ),
-      ),
-      body: Center(
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (!_isCancelled) // Show the timer if not cancelled
-              Column(
+            Container(
+              padding: const EdgeInsets.fromLTRB(4, 8, 16, 8),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppTheme.borderMuted(context))),
+              ),
+              child: Row(
                 children: [
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    height: 200,
-                    width: 200,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        CircularProgressIndicator(
-                          value: _progress,
-                          strokeWidth: 20,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.error),
-                          strokeCap: StrokeCap.round,
-                        ),
-                        Center(
-                          child: Text(
-                            '${(_durationInSeconds - (_progress * _durationInSeconds)).floor()}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .displaySmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
+                  if (Navigator.canPop(context))
+                    IconButton(
+                      icon: Icon(LucideIcons.arrowLeft, size: 20, color: AppTheme.textPrimary(context)),
+                      onPressed: () => Navigator.pop(context),
+                    )
+                  else
+                    const SizedBox(width: 12),
+                  const Icon(
+                    LucideIcons.triangleAlert,
+                    size: 20,
+                    color: _sosRed,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: SlideAction(
-                      sliderButtonIcon: const FaIcon(FontAwesomeIcons.xmark),
-                      height: 80,
-                      borderRadius: 12,
-                      elevation: 0,
-                      innerColor: Theme.of(context).colorScheme.error,
-                      outerColor: Theme.of(context).colorScheme.errorContainer,
-                      animationDuration: const Duration(milliseconds: 500),
-                      text: 'Slide to Cancel',
-                      textStyle: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        fontStyle: FontStyle.italic,
-                        color: Theme.of(context).colorScheme.onErrorContainer,
-                      ),
-                      onSubmit: () {
-                        setState(() {
-                          _isCancelled = true;
-                        });
-                        return null;
-                      },
-                    ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Emergency SOS',
+                    style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
                   ),
                 ],
               ),
-            if (_isCancelled)
-              Expanded(
-                child: ReorderableListView(
-                  buildDefaultDragHandles: false,
-                  onReorderItem: (oldIndex, newIndex) {
-                    setState(() {
-                      final item = _emergencyContacts.removeAt(oldIndex);
-                      _emergencyContacts.insert(newIndex, item);
-                      _saveEmergencyContacts();
-                    });
-                  },
-                  children: _emergencyContacts
-                      .asMap()
-                      .entries
-                      .map(
-                        (entry) => ListTile(
-                          key: ValueKey(entry.key),
-                          leading: ReorderableDragStartListener(
-                            index: entry.key,
-                            child: const FaIcon(
-                              FontAwesomeIcons.gripVertical,
-                              size: 15,
+            ),
+            Expanded(
+              child: !_isCancelled
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            height: 200,
+                            width: 200,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                const CircularProgressIndicator(
+                                  value: 1,
+                                  strokeWidth: 20,
+                                  valueColor: AlwaysStoppedAnimation<Color>(_sosRedTrack),
+                                ),
+                                CircularProgressIndicator(
+                                  value: _progress,
+                                  strokeWidth: 20,
+                                  valueColor: const AlwaysStoppedAnimation<Color>(_sosRed),
+                                  strokeCap: StrokeCap.round,
+                                ),
+                                Center(
+                                  child: Text(
+                                    '$remaining',
+                                    style: AppTextStyles.display(color: AppTheme.textPrimary(context))
+                                        .copyWith(fontSize: 40),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          title: Row(
-                            children: [
-                              Text(entry.value['name']!),
-                              if (entry.key == 0) const SizedBox(width: 5),
-                              if (entry.key == 0)
-                                Icon(
-                                  Icons.star_rounded,
-                                  size: 16,
-                                  color: Theme.of(context).colorScheme.tertiary,
-                                ), // First contact is auto-dialed on trigger
-                            ],
+                          const SizedBox(height: 16),
+                          Text(
+                            'Calling your emergency contact in ${remaining}s',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.caption(color: AppTheme.textMuted(context)),
                           ),
-                          subtitle: Text(entry.value['phone']!),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.location_on_outlined),
-                                tooltip: 'Text my location',
-                                onPressed: () {
-                                  _shareLocationViaSms(entry.value['phone']!);
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.phone),
-                                onPressed: () {
-                                  _callNumber(entry.value['phone']!);
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () {
-                                  _showDeleteContactDialog(entry.key);
-                                },
-                              ),
-                            ],
+                          Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: SlideAction(
+                              sliderButtonIcon: const Icon(LucideIcons.x, color: Colors.white),
+                              height: 60,
+                              borderRadius: AppTheme.radiusMd,
+                              elevation: 0,
+                              innerColor: _sosRed,
+                              outerColor: _sosRedTrack,
+                              animationDuration: const Duration(milliseconds: 500),
+                              text: 'Slide to Cancel',
+                              textStyle: AppTextStyles.bodyBold(color: _sosRed)
+                                  .copyWith(fontStyle: FontStyle.italic),
+                              onSubmit: () {
+                                setState(() {
+                                  _isCancelled = true;
+                                });
+                                return null;
+                              },
+                            ),
                           ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              )
+                        ],
+                      ),
+                    )
+                  : ReorderableListView(
+                      buildDefaultDragHandles: false,
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                      onReorderItem: (oldIndex, newIndex) {
+                        setState(() {
+                          final item = _emergencyContacts.removeAt(oldIndex);
+                          _emergencyContacts.insert(newIndex, item);
+                          _saveEmergencyContacts();
+                        });
+                      },
+                      children: _emergencyContacts
+                          .asMap()
+                          .entries
+                          .map(
+                            (entry) => Container(
+                              key: ValueKey(entry.key),
+                              margin: const EdgeInsets.only(bottom: 8),
+                              decoration: AppTheme.flatCard(context),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              child: Row(
+                                children: [
+                                  ReorderableDragStartListener(
+                                    index: entry.key,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: Icon(
+                                        LucideIcons.gripVertical,
+                                        size: 18,
+                                        color: AppTheme.textMuted(context),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                entry.value['name']!,
+                                                style: AppTextStyles.bodyBold(
+                                                    color: AppTheme.textPrimary(context)),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (entry.key == 0) const SizedBox(width: 5),
+                                            if (entry.key == 0)
+                                              const Icon(
+                                                LucideIcons.star,
+                                                size: 16,
+                                                color: AppTheme.amber,
+                                              ), // First contact is auto-dialed on trigger
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          entry.value['phone']!,
+                                          style: AppTextStyles.caption(color: AppTheme.textMuted(context)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(LucideIcons.mapPin,
+                                        color: AppTheme.textMuted(context)),
+                                    tooltip: 'Text my location',
+                                    onPressed: () {
+                                      _shareLocationViaSms(entry.value['phone']!);
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(LucideIcons.phone, color: AppTheme.textMuted(context)),
+                                    onPressed: () {
+                                      _callNumber(entry.value['phone']!);
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(LucideIcons.trash2, color: AppTheme.textMuted(context)),
+                                    onPressed: () {
+                                      _showDeleteContactDialog(entry.key);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+            ),
           ],
         ),
       ),
       bottomNavigationBar: SafeArea(
-        child: Padding(
+        child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: AppTheme.borderMuted(context))),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _SosActionButton(
-                icon: FontAwesomeIcons.userPlus,
+                icon: LucideIcons.userPlus,
                 label: 'Add contact',
                 active: false,
                 onTap: () => _onItemTapped(0),
               ),
               _SosActionButton(
-                icon: FontAwesomeIcons.bullhorn,
+                icon: LucideIcons.megaphone,
                 label: 'Buzzer',
                 active: _isBuzzerOn,
                 onTap: () => _onItemTapped(1),
               ),
               _SosActionButton(
-                icon: _isFlashOn
-                    ? FontAwesomeIcons.solidLightbulb
-                    : FontAwesomeIcons.lightbulb,
+                icon: _isFlashOn ? LucideIcons.lightbulb : LucideIcons.lightbulb,
                 label: 'Flashlight',
                 active: _isFlashOn,
                 onTap: () => _onItemTapped(2),
@@ -479,15 +535,14 @@ class _SosActionButton extends StatelessWidget {
     required this.onTap,
   });
 
-  final FaIconData icon;
+  final IconData icon;
   final String label;
   final bool active;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final color = active ? colorScheme.error : colorScheme.onSurfaceVariant;
+    final color = active ? _sosRed : AppTheme.textMuted(context);
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
@@ -496,9 +551,9 @@ class _SosActionButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            FaIcon(icon, size: 20, color: color),
+            Icon(icon, size: 20, color: color),
             const SizedBox(height: 6),
-            Text(label, style: TextStyle(color: color, fontSize: 12)),
+            Text(label, style: AppTextStyles.micro(color: color)),
           ],
         ),
       ),

@@ -1,12 +1,14 @@
 import 'package:avatar_glow/avatar_glow.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
+import '../data/api_client.dart';
 import '../data/app_exception.dart';
 import '../data/repositories/translation_repository.dart';
+import '../theme/app_theme.dart';
 
 class TranslationPage extends StatefulWidget {
   const TranslationPage({super.key});
@@ -136,7 +138,8 @@ class _TranslationPageState extends State<TranslationPage> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _inputController = TextEditingController();
   final TextEditingController _outputController = TextEditingController();
-  final TranslationRepository _translationRepository = TranslationRepository();
+  final TranslationRepository _translationRepository =
+      TranslationRepository(ApiClient.instance);
   String _sourceLanguage = 'en'; // Default source language
   String _targetLanguage = 'fr'; // Default target language
   List<Map<String, String>> _filteredLanguages = [];
@@ -176,7 +179,6 @@ class _TranslationPageState extends State<TranslationPage> {
         toLanguageCode: _targetLanguage,
       );
       setState(() => _outputController.text = translated);
-      await _speak(translated, _targetLanguage);
     } on AppException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -185,58 +187,95 @@ class _TranslationPageState extends State<TranslationPage> {
   }
 
   void _showLanguageBottomSheet(BuildContext context, String type) {
+    _filteredLanguages = _languages;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: TextField(
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      labelText: 'Search Language',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setSheetState) {
+            return SizedBox(
+              height: MediaQuery.of(context).size.height * 0.7,
+              child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Choose a language',
+                          style: AppTextStyles.bodyBold(color: AppTheme.textPrimary(context)),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(LucideIcons.x, color: AppTheme.textMuted(context, opacity: 0.4)),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceInput(context),
+                      borderRadius: BorderRadius.circular(999),
                     ),
-                    onChanged: (value) {
-                      setState(() {
-                        _filteredLanguages = _languages
-                            .where((lang) => lang['name']!
-                                .toLowerCase()
-                                .contains(value.toLowerCase()))
-                            .toList();
-                      });
-                    }),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _filteredLanguages.length,
-                  itemBuilder: (context, index) {
-                    final language = _filteredLanguages[index];
-                    return ListTile(
-                      title: Text(language['name']!),
-                      onTap: () {
-                        setState(() {
-                          if (type == 'source') {
-                            _sourceLanguage = language['code']!;
-                            // Set the appropriate keyboard type based on the selected language
-                            _inputController.clear(); // Clear the input field
-                          } else {
-                            _targetLanguage = language['code']!;
-                          }
+                    child: TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      style: AppTextStyles.body(color: AppTheme.textPrimary(context)),
+                      decoration: InputDecoration(
+                        hintText: 'Search language',
+                        hintStyle: AppTextStyles.body(color: AppTheme.textMuted(context)),
+                        prefixIcon: Icon(LucideIcons.search, color: AppTheme.textMuted(context)),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onChanged: (value) {
+                        setSheetState(() {
+                          _filteredLanguages = _languages
+                              .where((lang) => lang['name']!
+                                  .toLowerCase()
+                                  .contains(value.toLowerCase()))
+                              .toList();
                         });
-                        Navigator.pop(context);
                       },
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: _filteredLanguages.length,
+                      itemBuilder: (context, index) {
+                        final language = _filteredLanguages[index];
+                        return ListTile(
+                          title: Text(
+                            language['name']!,
+                            style: AppTextStyles.body(color: AppTheme.textPrimary(context)),
+                          ),
+                          onTap: () {
+                            setState(() {
+                              if (type == 'source') {
+                                _sourceLanguage = language['code']!;
+                                // Set the appropriate keyboard type based on the selected language
+                                _inputController.clear(); // Clear the input field
+                              } else {
+                                _targetLanguage = language['code']!;
+                              }
+                            });
+                            _searchController.clear();
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -248,7 +287,13 @@ class _TranslationPageState extends State<TranslationPage> {
   }
 
   void _startListening() async {
-    await _speechToText.listen(onResult: _onSpeechResult);
+    await _speechToText.listen(
+      onResult: _onSpeechResult,
+      listenOptions: SpeechListenOptions(
+        partialResults: true,
+        pauseFor: const Duration(seconds: 3),
+      ),
+    );
     setState(() {});
   }
 
@@ -262,133 +307,216 @@ class _TranslationPageState extends State<TranslationPage> {
       _lastWords = result.recognizedWords;
       _inputController.text = _lastWords;
     });
+    // The engine finalizes a result once it detects the user has stopped
+    // speaking (per pauseFor above) — that's the natural trigger to
+    // translate automatically, instead of requiring a separate tap.
+    if (result.finalResult && _lastWords.isNotEmpty) {
+      _translateText();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Language Translation'),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppTheme.borderMuted(context))),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    'Language Translation',
+                    style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showLanguageBottomSheet(context, 'source'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                color: AppTheme.accent(context).withValues(alpha: 0.1),
+                              ),
+                              child: Text(
+                                _getLanguageName(_sourceLanguage),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.label(
+                                  color: AppTheme.accent(context),
+                                  weight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Material(
+                            color: AppTheme.surfaceInput(context),
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: _toggleLanguages,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(
+                                  LucideIcons.arrowLeftRight,
+                                  size: 18,
+                                  color: AppTheme.accent(context),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showLanguageBottomSheet(context, 'target'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                color: AppTheme.accent(context).withValues(alpha: 0.1),
+                              ),
+                              child: Text(
+                                _getLanguageName(_targetLanguage),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.label(
+                                  color: AppTheme.accent(context),
+                                  weight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _inputController,
+                      style: AppTextStyles.body(color: AppTheme.textPrimary(context)),
+                      decoration: InputDecoration(
+                        hintText: 'Enter text to translate',
+                        hintStyle: AppTextStyles.body(color: AppTheme.textMuted(context)),
+                        filled: false,
+                        contentPadding: const EdgeInsets.all(16),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                          borderSide: BorderSide(color: AppTheme.borderMuted(context)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                          borderSide: BorderSide(color: AppTheme.borderMuted(context)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                          borderSide: BorderSide(color: AppTheme.accent(context)),
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(LucideIcons.x, color: AppTheme.textMuted(context)),
+                          onPressed: () {
+                            setState(() {
+                              _inputController.clear();
+                              _outputController.clear();
+                            });
+                          },
+                        ),
+                      ),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _translateText,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentStrong(context),
+                        foregroundColor: AppTheme.onAccentStrong(context),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                        ),
+                      ),
+                      child: Text('Translate',
+                          style: AppTextStyles.bodyBold(color: AppTheme.onAccentStrong(context))),
+                    ),
+                    if (_outputController.text.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        decoration: AppTheme.flatCard(context),
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'TRANSLATED TEXT',
+                                  style: AppTextStyles.tag(color: AppTheme.textMuted(context, opacity: 0.4)),
+                                ),
+                                SizedBox(
+                                  width: 28,
+                                  height: 28,
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    icon: Icon(LucideIcons.volume2, size: 18, color: AppTheme.accent(context)),
+                                    tooltip: 'Speak translation',
+                                    onPressed: () =>
+                                        _speak(_outputController.text, _targetLanguage),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _outputController.text,
+                              style: AppTextStyles.body(color: AppTheme.textPrimary(context)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: AvatarGlow(
         animate: _speechToText.isListening,
-        glowColor: Theme.of(context).colorScheme.primary,
+        glowColor: AppTheme.accentStrong(context).withValues(alpha: 0.4),
         glowShape: BoxShape.circle,
         duration: const Duration(milliseconds: 2000),
         repeat: true,
         child: FloatingActionButton(
           shape: const CircleBorder(),
+          backgroundColor: AppTheme.accentStrong(context),
+          foregroundColor: AppTheme.onAccentStrong(context),
           onPressed: !_speechEnabled
               ? null
               : _speechToText.isNotListening
                   ? _startListening
                   : _stopListening,
           tooltip: _speechEnabled ? 'Listen' : 'Speech recognition unavailable',
-          child: Icon(_speechToText.isNotListening ? Icons.mic : Icons.mic_off),
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _showLanguageBottomSheet(context, 'source'),
-                    child: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8.0),
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                      ),
-                      child: Text(
-                        _getLanguageName(_sourceLanguage),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(30),
-                    onTap: _toggleLanguages,
-                    child: const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: FaIcon(
-                        FontAwesomeIcons.arrowsRotate,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _showLanguageBottomSheet(context, 'target'),
-                    child: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8.0),
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                      ),
-                      child: Text(
-                        _getLanguageName(_targetLanguage),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _inputController,
-              decoration: InputDecoration(
-                labelText: 'Enter Text to Translate',
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _inputController.clear();
-                    _outputController.clear();
-                  },
-                ),
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _translateText,
-              child: const Text('Translate'),
-            ),
-            const SizedBox(height: 16),
-            Visibility(
-              visible: _outputController.text.isNotEmpty,
-              child: TextField(
-                controller: _outputController,
-                decoration: const InputDecoration(
-                  labelText: 'Translated Text',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-                readOnly: true,
-              ),
-            ),
-          ],
+          child: Icon(_speechToText.isNotListening ? LucideIcons.mic : LucideIcons.micOff),
         ),
       ),
     );
