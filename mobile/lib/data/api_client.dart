@@ -7,7 +7,10 @@ import 'token_storage.dart';
 
 /// Backend base URL. Override at build/run time with
 /// `--dart-define=API_BASE_URL=https://your-server` (e.g. an ngrok URL when
-/// running on a physical device against a local backend).
+/// running on a physical device against a local backend), or with
+/// `--dart-define-from-file=config.json` (see config.json.example) once
+/// there are enough build-time values that individual flags get unwieldy —
+/// CI uses the latter.
 const _defaultBaseUrl = 'http://localhost:5000';
 const apiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',

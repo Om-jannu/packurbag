@@ -54,6 +54,9 @@ mobile/android/keystore/
 mobile/**/*.jks
 mobile/**/*.keystore
 
+# Local build-time config — copy config.json.example and edit as needed
+mobile/config.json
+
 # iOS release signing
 mobile/ios/certs/
 mobile/ios/*.p12

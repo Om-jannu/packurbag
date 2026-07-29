@@ -11,6 +11,11 @@ on:
 
 env:
   FLUTTER_VERSION: "3.44.8"
+  # Not a secret — just the public backend URL. Baked in at build time so
+  # the release APK/AAB talk to the real server instead of the mobile
+  # app's default of localhost:5000 (meant for local dev against a
+  # backend running on the same machine).
+  PRODUCTION_API_URL: "https://packurbag-server.onrender.com"
 
 jobs:
   android:
@@ -46,9 +51,20 @@ jobs:
           storeFile=keystore/upload-keystore.jks
           EOF
 
+      # Add more keys here as needed — everything downstream (both build
+      # commands, and the app's own String.fromEnvironment(...) calls)
+      # picks them up automatically with no other changes required.
+      - name: Write build-time config
+        run: |
+          cat > config.json <<EOF
+          {
+            "API_BASE_URL": "${{ env.PRODUCTION_API_URL }}"
+          }
+          EOF
+
       - run: flutter pub get
-      - run: flutter build apk --release
-      - run: flutter build appbundle --release
+      - run: flutter build apk --release --dart-define-from-file=config.json
+      - run: flutter build appbundle --release --dart-define-from-file=config.json
 
       # Stage both outputs into one flat directory before uploading —
       # upload-artifact preserves each input path's subdirectories when
@@ -135,9 +151,17 @@ jobs:
           </plist>
           EOF
 
+      - name: Write build-time config
+        run: |
+          cat > config.json <<EOF
+          {
+            "API_BASE_URL": "${{ env.PRODUCTION_API_URL }}"
+          }
+          EOF
+
       - run: flutter pub get
       - run: pod install --project-directory=ios
-      - run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+      - run: flutter build ipa --release --dart-define-from-file=config.json --export-options-plist=ios/ExportOptions.plist
 
       - uses: actions/upload-artifact@v7
         with:

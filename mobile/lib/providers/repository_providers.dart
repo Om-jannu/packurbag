@@ -10,7 +10,6 @@ import '../data/repositories/expense_repository.dart';
 import '../data/repositories/itinerary_repository.dart';
 import '../data/repositories/message_repository.dart';
 import '../data/repositories/packing_repository.dart';
-import '../data/repositories/translation_repository.dart';
 import '../data/repositories/trip_repository.dart';
 import '../data/repositories/weather_repository.dart';
 
@@ -58,8 +57,4 @@ final documentsRepositoryProvider = Provider<DocumentsRepository>(
 
 final aiRepositoryProvider = Provider<AiRepository>(
   (ref) => AiRepository(ref.watch(apiClientProvider)),
-);
-
-final translationRepositoryProvider = Provider<TranslationRepository>(
-  (ref) => TranslationRepository(ref.watch(apiClientProvider)),
 );
