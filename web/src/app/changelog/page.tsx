@@ -19,7 +19,7 @@ interface ChangelogEntry {
 }
 
 const ANDROID_APK_URL =
-  "https://github.com/Om-jannu/packurbag/releases/latest/download/app-release.apk";
+  "https://github.com/Om-jannu/packurbag/releases/latest/download/packurbag.apk";
 
 const ENTRIES: ChangelogEntry[] = [
   {

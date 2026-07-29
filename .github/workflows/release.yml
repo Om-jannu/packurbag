@@ -58,8 +58,8 @@ jobs:
       - name: Stage release artifacts
         run: |
           mkdir -p release-artifacts
-          cp build/app/outputs/flutter-apk/app-release.apk release-artifacts/
-          cp build/app/outputs/bundle/release/app-release.aab release-artifacts/
+          cp build/app/outputs/flutter-apk/app-release.apk release-artifacts/packurbag.apk
+          cp build/app/outputs/bundle/release/app-release.aab release-artifacts/packurbag.aab
 
       - uses: actions/upload-artifact@v7
         with:
@@ -162,8 +162,8 @@ jobs:
       - uses: softprops/action-gh-release@v3
         with:
           files: |
-            **/app-release.apk
-            **/app-release.aab
+            **/packurbag.apk
+            **/packurbag.aab
             **/*.ipa
           fail_on_unmatched_files: false
           generate_release_notes: true

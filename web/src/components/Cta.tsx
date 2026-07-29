@@ -21,7 +21,7 @@ export default function Cta() {
           </p>
           <div className="mx-auto mt-8 flex max-w-md flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <a
-              href="https://github.com/Om-jannu/packurbag/releases/latest/download/app-release.apk"
+              href="https://github.com/Om-jannu/packurbag/releases/latest/download/packurbag.apk"
               className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-teal-dark transition hover:brightness-95 sm:w-auto"
             >
               <Smartphone size={18} />
