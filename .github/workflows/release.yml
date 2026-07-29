@@ -155,10 +155,14 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
 
+      - name: Show downloaded artifact layout
+        run: pwd && find . -maxdepth 4 -type f
+
       - uses: softprops/action-gh-release@v3
         with:
           files: |
-            android-release/*
+            android-release/app-release.apk
+            android-release/app-release.aab
             ios-release/*
           fail_on_unmatched_files: false
           generate_release_notes: true
