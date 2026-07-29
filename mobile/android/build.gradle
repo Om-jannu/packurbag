@@ -26,10 +26,9 @@ subprojects {
             if (androidExt != null && androidExt.namespace == null) {
                 def manifestFile = project.file("src/main/AndroidManifest.xml")
                 if (manifestFile.exists()) {
-                    def manifestXml = new XmlSlurper().parse(manifestFile)
-                    def packageName = manifestXml.@package.text()
-                    if (packageName) {
-                        androidExt.namespace = packageName
+                    def matcher = manifestFile.text =~ /package="([^"]+)"/
+                    if (matcher.find()) {
+                        androidExt.namespace = matcher.group(1)
                     }
                 }
             }
