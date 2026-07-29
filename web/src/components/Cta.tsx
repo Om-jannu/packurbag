@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Apple, Smartphone } from "lucide-react";
+import { Heart, Smartphone } from "lucide-react";
 
 export default function Cta() {
   return (
@@ -17,8 +17,8 @@ export default function Cta() {
             Download Packurbag
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-white/85">
-            No app store gatekeeping — grab the Android APK or the iOS build directly
-            and start planning your next trip.
+            No app store gatekeeping — grab the Android APK directly and start
+            planning your next trip.
           </p>
           <div className="mx-auto mt-8 flex max-w-md flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
@@ -28,16 +28,20 @@ export default function Cta() {
               <Smartphone size={18} />
               Download for Android
             </Link>
-            <Link
-              href="/changelog"
+            <a
+              href="https://github.com/sponsors/Om-jannu"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex w-full items-center justify-center gap-2 rounded-full bg-teal-dark px-6 py-3.5 text-sm font-bold text-white transition hover:brightness-110 sm:w-auto"
             >
-              <Apple size={18} />
-              Download for iOS
-            </Link>
+              <Heart size={18} />
+              Help bring iOS
+            </a>
           </div>
           <p className="mt-5 text-xs text-white/70">
-            Builds are rolling out — check the changelog for the latest release.
+            iOS needs a paid Apple developer account to ship — sponsoring the
+            project helps make that happen. Android builds are rolling out —
+            check the changelog for the latest release.
           </p>
         </div>
       </div>

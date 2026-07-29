@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Heart } from "lucide-react";
 import BackendStatusBadge from "./BackendStatusBadge";
 
 export default function Footer() {
@@ -28,6 +29,15 @@ export default function Footer() {
           <Link href="/terms" className="transition hover:text-teal">
             Terms
           </Link>
+          <a
+            href="https://github.com/sponsors/Om-jannu"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 transition hover:text-teal"
+          >
+            <Heart size={13} />
+            Sponsor
+          </a>
           <BackendStatusBadge />
         </div>
       </div>

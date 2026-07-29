@@ -48,6 +48,18 @@ mobile/android/app/debug
 mobile/android/app/profile
 mobile/android/app/release
 
+# Release signing — never commit the keystore or its passwords
+mobile/android/key.properties
+mobile/android/keystore/
+mobile/**/*.jks
+mobile/**/*.keystore
+
+# iOS release signing
+mobile/ios/certs/
+mobile/ios/*.p12
+mobile/ios/*.mobileprovision
+mobile/ios/ExportOptions.plist
+
 mobile/node_modules/
 
 # ==========================================================================
