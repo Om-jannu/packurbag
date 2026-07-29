@@ -19,12 +19,12 @@ subprojects {
 // attribute — this backfills the namespace from that attribute for any
 // subproject missing one, so it also covers older plugins added later
 // instead of needing a per-package fix each time one shows up.
-subprojects {
-    afterEvaluate { project ->
-        if (project.plugins.hasPlugin("com.android.library")) {
-            def androidExt = project.extensions.findByName("android")
+subprojects { subproject ->
+    def backfillNamespace = {
+        if (subproject.plugins.hasPlugin("com.android.library")) {
+            def androidExt = subproject.extensions.findByName("android")
             if (androidExt != null && androidExt.namespace == null) {
-                def manifestFile = project.file("src/main/AndroidManifest.xml")
+                def manifestFile = subproject.file("src/main/AndroidManifest.xml")
                 if (manifestFile.exists()) {
                     def matcher = manifestFile.text =~ /package="([^"]+)"/
                     if (matcher.find()) {
@@ -33,6 +33,15 @@ subprojects {
                 }
             }
         }
+    }
+    // Flutter's plugin loader can evaluate some plugin subprojects earlier
+    // than Gradle's normal ordering, so by the time this line runs a given
+    // subproject may already be evaluated — calling afterEvaluate on one
+    // that's already executed throws, so apply immediately in that case.
+    if (subproject.state.executed) {
+        backfillNamespace()
+    } else {
+        subproject.afterEvaluate { backfillNamespace() }
     }
 }
 
