@@ -13,6 +13,30 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// AGP 8+ requires every Android library module to declare a `namespace`.
+// A handful of older plugins (e.g. torch_controller, flutter_phone_direct_caller)
+// were never updated for that and only have the legacy manifest `package`
+// attribute — this backfills the namespace from that attribute for any
+// subproject missing one, so it also covers older plugins added later
+// instead of needing a per-package fix each time one shows up.
+subprojects {
+    afterEvaluate { project ->
+        if (project.plugins.hasPlugin("com.android.library")) {
+            def androidExt = project.extensions.findByName("android")
+            if (androidExt != null && androidExt.namespace == null) {
+                def manifestFile = project.file("src/main/AndroidManifest.xml")
+                if (manifestFile.exists()) {
+                    def manifestXml = new XmlSlurper().parse(manifestFile)
+                    def packageName = manifestXml.@package.text()
+                    if (packageName) {
+                        androidExt.namespace = packageName
+                    }
+                }
+            }
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
