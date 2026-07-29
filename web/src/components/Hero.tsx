@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Luggage, Wallet, Users } from "lucide-react";
+import { Luggage, Smartphone, Wallet, Users } from "lucide-react";
 import PhoneFrame from "./PhoneFrame";
 import HeroFlowMock from "./mocks/HeroFlowMock";
 
@@ -34,10 +34,11 @@ export default function Hero() {
 
           <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row md:justify-start">
             <a
-              href="#features"
-              className="w-full rounded-full bg-coral px-7 py-3.5 text-center font-bold text-white shadow-lg shadow-coral/30 transition hover:brightness-110 sm:w-auto"
+              href="https://github.com/Om-jannu/packurbag/releases/latest/download/packurbag.apk"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-coral px-7 py-3.5 text-center font-bold text-white shadow-lg shadow-coral/30 transition hover:brightness-110 sm:w-auto"
             >
-              Explore features
+              <Smartphone size={18} />
+              Download for Android
             </a>
             <a
               href="#mockups"
