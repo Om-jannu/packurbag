@@ -155,14 +155,15 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
 
-      - name: Show downloaded artifact layout
-        run: pwd && find . -maxdepth 4 -type f
-
+      # download-artifact's layout depends on how many artifacts exist —
+      # with just one (today, since iOS is disabled) it extracts flat into
+      # the workspace root; with two or more it nests each under a
+      # directory named after the artifact. `**/` matches either case.
       - uses: softprops/action-gh-release@v3
         with:
           files: |
-            android-release/app-release.apk
-            android-release/app-release.aab
-            ios-release/*
+            **/app-release.apk
+            **/app-release.aab
+            **/*.ipa
           fail_on_unmatched_files: false
           generate_release_notes: true
