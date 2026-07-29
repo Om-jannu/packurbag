@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:torch_controller/torch_controller.dart';
 
 import 'data/api_client.dart';
 import 'providers/auth_provider.dart';
@@ -10,7 +9,6 @@ import 'theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  TorchController().initialize();
   runApp(const ProviderScope(child: MyApp()));
 }
 

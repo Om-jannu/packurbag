@@ -37,7 +37,7 @@ dependencies:
   shimmer: ^3.0.0
   slide_to_act: ^2.0.2
   speech_to_text: ^7.4.0
-  torch_controller: ^2.0.1
+  torch_light: ^2.0.0
   url_launcher: ^6.3.2
   vibration: ^3.2.0
 

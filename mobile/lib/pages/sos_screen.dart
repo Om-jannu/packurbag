@@ -5,7 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:slide_to_act/slide_to_act.dart';
-import 'package:torch_controller/torch_controller.dart';
+import 'package:torch_light/torch_light.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vibration/vibration.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,9 +31,10 @@ class _SosScreenState extends State<SosScreen> {
   double _progress = 0.0;
   bool _isCancelled = false;
   bool _isBuzzerOn = false; // Track the state of the buzzer
-  bool _isFlashOn = false; // Track the state of the flashlight
+  bool _isFlashOn = false; // Track whether the SOS strobe loop is running
+  bool _isTorchLit = false; // Track the flashlight's actual physical on/off state
+  Timer? _flashTimer;
   final player = AudioPlayer();
-  final torchController = TorchController();
 
   List<Map<String, String>> _emergencyContacts = [];
 
@@ -48,8 +49,12 @@ class _SosScreenState extends State<SosScreen> {
   @override
   void dispose() {
     super.dispose();
-    // Cancel the timer when the screen is disposed
+    // Cancel the timers when the screen is disposed
     _timer.cancel();
+    _flashTimer?.cancel();
+    if (_isTorchLit) {
+      TorchLight.disableTorch().catchError((_) {});
+    }
   }
 
   void _onItemTapped(int index) {
@@ -158,22 +163,36 @@ class _SosScreenState extends State<SosScreen> {
   }
 
   void _startFlashToggle() {
-    // Start a timer to toggle the flashlight every 500 milliseconds
-    Timer.periodic(const Duration(milliseconds: 100), (timer) {
+    // Start a timer to toggle the flashlight every 100 milliseconds
+    _flashTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) async {
       if (!_isFlashOn) {
         // If flashlight is turned off externally, cancel the timer
         timer.cancel();
-      } else {
-        torchController.toggle();
+        return;
+      }
+      try {
+        if (_isTorchLit) {
+          await TorchLight.disableTorch();
+        } else {
+          await TorchLight.enableTorch();
+        }
+        _isTorchLit = !_isTorchLit;
+      } catch (_) {
+        // No flashlight on this device, or it's in use elsewhere — stop
+        // trying rather than throwing every 100ms.
+        timer.cancel();
       }
     });
   }
 
   void _stopFlashToggle() async {
-    // Cancel the flashlight toggle timer
-    bool? flashInstance = await torchController.isTorchActive;
-    if (flashInstance!) {
-      torchController.toggle();
+    if (_isTorchLit) {
+      try {
+        await TorchLight.disableTorch();
+      } catch (_) {
+        // Already off or unavailable — nothing to clean up.
+      }
+      _isTorchLit = false;
     }
   }
 
