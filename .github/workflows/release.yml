@@ -50,12 +50,21 @@ jobs:
       - run: flutter build apk --release
       - run: flutter build appbundle --release
 
+      # Stage both outputs into one flat directory before uploading —
+      # upload-artifact preserves each input path's subdirectories when
+      # given multiple files with diverging structure, which made the
+      # downloaded artifact awkward to glob-match reliably in the release
+      # job. A flat directory sidesteps that entirely.
+      - name: Stage release artifacts
+        run: |
+          mkdir -p release-artifacts
+          cp build/app/outputs/flutter-apk/app-release.apk release-artifacts/
+          cp build/app/outputs/bundle/release/app-release.aab release-artifacts/
+
       - uses: actions/upload-artifact@v7
         with:
           name: android-release
-          path: |
-            mobile/build/app/outputs/flutter-apk/app-release.apk
-            mobile/build/app/outputs/bundle/release/app-release.aab
+          path: mobile/release-artifacts
           if-no-files-found: error
 
   ios:
@@ -149,8 +158,7 @@ jobs:
       - uses: softprops/action-gh-release@v3
         with:
           files: |
-            android-release/**/*.apk
-            android-release/**/*.aab
-            ios-release/**/*.ipa
+            android-release/*
+            ios-release/*
           fail_on_unmatched_files: false
           generate_release_notes: true
