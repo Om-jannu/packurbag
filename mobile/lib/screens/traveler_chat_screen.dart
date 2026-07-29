@@ -13,6 +13,7 @@ import '../providers/discovery_providers.dart';
 import '../providers/repository_providers.dart';
 import '../theme/app_theme.dart';
 import '../widgets/chat_bubble_tile.dart';
+import '../widgets/conversation_shimmer.dart';
 
 /// 1:1 chat with a nearby traveler. Polls the conversation on a timer while
 /// open rather than using a websocket — consistent with the rest of the
@@ -104,7 +105,7 @@ class _TravelerChatScreenState extends ConsumerState<TravelerChatScreen> {
               child: conversationAsync == null
                   ? const SizedBox.shrink()
                   : conversationAsync.when(
-                      loading: () => const Center(child: CircularProgressIndicator()),
+                      loading: () => const ConversationShimmer(),
                       error: (error, _) => Center(child: Text('$error')),
                       data: (messages) {
                         if (messages.isEmpty) {

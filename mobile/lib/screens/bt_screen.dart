@@ -12,6 +12,7 @@ import '../providers/discovery_providers.dart';
 import '../providers/repository_providers.dart';
 import '../theme/app_theme.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/list_row_shimmer.dart';
 
 /// "Nearby Travelers" — social travel discovery. Registered users opt in to
 /// share their live location and can see (and chat with) other nearby
@@ -135,8 +136,7 @@ class _BtScreenState extends ConsumerState<BtScreen> {
                           onRefresh: () async =>
                               ref.invalidate(nearbyTravelersProvider(userId!)),
                           child: travelersAsync.when(
-                            loading: () =>
-                                const Center(child: CircularProgressIndicator()),
+                            loading: () => const ListRowShimmerList(),
                             error: (error, _) => Center(child: Text('$error')),
                             data: (travelers) {
                               if (travelers.isEmpty) {

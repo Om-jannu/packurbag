@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../data/api_client.dart';
 import '../theme/app_theme.dart';
+import '../widgets/loading_shimmer_card.dart';
 
 class ConversionCard extends StatefulWidget {
   final Map<String, double> rates;
@@ -476,17 +477,13 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
                 future: ratesModel,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
+                    return const _ConverterFormShimmer();
                   } else {
                     return FutureBuilder<Map>(
                       future: currenciesModel,
                       builder: (context, index) {
                         if (index.connectionState == ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
+                          return const _ConverterFormShimmer();
                         } else if (index.hasError) {
                           return Center(child: Text('Error: ${index.error}'));
                         } else {
@@ -503,6 +500,34 @@ class _CurrencyConverterState extends State<CurrencyConverter> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Rough shape of the converter form (amount field, currency pickers,
+/// convert button) — shown while rates/currencies load.
+class _ConverterFormShimmer extends StatelessWidget {
+  const _ConverterFormShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          const LoadingShimmerCard(height: 64),
+          const SizedBox(height: 16),
+          Row(
+            children: const [
+              Expanded(child: LoadingShimmerCard(height: 56)),
+              SizedBox(width: 12),
+              Expanded(child: LoadingShimmerCard(height: 56)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const LoadingShimmerCard(height: 48, borderRadius: 999),
+        ],
       ),
     );
   }

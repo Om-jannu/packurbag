@@ -63,6 +63,9 @@ export interface AiChatBody {
   message: string;
   history?: { role: "user" | "assistant" | "system"; content: string }[];
   destination?: string;
+  /** Short, pre-formatted summary of the trip's dates/budget/itinerary —
+   * built client-side from the user's own trip data, not free-form input. */
+  tripContext?: string;
 }
 
 export interface TranslateBody {

@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../data/repositories/weather_repository.dart';
 import '../models/itinerary_item.dart';
@@ -13,6 +14,7 @@ import '../providers/trip_providers.dart';
 import '../theme/app_theme.dart';
 import '../widgets/category_color.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/home_dashboard_shimmer.dart';
 import '../widgets/trip_calendar_card.dart';
 import '../widgets/trip_form_sheet.dart';
 
@@ -96,7 +98,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: tripsAsync == null
                   ? const SizedBox.shrink()
                   : tripsAsync.when(
-                      loading: () => const Center(child: CircularProgressIndicator()),
+                      loading: () => const HomeDashboardShimmer(),
                       error: (error, _) => Center(child: Text('$error')),
                       data: (trips) {
                         final nextTrip = _nextTrip(trips);
@@ -265,10 +267,41 @@ class _WeatherCard extends ConsumerWidget {
       decoration: AppTheme.flatCard(context),
       padding: const EdgeInsets.all(14),
       child: weatherAsync.when(
-        loading: () => const SizedBox(
-          height: 32,
-          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        ),
+        loading: () {
+          final colorScheme = Theme.of(context).colorScheme;
+          return Shimmer.fromColors(
+            baseColor: colorScheme.surfaceContainerHigh,
+            highlightColor: colorScheme.surfaceContainerHighest,
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 120,
+                        height: 12,
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: 80,
+                        height: 10,
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
         error: (error, _) => Row(
           children: [
             Icon(LucideIcons.cloudOff, color: AppTheme.textMuted(context)),
@@ -323,10 +356,18 @@ class _CurrencySnippetCard extends ConsumerWidget {
       decoration: AppTheme.flatCard(context),
       padding: const EdgeInsets.all(14),
       child: ratesAsync.when(
-        loading: () => const SizedBox(
-          height: 20,
-          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        ),
+        loading: () {
+          final colorScheme = Theme.of(context).colorScheme;
+          return Shimmer.fromColors(
+            baseColor: colorScheme.surfaceContainerHigh,
+            highlightColor: colorScheme.surfaceContainerHighest,
+            child: Container(
+              width: 160,
+              height: 14,
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
+            ),
+          );
+        },
         error: (error, _) => Text(
           'Currency rates unavailable',
           style: AppTextStyles.label(color: AppTheme.textMuted(context)),

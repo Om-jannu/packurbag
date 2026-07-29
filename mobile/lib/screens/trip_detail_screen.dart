@@ -23,6 +23,7 @@ import '../widgets/document_form_sheet.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/expense_form_sheet.dart';
 import '../widgets/itinerary_item_form_sheet.dart';
+import '../widgets/list_row_shimmer.dart';
 import '../widgets/packing_item_form_sheet.dart';
 import '../widgets/photo_viewer_page.dart';
 import '../widgets/priority_badge.dart';
@@ -490,8 +491,13 @@ class _BudgetTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ratesAsync = ref.watch(_usdRatesProvider);
 
+    // Expenses are already available synchronously — only the conversion
+    // rates are async, and the error case already degrades gracefully to
+    // unconverted amounts, so there's no need for a loading placeholder at
+    // all: show unconverted amounts immediately, then re-render once rates
+    // arrive, instead of a spinner or shimmer flash for something this brief.
     return ratesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => _buildBody(context, ref, const {}),
       error: (error, _) => _buildBody(context, ref, const {}),
       data: (rates) => _buildBody(context, ref, rates),
     );
@@ -685,7 +691,7 @@ class _DocumentsTab extends ConsumerWidget {
         ),
         Expanded(
           child: documentsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const ListRowShimmerList(count: 4),
             error: (error, _) => Center(child: Text('$error')),
             data: (documents) {
               if (documents.isEmpty) {
