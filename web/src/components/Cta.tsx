@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Heart, Smartphone } from "lucide-react";
 
 export default function Cta() {
@@ -21,13 +20,13 @@ export default function Cta() {
             planning your next trip.
           </p>
           <div className="mx-auto mt-8 flex max-w-md flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <Link
-              href="/changelog"
+            <a
+              href="https://github.com/Om-jannu/packurbag/releases/latest/download/app-release.apk"
               className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-teal-dark transition hover:brightness-95 sm:w-auto"
             >
               <Smartphone size={18} />
               Download for Android
-            </Link>
+            </a>
             <a
               href="https://github.com/sponsors/Om-jannu"
               target="_blank"
@@ -40,8 +39,9 @@ export default function Cta() {
           </div>
           <p className="mt-5 text-xs text-white/70">
             iOS needs a paid Apple developer account to ship — sponsoring the
-            project helps make that happen. Android builds are rolling out —
-            check the changelog for the latest release.
+            project helps make that happen. You&apos;ll need to allow
+            &quot;install unknown apps&quot; on your phone the first time,
+            since this isn&apos;t distributed through the Play Store.
           </p>
         </div>
       </div>
