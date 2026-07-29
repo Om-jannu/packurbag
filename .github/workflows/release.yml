@@ -149,7 +149,8 @@ jobs:
       - uses: softprops/action-gh-release@v3
         with:
           files: |
-            android-release/*
-            ios-release/*
+            android-release/**/*.apk
+            android-release/**/*.aab
+            ios-release/**/*.ipa
           fail_on_unmatched_files: false
           generate_release_notes: true
