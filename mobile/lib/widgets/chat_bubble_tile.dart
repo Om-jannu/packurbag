@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 
 import '../theme/app_theme.dart';
 
@@ -6,13 +7,24 @@ import '../theme/app_theme.dart';
 /// package's speech-tail clipper with the simpler pill shape used across
 /// the app's chat surfaces (traveler chat, AI assistant).
 class ChatBubbleTile extends StatelessWidget {
-  const ChatBubbleTile({super.key, required this.text, required this.isMe});
+  const ChatBubbleTile({
+    super.key,
+    required this.text,
+    required this.isMe,
+    this.enableMarkdown = false,
+  });
 
   final String text;
   final bool isMe;
 
+  /// Renders [text] as markdown instead of plain text — only meant for AI
+  /// assistant replies (which regularly contain **bold**/lists/etc.), not
+  /// human-typed messages between travelers.
+  final bool enableMarkdown;
+
   @override
   Widget build(BuildContext context) {
+    final color = isMe ? AppTheme.textPrimary(context) : AppTheme.textMuted(context, opacity: 0.8);
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -23,12 +35,9 @@ class ChatBubbleTile extends StatelessWidget {
           color: isMe ? AppTheme.accent(context).withValues(alpha: 0.15) : AppTheme.surfaceInput(context),
           borderRadius: BorderRadius.circular(18),
         ),
-        child: Text(
-          text,
-          style: AppTextStyles.body(
-            color: isMe ? AppTheme.textPrimary(context) : AppTheme.textMuted(context, opacity: 0.8),
-          ),
-        ),
+        child: enableMarkdown
+            ? GptMarkdown(text, style: AppTextStyles.body(color: color))
+            : Text(text, style: AppTextStyles.body(color: color)),
       ),
     );
   }

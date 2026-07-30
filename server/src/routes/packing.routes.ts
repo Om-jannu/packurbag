@@ -50,7 +50,16 @@ packingRoutes.put("/:tripId/packing/:itemId", async (c) => {
     if (!item) {
       return c.json({ success: false, message: "Packing item not found" }, 404);
     }
-    Object.assign(item, await c.req.json<Partial<PackingItemBody>>());
+    const body = await c.req.json<Partial<PackingItemBody>>();
+    // Assign only the known editable fields — Object.assign(item, body) would
+    // let any field on the same schema through (e.g. packed) if the body
+    // ever contained them.
+    const editableFields: (keyof PackingItemBody)[] = ["text", "category"];
+    for (const field of editableFields) {
+      if (body[field] !== undefined) {
+        (item as unknown as Record<string, unknown>)[field] = body[field];
+      }
+    }
     await user!.save();
     return c.json({ success: true, message: "Packing item updated" });
   } catch (error) {

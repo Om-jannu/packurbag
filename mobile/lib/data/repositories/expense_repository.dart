@@ -1,3 +1,4 @@
+import '../../models/expense.dart';
 import '../app_exception.dart';
 import '../api_client.dart';
 
@@ -8,7 +9,7 @@ class ExpenseRepository {
 
   String _base(String userId, String tripId) => '/trips/$tripId/expenses';
 
-  Future<void> addExpense({
+  Future<Expense> addExpense({
     required String userId,
     required String tripId,
     required String title,
@@ -27,6 +28,7 @@ class ExpenseRepository {
     if (response['success'] == false) {
       throw AppException(response['message'] as String? ?? 'Error adding expense');
     }
+    return Expense.fromJson(response['data'] as Map<String, dynamic>);
   }
 
   Future<void> updateExpense({

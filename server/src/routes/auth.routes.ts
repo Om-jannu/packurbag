@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import bcrypt from "bcrypt";
 import User from "../models/userSchema";
 import RefreshToken from "../models/refreshTokenSchema";
 import {
@@ -8,8 +9,19 @@ import {
   REFRESH_TOKEN_TTL_MS,
 } from "../lib/tokens";
 import type { LoginBody, RegisterBody } from "../types/requests";
+import { rateLimitByIp } from "../middleware/rate-limit";
 
 export const authRoutes = new Hono();
+
+// A precomputed hash with no matching plaintext — compared against on every
+// login attempt for a nonexistent user, so a nonexistent-user response takes
+// the same ~bcrypt-compare time as a wrong-password one. Without this, an
+// attacker can time /login responses to enumerate which emails are
+// registered before attempting a credential-stuffing attack.
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync("not-a-real-password", 12);
+
+authRoutes.use("/register", rateLimitByIp({ limit: 5, windowMs: 60 * 60 * 1000 }));
+authRoutes.use("/login", rateLimitByIp({ limit: 10, windowMs: 15 * 60 * 1000 }));
 
 interface TokenPair {
   accessToken: string;
@@ -44,7 +56,9 @@ authRoutes.post("/login", async (c) => {
   const { userEmail, password } = await c.req.json<LoginBody>();
   try {
     const user = await User.findOne({ userEmail });
-    const passwordMatches = user ? await user.comparePassword(password) : false;
+    const passwordMatches = user
+      ? await user.comparePassword(password)
+      : await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
 
     if (user && passwordMatches) {
       const userData = user.toObject();

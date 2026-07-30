@@ -10,3 +10,9 @@ final documentsProvider = FutureProvider.family<List<TravelDocument>,
       .watch(documentsRepositoryProvider)
       .fetchDocuments(userId: ids.userId, tripId: ids.tripId);
 });
+
+/// All of a user's travel documents across every trip.
+final allDocumentsProvider =
+    FutureProvider.family<List<TravelDocument>, String>((ref, userId) {
+  return ref.watch(documentsRepositoryProvider).fetchAllDocuments(userId: userId);
+});

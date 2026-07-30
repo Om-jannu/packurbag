@@ -147,8 +147,8 @@ class _TripFormSheetState extends ConsumerState<TripFormSheet> {
           budgetCurrency: budgetCurrency,
         );
       }
-      ref.invalidate(tripsProvider(widget.userId));
       if (!mounted) return;
+      ref.invalidate(tripsProvider(widget.userId));
       Navigator.pop(context);
     } on AppException catch (error) {
       if (!mounted) return;
@@ -230,6 +230,14 @@ class _TripFormSheetState extends ConsumerState<TripFormSheet> {
                       label: 'Budget (optional)',
                       keyboardType: TextInputType.number,
                       prefixIcon: LucideIcons.wallet,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return null;
+                        final parsed = double.tryParse(v.trim());
+                        if (parsed == null || parsed < 0) {
+                          return 'Enter a valid amount';
+                        }
+                        return null;
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),

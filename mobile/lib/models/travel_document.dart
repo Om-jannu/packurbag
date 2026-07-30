@@ -1,61 +1,58 @@
-enum TravelDocumentType { passport, visa, ticket, insurance, other }
-
-/// Stored entirely on-device (see [DocumentsRepository]) — never synced to
-/// the backend, since these can represent scans of sensitive documents like
-/// passports.
+/// A per-trip photo entry (e.g. "Day 1", "Day 2") — stored entirely on-device
+/// (see [DocumentsRepository]) and never synced to the backend.
 class TravelDocument {
   const TravelDocument({
     required this.id,
     required this.tripId,
-    required this.type,
     required this.title,
     this.notes = '',
-    this.imagePath,
+    this.imagePaths = const [],
   });
 
   final String id;
   final String tripId;
-  final TravelDocumentType type;
   final String title;
   final String notes;
-  final String? imagePath;
+  final List<String> imagePaths;
 
   TravelDocument copyWith({
-    TravelDocumentType? type,
     String? title,
     String? notes,
-    String? imagePath,
+    List<String>? imagePaths,
   }) {
     return TravelDocument(
       id: id,
       tripId: tripId,
-      type: type ?? this.type,
       title: title ?? this.title,
       notes: notes ?? this.notes,
-      imagePath: imagePath ?? this.imagePath,
+      imagePaths: imagePaths ?? this.imagePaths,
     );
   }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'tripId': tripId,
-        'type': type.name,
         'title': title,
         'notes': notes,
-        'imagePath': imagePath,
+        'imagePaths': imagePaths,
       };
 
   factory TravelDocument.fromJson(Map<String, dynamic> json) {
+    // Entries saved before this became a multi-photo gallery had a single
+    // nullable `imagePath` string instead of `imagePaths` — fold that into
+    // a one-element list rather than losing the photo.
+    final rawPaths = json['imagePaths'] as List<dynamic>?;
+    final legacyPath = json['imagePath'] as String?;
+    final imagePaths = rawPaths != null
+        ? rawPaths.cast<String>()
+        : (legacyPath != null ? [legacyPath] : const <String>[]);
+
     return TravelDocument(
       id: json['id'] as String,
       tripId: json['tripId'] as String,
-      type: TravelDocumentType.values.firstWhere(
-        (t) => t.name == json['type'],
-        orElse: () => TravelDocumentType.other,
-      ),
       title: json['title'] as String,
       notes: json['notes'] as String? ?? '',
-      imagePath: json['imagePath'] as String?,
+      imagePaths: imagePaths,
     );
   }
 }

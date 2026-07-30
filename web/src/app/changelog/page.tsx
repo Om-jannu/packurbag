@@ -23,6 +23,20 @@ const ANDROID_APK_URL =
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "1.1.0",
+    date: "30 July 2026",
+    highlights: [
+      "Turned trip Documents into a per-trip photo journal — create dated entries, attach multiple photos (or any file type, not just images), and browse them as a collage grid with a full-screen swipeable viewer.",
+      "Budget expenses can now attach multiple bill/receipt photos, shown as a mini collage right on the expense row.",
+      "Added CSV export and a plain-text share for a trip's whole budget.",
+      "Added a quick-add-budget shortcut on the Home screen and a \"Recent photos\" strip, replacing a Quick Actions row that only duplicated the bottom nav.",
+      "The Trips list now shows a small document-photo preview and quick document/packing/itinerary counts on each trip card.",
+      "Fixed a crash on the SOS screen if you left it before your emergency contacts finished loading, and stopped it from claiming your location was shared when the SMS actually failed to send.",
+      "Fixed a background-crash risk shared by every add/edit/delete form in the app, where closing a screen mid-save could throw.",
+      "Hardened the backend: rate-limited login/register, closed a timing side-channel that could reveal which emails are registered, rejected empty passwords, and fixed several update routes that could silently wipe unrelated trip data.",
+    ],
+  },
+  {
     version: "1.0.0",
     date: "29 July 2026",
     highlights: [
@@ -80,7 +94,7 @@ const ENTRIES: ChangelogEntry[] = [
 
 export default function ChangelogPage() {
   return (
-    <LegalLayout title="Changelog" updated="29 July 2026">
+    <LegalLayout title="Changelog" updated="30 July 2026">
       <div className="space-y-10">
         {ENTRIES.map((entry) => (
           <section key={entry.version}>

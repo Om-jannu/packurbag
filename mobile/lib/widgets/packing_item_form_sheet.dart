@@ -98,8 +98,8 @@ class _PackingItemFormSheetState extends ConsumerState<PackingItemFormSheet> {
           category: _category,
         );
       }
-      ref.invalidate(tripsProvider(widget.userId));
       if (!mounted) return;
+      ref.invalidate(tripsProvider(widget.userId));
       Navigator.pop(context);
     } on AppException catch (error) {
       if (!mounted) return;
@@ -118,8 +118,8 @@ class _PackingItemFormSheetState extends ConsumerState<PackingItemFormSheet> {
             tripId: widget.tripId,
             itemId: widget.itemToEdit!.id,
           );
-      ref.invalidate(tripsProvider(widget.userId));
       if (!mounted) return;
+      ref.invalidate(tripsProvider(widget.userId));
       Navigator.pop(context);
     } on AppException catch (error) {
       if (!mounted) return;

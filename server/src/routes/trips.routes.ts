@@ -50,7 +50,25 @@ tripsRoutes.put("/:tripId", async (c) => {
     if (!trip) {
       return c.json({ success: false, message: "Trip not found" }, 404);
     }
-    Object.assign(trip, await c.req.json<Partial<TripBody>>());
+    const body = await c.req.json<Partial<TripBody>>();
+    // Assign only the known editable fields — Object.assign(trip, body) would
+    // let any field present on the same Mongoose subdocument schema through
+    // (e.g. itinerary/packingItems/expenses), silently wiping those arrays if
+    // the body ever contains them.
+    const editableFields: (keyof TripBody)[] = [
+      "title",
+      "destination",
+      "startDate",
+      "endDate",
+      "coverColor",
+      "budgetAmount",
+      "budgetCurrency",
+    ];
+    for (const field of editableFields) {
+      if (body[field] !== undefined) {
+        (trip as unknown as Record<string, unknown>)[field] = body[field];
+      }
+    }
     await user.save();
     return c.json({ success: true, message: "Trip updated successfully" });
   } catch (error) {

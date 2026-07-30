@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,16 +8,9 @@ import '../providers/documents_providers.dart';
 import '../providers/repository_providers.dart';
 import '../utils.dart';
 import 'app_text_field.dart';
+import 'multi_photo_picker.dart';
 
-const _typeLabels = {
-  TravelDocumentType.passport: 'Passport',
-  TravelDocumentType.visa: 'Visa',
-  TravelDocumentType.ticket: 'Ticket',
-  TravelDocumentType.insurance: 'Insurance',
-  TravelDocumentType.other: 'Other',
-};
-
-/// Add/edit form for a single travel document within a trip.
+/// Add/edit form for a single photo-journal entry (e.g. "Day 1") within a trip.
 Future<void> showDocumentFormSheet(
   BuildContext context, {
   required String userId,
@@ -59,8 +49,8 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _notesController;
-  late TravelDocumentType _type;
-  XFile? _newPhoto;
+  late List<String> _existingPhotoPaths;
+  final List<XFile> _newPhotos = [];
   bool _isSubmitting = false;
 
   bool get _isEditing => widget.documentToEdit != null;
@@ -71,7 +61,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
     final editing = widget.documentToEdit;
     _titleController = TextEditingController(text: editing?.title ?? '');
     _notesController = TextEditingController(text: editing?.notes ?? '');
-    _type = editing?.type ?? TravelDocumentType.passport;
+    _existingPhotoPaths = List.of(editing?.imagePaths ?? []);
   }
 
   @override
@@ -79,11 +69,6 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
     _titleController.dispose();
     _notesController.dispose();
     super.dispose();
-  }
-
-  Future<void> _pickPhoto() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
-    if (picked != null) setState(() => _newPhoto = picked);
   }
 
   Future<void> _submit() async {
@@ -97,23 +82,23 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
         await repo.updateDocument(
           userId: widget.userId,
           documentId: widget.documentToEdit!.id,
-          type: _type,
           title: title,
           notes: notes,
-          newPhoto: _newPhoto,
+          existingPhotoPaths: _existingPhotoPaths,
+          newPhotos: _newPhotos,
         );
       } else {
         await repo.addDocument(
           userId: widget.userId,
           tripId: widget.tripId,
-          type: _type,
           title: title,
           notes: notes,
-          photo: _newPhoto,
+          photos: _newPhotos,
         );
       }
-      ref.invalidate(documentsProvider((userId: widget.userId, tripId: widget.tripId)));
       if (!mounted) return;
+      ref.invalidate(documentsProvider((userId: widget.userId, tripId: widget.tripId)));
+      ref.invalidate(allDocumentsProvider(widget.userId));
       Navigator.pop(context);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -127,8 +112,9 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
             userId: widget.userId,
             documentId: widget.documentToEdit!.id,
           );
-      ref.invalidate(documentsProvider((userId: widget.userId, tripId: widget.tripId)));
       if (!mounted) return;
+      ref.invalidate(documentsProvider((userId: widget.userId, tripId: widget.tripId)));
+      ref.invalidate(allDocumentsProvider(widget.userId));
       Navigator.pop(context);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -137,7 +123,6 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final existingPhotoPath = widget.documentToEdit?.imagePath;
     return Padding(
       padding: EdgeInsets.only(
         left: 20,
@@ -153,7 +138,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                _isEditing ? 'Edit travel document' : 'Add travel document',
+                _isEditing ? 'Edit entry' : 'New photo entry',
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge
@@ -167,21 +152,9 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                     ),
               ),
               const SizedBox(height: 20),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: TravelDocumentType.values.map((type) {
-                  return ChoiceChip(
-                    label: Text(_typeLabels[type]!),
-                    selected: type == _type,
-                    onSelected: (_) => setState(() => _type = type),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
               AppTextField(
                 controller: _titleController,
-                label: 'Title',
+                label: 'Title (e.g. "Day 1")',
                 validator: (v) => Validators.required(v, field: 'Title'),
               ),
               const SizedBox(height: 16),
@@ -190,24 +163,14 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                 label: 'Notes (optional)',
               ),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: _pickPhoto,
-                icon: const Icon(LucideIcons.camera),
-                label: Text(_newPhoto == null ? 'Attach photo (optional)' : 'New photo selected'),
+              MultiPhotoPicker(
+                existingPhotoPaths: _existingPhotoPaths,
+                newPhotos: _newPhotos,
+                onRemoveExisting: (path) => setState(() => _existingPhotoPaths.remove(path)),
+                onRemoveNew: (photo) => setState(() => _newPhotos.remove(photo)),
+                onPhotosPicked: (photos) => setState(() => _newPhotos.addAll(photos)),
+                allowAnyFile: true,
               ),
-              if (_newPhoto != null && !kIsWeb) ...[
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(File(_newPhoto!.path), height: 120, fit: BoxFit.cover),
-                ),
-              ] else if (existingPhotoPath != null && !kIsWeb) ...[
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(File(existingPhotoPath), height: 120, fit: BoxFit.cover),
-                ),
-              ],
               const SizedBox(height: 20),
               if (_isEditing) ...[
                 OutlinedButton.icon(
@@ -216,7 +179,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                   ),
                   onPressed: _isSubmitting ? null : _delete,
                   icon: const Icon(LucideIcons.trash2),
-                  label: const Text('Delete document'),
+                  label: const Text('Delete entry'),
                 ),
                 const SizedBox(height: 12),
               ],
@@ -228,7 +191,7 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Text(_isEditing ? 'Save changes' : 'Save document'),
+                    : Text(_isEditing ? 'Save changes' : 'Save entry'),
               ),
             ],
           ),
