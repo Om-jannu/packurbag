@@ -49,7 +49,15 @@ expensesRoutes.put("/:tripId/expenses/:expenseId", async (c) => {
     if (!expense) {
       return c.json({ success: false, message: "Expense not found" }, 404);
     }
-    Object.assign(expense, await c.req.json<Partial<ExpenseBody>>());
+    const body = await c.req.json<Partial<ExpenseBody>>();
+    // Assign only the known editable fields, rather than trusting whatever
+    // keys the body happens to contain.
+    const editableFields: (keyof ExpenseBody)[] = ["title", "amount", "currency", "category", "date"];
+    for (const field of editableFields) {
+      if (body[field] !== undefined) {
+        (expense as unknown as Record<string, unknown>)[field] = body[field];
+      }
+    }
     await user!.save();
     return c.json({ success: true, message: "Expense updated" });
   } catch (error) {

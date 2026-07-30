@@ -63,6 +63,7 @@ class _TravelerChatScreenState extends ConsumerState<TravelerChatScreen> {
             receiverId: widget.traveler.userId,
             text: text,
           );
+      if (!mounted) return;
       _controller.clear();
       ref.invalidate(conversationProvider((userId: userId, otherUserId: widget.traveler.userId)));
     } on AppException catch (error) {

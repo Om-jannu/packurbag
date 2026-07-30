@@ -30,6 +30,9 @@ class ExpenseReceiptsRepository {
     final newPaths = await Future.wait(newPhotos.map(_persistImage));
     final photoPaths = [...existingPhotoPaths, ...newPaths];
     final map = await _readMap(userId);
+    final removedPaths = (map[expenseId] ?? const [])
+        .where((p) => !existingPhotoPaths.contains(p));
+    await _deleteFiles(removedPaths);
     map[expenseId] = photoPaths;
     await _writeMap(userId, map);
   }
@@ -39,7 +42,22 @@ class ExpenseReceiptsRepository {
     required String expenseId,
   }) async {
     final map = await _readMap(userId);
-    map.remove(expenseId);
+    final removed = map.remove(expenseId);
+    if (removed != null) await _deleteFiles(removed);
+    await _writeMap(userId, map);
+  }
+
+  /// Called when a whole trip (and its expenses) is deleted, so receipt
+  /// photos for expenses that no longer exist don't stay orphaned forever.
+  Future<void> deleteReceiptsForExpenses({
+    required String userId,
+    required List<String> expenseIds,
+  }) async {
+    final map = await _readMap(userId);
+    for (final expenseId in expenseIds) {
+      final removed = map.remove(expenseId);
+      if (removed != null) await _deleteFiles(removed);
+    }
     await _writeMap(userId, map);
   }
 
@@ -66,5 +84,21 @@ class ExpenseReceiptsRepository {
     final fileName = '${DateTime.now().microsecondsSinceEpoch}_${picked.name}';
     final saved = await File(picked.path).copy('${receiptsFolder.path}/$fileName');
     return saved.path;
+  }
+
+  /// Best-effort cleanup of persisted files backing removed/deleted photos.
+  /// No-op on web (paths are blob: URLs) and swallows errors — a stale
+  /// metadata entry pointing at an already-missing file must never block the
+  /// delete the user actually asked for.
+  Future<void> _deleteFiles(Iterable<String> paths) async {
+    if (kIsWeb) return;
+    for (final path in paths) {
+      try {
+        final file = File(path);
+        if (await file.exists()) await file.delete();
+      } catch (_) {
+        // Best-effort — a missing/locked file shouldn't block deletion.
+      }
+    }
   }
 }

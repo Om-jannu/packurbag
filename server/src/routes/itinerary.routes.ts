@@ -48,7 +48,16 @@ itineraryRoutes.put("/:tripId/itinerary/:itemId", async (c) => {
     if (!item) {
       return c.json({ success: false, message: "Itinerary item not found" }, 404);
     }
-    Object.assign(item, await c.req.json<Partial<ItineraryItemBody>>());
+    const body = await c.req.json<Partial<ItineraryItemBody>>();
+    // Assign only the known editable fields — Object.assign(item, body) would
+    // let any field on the same schema through (e.g. completed,
+    // dateOfCreation) if the body ever contained them.
+    const editableFields: (keyof ItineraryItemBody)[] = ["text", "date", "priority", "location"];
+    for (const field of editableFields) {
+      if (body[field] !== undefined) {
+        (item as unknown as Record<string, unknown>)[field] = body[field];
+      }
+    }
     await user!.save();
     return c.json({ success: true, message: "Itinerary item updated" });
   } catch (error) {

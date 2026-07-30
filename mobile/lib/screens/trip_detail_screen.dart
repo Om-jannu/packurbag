@@ -268,6 +268,7 @@ class _ItineraryTab extends ConsumerWidget {
   final Color color;
 
   Future<void> _toggleCompleted(
+    BuildContext context,
     WidgetRef ref,
     ItineraryItem item,
     bool completed,
@@ -281,6 +282,7 @@ class _ItineraryTab extends ConsumerWidget {
             itemId: item.id,
             completed: completed,
           );
+      if (!context.mounted) return;
       ref.invalidate(tripsProvider(userId));
     } on AppException catch (_) {
       // the next refetch reflects the true server state either way
@@ -335,7 +337,8 @@ class _ItineraryTab extends ConsumerWidget {
                   value: item.completed,
                   color: color,
                   shape: BoxShape.circle,
-                  onChanged: (value) => _toggleCompleted(ref, item, value),
+                  onChanged: (value) =>
+                      _toggleCompleted(context, ref, item, value),
                 ),
                 title: Text(
                   item.text,
@@ -380,7 +383,7 @@ class _ItineraryTab extends ConsumerWidget {
   }
 }
 
-class _PackingTab extends ConsumerWidget {
+class _PackingTab extends ConsumerStatefulWidget {
   const _PackingTab({
     required this.userId,
     required this.trip,
@@ -391,12 +394,20 @@ class _PackingTab extends ConsumerWidget {
   final Trip trip;
   final Color color;
 
-  Future<void> _applyTemplate(
-    WidgetRef ref,
-    BuildContext context,
-    String templateName,
-  ) async {
-    final existing = trip.packingItems
+  @override
+  ConsumerState<_PackingTab> createState() => _PackingTabState();
+}
+
+class _PackingTabState extends ConsumerState<_PackingTab> {
+  // Which templates currently have an addItems request in flight — guards
+  // against a rapid double-tap on the same chip firing the request twice
+  // (each call would independently compute the same "missing" items against
+  // the same stale trip.packingItems snapshot) before the first one lands
+  // and the tab rebuilds with the now-updated list.
+  final Set<String> _applyingTemplates = {};
+
+  Future<void> _applyTemplate(String templateName) async {
+    final existing = widget.trip.packingItems
         .map((i) => i.text.trim().toLowerCase())
         .toSet();
     final newItems = packingTemplates[templateName]!
@@ -404,7 +415,7 @@ class _PackingTab extends ConsumerWidget {
         .toList();
 
     if (newItems.isEmpty) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Those items are already on your list')),
         );
@@ -412,40 +423,43 @@ class _PackingTab extends ConsumerWidget {
       return;
     }
 
+    setState(() => _applyingTemplates.add(templateName));
     try {
       await ref
           .read(packingRepositoryProvider)
-          .addItems(userId: userId, tripId: trip.id, items: newItems);
-      ref.invalidate(tripsProvider(userId));
+          .addItems(userId: widget.userId, tripId: widget.trip.id, items: newItems);
+      if (!mounted) return;
+      ref.invalidate(tripsProvider(widget.userId));
     } on AppException catch (error) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(error.message)));
       }
+    } finally {
+      if (mounted) setState(() => _applyingTemplates.remove(templateName));
     }
   }
 
-  Future<void> _togglePacked(
-    WidgetRef ref,
-    PackingItem item,
-    bool packed,
-  ) async {
+  Future<void> _togglePacked(PackingItem item, bool packed) async {
     try {
       await ref
           .read(packingRepositoryProvider)
           .setPacked(
-            userId: userId,
-            tripId: trip.id,
+            userId: widget.userId,
+            tripId: widget.trip.id,
             itemId: item.id,
             packed: packed,
           );
-      ref.invalidate(tripsProvider(userId));
+      if (!mounted) return;
+      ref.invalidate(tripsProvider(widget.userId));
     } on AppException catch (_) {}
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final trip = widget.trip;
+    final color = widget.color;
     final grouped = <String, List<PackingItem>>{};
     for (final item in trip.packingItems) {
       grouped.putIfAbsent(item.category, () => []).add(item);
@@ -471,6 +485,7 @@ class _PackingTab extends ConsumerWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: packingTemplates.keys.map((name) {
+                  final isApplying = _applyingTemplates.contains(name);
                   return ActionChip(
                     label: Text(name),
                     labelStyle: AppTextStyles.label(
@@ -482,7 +497,7 @@ class _PackingTab extends ConsumerWidget {
                     shape: const StadiumBorder(),
                     elevation: 0,
                     pressElevation: 0,
-                    onPressed: () => _applyTemplate(ref, context, name),
+                    onPressed: isApplying ? null : () => _applyTemplate(name),
                   );
                 }).toList(),
               ),
@@ -533,7 +548,7 @@ class _PackingTab extends ConsumerWidget {
                         ListTile(
                           onTap: () => showPackingItemFormSheet(
                             context,
-                            userId: userId,
+                            userId: widget.userId,
                             tripId: trip.id,
                             itemToEdit: item,
                           ),
@@ -542,7 +557,7 @@ class _PackingTab extends ConsumerWidget {
                             color: color,
                             shape: BoxShape.rectangle,
                             onChanged: (value) =>
-                                _togglePacked(ref, item, value),
+                                _togglePacked(item, value),
                           ),
                           title: Text(
                             item.text,
@@ -676,7 +691,7 @@ class _BudgetTab extends ConsumerWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _exportCsv,
+                  onPressed: () => _exportCsv(context),
                   icon: const Icon(LucideIcons.download, size: 16),
                   label: const Text('Export CSV'),
                 ),
@@ -717,41 +732,44 @@ class _BudgetTab extends ConsumerWidget {
                 defaultCurrency: trip.budgetCurrency,
                 expenseToEdit: expense,
               ),
-              onDelete: () => ref
-                  .read(expenseRepositoryProvider)
-                  .deleteExpense(
-                    userId: userId,
-                    tripId: trip.id,
-                    expenseId: expense.id,
-                  ),
+              onDelete: () =>
+                  _deleteExpense(context, ref, userId, trip.id, expense.id),
             ),
       ],
     );
   }
 
-  Future<void> _exportCsv() async {
-    final rows = <List<dynamic>>[
-      ['Date', 'Title', 'Category', 'Amount', 'Currency'],
-      for (final expense in [
-        ...trip.expenses,
-      ]..sort((a, b) => a.date.compareTo(b.date)))
-        [
-          DateFormat('yyyy-MM-dd').format(expense.date),
-          expense.title,
-          expense.category,
-          expense.amount,
-          expense.currency,
-        ],
-    ];
-    final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/${trip.title}_budget.csv');
-    await file.writeAsString(csv.encode(rows));
-    await SharePlus.instance.share(
-      ShareParams(
-        files: [XFile(file.path)],
-        text: 'Budget export for ${trip.title}',
-      ),
-    );
+  Future<void> _exportCsv(BuildContext context) async {
+    try {
+      final rows = <List<dynamic>>[
+        ['Date', 'Title', 'Category', 'Amount', 'Currency'],
+        for (final expense in [
+          ...trip.expenses,
+        ]..sort((a, b) => a.date.compareTo(b.date)))
+          [
+            DateFormat('yyyy-MM-dd').format(expense.date),
+            expense.title,
+            expense.category,
+            expense.amount,
+            expense.currency,
+          ],
+      ];
+      final tempDir = await getTemporaryDirectory();
+      final safeTitle = trip.title.replaceAll(RegExp(r'[^A-Za-z0-9 _-]'), '_');
+      final file = File('${tempDir.path}/${safeTitle}_budget.csv');
+      await file.writeAsString(csv.encode(rows));
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text: 'Budget export for ${trip.title}',
+        ),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not export budget CSV.')),
+      );
+    }
   }
 
   Future<void> _shareSummary(
@@ -784,6 +802,34 @@ class _BudgetTab extends ConsumerWidget {
     }
     await SharePlus.instance.share(ShareParams(text: buffer.toString()));
   }
+
+  Future<void> _deleteExpense(
+    BuildContext context,
+    WidgetRef ref,
+    String userId,
+    String tripId,
+    String expenseId,
+  ) async {
+    try {
+      await ref
+          .read(expenseRepositoryProvider)
+          .deleteExpense(userId: userId, tripId: tripId, expenseId: expenseId);
+      await ref
+          .read(expenseReceiptsRepositoryProvider)
+          .deleteReceiptPhotos(userId: userId, expenseId: expenseId);
+      if (!context.mounted) return;
+      ref.invalidate(tripsProvider(userId));
+      ref.invalidate(
+        expenseReceiptsProvider((userId: userId, expenseId: expenseId)),
+      );
+    } on AppException catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    }
+  }
 }
 
 final _usdRatesProvider = FutureProvider<Map<String, double>>((ref) {
@@ -814,6 +860,32 @@ class _ExpenseTile extends ConsumerWidget {
     );
   }
 
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete expense?'),
+        content: Text('"${expense.title}" will be deleted.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              'Delete',
+              style: TextStyle(
+                color: Theme.of(dialogContext).colorScheme.error,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) onDelete();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final receiptsAsync = ref.watch(
@@ -828,6 +900,7 @@ class _ExpenseTile extends ConsumerWidget {
         color: Colors.transparent,
         child: ListTile(
           onTap: onTap,
+          onLongPress: () => _confirmDelete(context),
           leading: Container(
             width: 52,
             height: 52,
@@ -895,24 +968,9 @@ class _ExpenseTile extends ConsumerWidget {
               color: AppTheme.textMuted(context, opacity: 0.4),
             ),
           ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '${expense.amount.toStringAsFixed(2)} ${expense.currency}',
-                style: AppTextStyles.bodyBold(
-                  color: AppTheme.textPrimary(context),
-                ),
-              ),
-              IconButton(
-                icon: Icon(
-                  LucideIcons.trash2,
-                  size: 18,
-                  color: AppTheme.textMuted(context, opacity: 0.4),
-                ),
-                onPressed: onDelete,
-              ),
-            ],
+          trailing: Text(
+            '${expense.amount.toStringAsFixed(2)} ${expense.currency}',
+            style: AppTextStyles.bodyBold(color: AppTheme.textPrimary(context)),
           ),
         ),
       ),
@@ -994,7 +1052,11 @@ class _DocumentsTab extends ConsumerWidget {
                     onDelete: () => ref
                         .read(documentsRepositoryProvider)
                         .deleteDocument(userId: userId, documentId: document.id)
-                        .then((_) => ref.invalidate(documentsProvider(ids))),
+                        .then((_) {
+                          if (!context.mounted) return;
+                          ref.invalidate(documentsProvider(ids));
+                          ref.invalidate(allDocumentsProvider(userId));
+                        }),
                   );
                 },
               );

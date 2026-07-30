@@ -96,8 +96,9 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
           photos: _newPhotos,
         );
       }
-      ref.invalidate(documentsProvider((userId: widget.userId, tripId: widget.tripId)));
       if (!mounted) return;
+      ref.invalidate(documentsProvider((userId: widget.userId, tripId: widget.tripId)));
+      ref.invalidate(allDocumentsProvider(widget.userId));
       Navigator.pop(context);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -111,8 +112,9 @@ class _DocumentFormSheetState extends ConsumerState<DocumentFormSheet> {
             userId: widget.userId,
             documentId: widget.documentToEdit!.id,
           );
-      ref.invalidate(documentsProvider((userId: widget.userId, tripId: widget.tripId)));
       if (!mounted) return;
+      ref.invalidate(documentsProvider((userId: widget.userId, tripId: widget.tripId)));
+      ref.invalidate(allDocumentsProvider(widget.userId));
       Navigator.pop(context);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

@@ -36,10 +36,15 @@ class SosScreen extends StatefulWidget {
 }
 
 class _SosScreenState extends State<SosScreen> {
-  late Timer _timer;
+  Timer? _timer;
   final int _durationInSeconds = 10; // Duration for the SOS timer in seconds
   double _progress = 0.0;
   _SosOutcome _outcome = _SosOutcome.counting;
+  // null: still trying to send / not yet attempted. true: sent. false:
+  // failed (no location permission, GPS off, no fix, or no SMS app) — the
+  // triggered banner must reflect this truthfully rather than always
+  // claiming the location was shared.
+  bool? _locationShareSucceeded;
   bool _isBuzzerOn = false; // Track the state of the buzzer
   bool _isFlashOn = false; // Track whether the SOS strobe loop is running
   bool _isTorchLit =
@@ -64,8 +69,10 @@ class _SosScreenState extends State<SosScreen> {
   @override
   void dispose() {
     // Own cleanup before super.dispose(), not after — once the base class's
-    // dispose runs, the framework considers this State defunct.
-    _timer.cancel();
+    // dispose runs, the framework considers this State defunct. _timer may
+    // never have been assigned if the widget was disposed while still
+    // waiting on _loadEmergencyContacts() in initState.
+    _timer?.cancel();
     _flashTimer?.cancel();
     if (_isTorchLit) {
       TorchLight.disableTorch().catchError((_) {});
@@ -98,7 +105,7 @@ class _SosScreenState extends State<SosScreen> {
           }
         });
       } else {
-        _timer.cancel();
+        timer.cancel();
       }
     });
   }
@@ -123,16 +130,18 @@ class _SosScreenState extends State<SosScreen> {
 
   /// Grabs the current position (best-effort — this must never block or
   /// fail the SOS flow itself) and texts a Google Maps link to [number].
-  Future<void> _shareLocationViaSms(String number) async {
+  /// Returns whether the SMS was actually launched, so callers can tell the
+  /// user the truth instead of assuming it worked.
+  Future<bool> _shareLocationViaSms(String number) async {
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) return;
+      if (!await Geolocator.isLocationServiceEnabled()) return false;
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        return;
+        return false;
       }
 
       Position? position;
@@ -149,7 +158,7 @@ class _SosScreenState extends State<SosScreen> {
       } catch (_) {
         position = await Geolocator.getLastKnownPosition();
       }
-      if (position == null) return;
+      if (position == null) return false;
 
       final mapsLink =
           'https://maps.google.com/?q=${position.latitude},${position.longitude}';
@@ -164,9 +173,12 @@ class _SosScreenState extends State<SosScreen> {
       );
       if (await canLaunchUrl(smsUri)) {
         await launchUrl(smsUri);
+        return true;
       }
+      return false;
     } catch (_) {
       // Best-effort only — a failure here shouldn't interrupt the SOS flow.
+      return false;
     }
   }
 
@@ -176,7 +188,9 @@ class _SosScreenState extends State<SosScreen> {
     if (_emergencyContacts.isNotEmpty) {
       final phone = _emergencyContacts[0]['phone']!;
       _callNumber(phone);
-      _shareLocationViaSms(phone);
+      _shareLocationViaSms(phone).then((sent) {
+        if (mounted) setState(() => _locationShareSucceeded = sent);
+      });
     }
 
     setState(() {
@@ -545,7 +559,9 @@ class _SosScreenState extends State<SosScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Calling ${_emergencyContacts[0]['name']} and sharing your location.',
+                                    _locationShareSucceeded == false
+                                        ? "Calling ${_emergencyContacts[0]['name']}. Couldn't send your location — tell them where you are."
+                                        : 'Calling ${_emergencyContacts[0]['name']} and sharing your location.',
                                     style: AppTextStyles.label(
                                       color: _sosRed,
                                       weight: FontWeight.w700,
@@ -674,9 +690,21 @@ class _SosScreenState extends State<SosScreen> {
                                                   ),
                                                 ),
                                                 tooltip: 'Text my location',
-                                                onPressed: () {
-                                                  _shareLocationViaSms(
-                                                    entry.value['phone']!,
+                                                onPressed: () async {
+                                                  final sent =
+                                                      await _shareLocationViaSms(
+                                                        entry.value['phone']!,
+                                                      );
+                                                  if (!mounted) return;
+                                                  if (sent) return;
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        "Couldn't send your location — check location permission and try again.",
+                                                      ),
+                                                    ),
                                                   );
                                                 },
                                               ),

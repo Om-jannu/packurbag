@@ -35,6 +35,15 @@ class _BtScreenState extends ConsumerState<BtScreen> {
 
     try {
       if (value) {
+        if (!await Geolocator.isLocationServiceEnabled()) {
+          if (mounted) {
+            GlobalSnackbar.show(
+              context,
+              'Turn on Location Services to find nearby travelers.',
+            );
+          }
+          return;
+        }
         final position = await _getCurrentPosition();
         if (position == null) {
           if (mounted) {
@@ -55,6 +64,7 @@ class _BtScreenState extends ConsumerState<BtScreen> {
             .updateLocation(userId: userId, isDiscoverable: false);
       }
       await ref.read(authProvider.notifier).setDiscoverableLocally(value);
+      if (!mounted) return;
       ref.invalidate(nearbyTravelersProvider(userId));
     } on AppException catch (error) {
       if (mounted) GlobalSnackbar.show(context, error.message);

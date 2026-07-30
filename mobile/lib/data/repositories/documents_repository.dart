@@ -66,12 +66,17 @@ class DocumentsRepository {
     final raw = prefs.getStringList(_prefsKey(userId)) ?? [];
     final newPaths = await Future.wait(newPhotos.map(_persistImage));
     final imagePaths = [...existingPhotoPaths, ...newPaths];
-    final updated = raw.map((entry) {
+    final updated = <String>[];
+    for (final entry in raw) {
       final doc = TravelDocument.fromJson(jsonDecode(entry) as Map<String, dynamic>);
-      if (doc.id != documentId) return entry;
+      if (doc.id != documentId) {
+        updated.add(entry);
+        continue;
+      }
+      await _deleteFiles(doc.imagePaths.where((p) => !existingPhotoPaths.contains(p)));
       final edited = doc.copyWith(title: title, notes: notes, imagePaths: imagePaths);
-      return jsonEncode(edited.toJson());
-    }).toList();
+      updated.add(jsonEncode(edited.toJson()));
+    }
     await prefs.setStringList(_prefsKey(userId), updated);
   }
 
@@ -81,10 +86,35 @@ class DocumentsRepository {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_prefsKey(userId)) ?? [];
-    final remaining = raw.where((entry) {
+    final remaining = <String>[];
+    for (final entry in raw) {
       final doc = TravelDocument.fromJson(jsonDecode(entry) as Map<String, dynamic>);
-      return doc.id != documentId;
-    }).toList();
+      if (doc.id == documentId) {
+        await _deleteFiles(doc.imagePaths);
+      } else {
+        remaining.add(entry);
+      }
+    }
+    await prefs.setStringList(_prefsKey(userId), remaining);
+  }
+
+  /// Called when a whole trip is deleted, so its photo-journal entries don't
+  /// stay orphaned in this user's SharedPreferences list forever.
+  Future<void> deleteDocumentsForTrip({
+    required String userId,
+    required String tripId,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList(_prefsKey(userId)) ?? [];
+    final remaining = <String>[];
+    for (final entry in raw) {
+      final doc = TravelDocument.fromJson(jsonDecode(entry) as Map<String, dynamic>);
+      if (doc.tripId == tripId) {
+        await _deleteFiles(doc.imagePaths);
+      } else {
+        remaining.add(entry);
+      }
+    }
     await prefs.setStringList(_prefsKey(userId), remaining);
   }
 
@@ -105,5 +135,21 @@ class DocumentsRepository {
     final fileName = '${DateTime.now().microsecondsSinceEpoch}_${picked.name}';
     final saved = await File(picked.path).copy('${documentsFolder.path}/$fileName');
     return saved.path;
+  }
+
+  /// Best-effort cleanup of persisted files backing removed/deleted photos.
+  /// No-op on web (paths are blob: URLs, nothing to delete on the device) and
+  /// swallows errors — a stale metadata entry pointing at an already-missing
+  /// file must never block the delete the user actually asked for.
+  Future<void> _deleteFiles(Iterable<String> paths) async {
+    if (kIsWeb) return;
+    for (final path in paths) {
+      try {
+        final file = File(path);
+        if (await file.exists()) await file.delete();
+      } catch (_) {
+        // Best-effort — a missing/locked file shouldn't block deletion.
+      }
+    }
   }
 }

@@ -134,19 +134,32 @@ class _ExpenseFormSheetState extends ConsumerState<ExpenseFormSheet> {
         );
         expenseId = created.id;
       }
+      // The expense itself is already saved on the backend by this point —
+      // if persisting its (purely local) receipt photos fails, that must
+      // not look like the whole save failed, which would invite the user to
+      // resubmit and create a duplicate expense. Report it separately and
+      // still proceed to close the sheet.
+      String? receiptError;
       if (_existingPhotoPaths.isNotEmpty || _newPhotos.isNotEmpty) {
-        await receiptsRepo.saveReceiptPhotos(
-          userId: widget.userId,
-          expenseId: expenseId,
-          existingPhotoPaths: _existingPhotoPaths,
-          newPhotos: _newPhotos,
-        );
+        try {
+          await receiptsRepo.saveReceiptPhotos(
+            userId: widget.userId,
+            expenseId: expenseId,
+            existingPhotoPaths: _existingPhotoPaths,
+            newPhotos: _newPhotos,
+          );
+        } catch (_) {
+          receiptError = 'Expense saved, but attaching photos failed.';
+        }
       }
+      if (!mounted) return;
       ref.invalidate(tripsProvider(widget.userId));
       ref.invalidate(
         expenseReceiptsProvider((userId: widget.userId, expenseId: expenseId)),
       );
-      if (!mounted) return;
+      if (receiptError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(receiptError)));
+      }
       Navigator.pop(context);
     } on AppException catch (error) {
       if (!mounted) return;
@@ -172,11 +185,11 @@ class _ExpenseFormSheetState extends ConsumerState<ExpenseFormSheet> {
       await ref
           .read(expenseReceiptsRepositoryProvider)
           .deleteReceiptPhotos(userId: widget.userId, expenseId: expenseId);
+      if (!mounted) return;
       ref.invalidate(tripsProvider(widget.userId));
       ref.invalidate(
         expenseReceiptsProvider((userId: widget.userId, expenseId: expenseId)),
       );
-      if (!mounted) return;
       Navigator.pop(context);
     } on AppException catch (error) {
       if (!mounted) return;
