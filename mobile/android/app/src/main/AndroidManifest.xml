@@ -11,6 +11,10 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.SEND_SMS" />
+    <!-- Needed for flutter_phone_direct_caller's direct ACTION_CALL on the
+         SOS screen — without this the plugin can never get the permission
+         granted, and the auto-dial-emergency-contact call silently fails. -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
     <queries>
         <intent>
             <action android:name="android.speech.RecognitionService" />

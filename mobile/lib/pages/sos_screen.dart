@@ -1,6 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:geolocator/geolocator.dart';
@@ -18,6 +22,12 @@ import '../theme/app_theme.dart';
 const _sosRed = Color(0xFFEF4444);
 const _sosRedTrack = Color(0xFFFEE2E2);
 
+/// What became of the countdown — kept distinct from a plain bool because
+/// "the user cancelled" and "the alert actually fired" need different UI
+/// afterward (a fired alert should say who's being called; a cancellation
+/// shouldn't imply anything happened).
+enum _SosOutcome { counting, cancelled, triggered }
+
 class SosScreen extends StatefulWidget {
   const SosScreen({super.key});
 
@@ -29,10 +39,11 @@ class _SosScreenState extends State<SosScreen> {
   late Timer _timer;
   final int _durationInSeconds = 10; // Duration for the SOS timer in seconds
   double _progress = 0.0;
-  bool _isCancelled = false;
+  _SosOutcome _outcome = _SosOutcome.counting;
   bool _isBuzzerOn = false; // Track the state of the buzzer
   bool _isFlashOn = false; // Track whether the SOS strobe loop is running
-  bool _isTorchLit = false; // Track the flashlight's actual physical on/off state
+  bool _isTorchLit =
+      false; // Track the flashlight's actual physical on/off state
   Timer? _flashTimer;
   final player = AudioPlayer();
 
@@ -41,20 +52,27 @@ class _SosScreenState extends State<SosScreen> {
   @override
   void initState() {
     super.initState();
-    // Start the SOS timer
-    _startTimer();
-    _loadEmergencyContacts();
+    // Wait for any saved contacts to actually load before the countdown can
+    // fire — otherwise a countdown that completes very quickly could decide
+    // "no contacts" against the still-empty initial value while real,
+    // already-saved contacts are just a beat away from finishing their load.
+    _loadEmergencyContacts().then((_) {
+      if (mounted) _startTimer();
+    });
   }
 
   @override
   void dispose() {
-    super.dispose();
-    // Cancel the timers when the screen is disposed
+    // Own cleanup before super.dispose(), not after — once the base class's
+    // dispose runs, the framework considers this State defunct.
     _timer.cancel();
     _flashTimer?.cancel();
     if (_isTorchLit) {
       TorchLight.disableTorch().catchError((_) {});
     }
+    player.stop();
+    player.dispose();
+    super.dispose();
   }
 
   void _onItemTapped(int index) {
@@ -71,7 +89,7 @@ class _SosScreenState extends State<SosScreen> {
   void _startTimer() {
     // Start a timer for the specified duration
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-      if (!_isCancelled) {
+      if (_outcome == _SosOutcome.counting) {
         setState(() {
           _progress = timer.tick / _durationInSeconds;
           Vibration.vibrate().catchError((_) {});
@@ -86,7 +104,21 @@ class _SosScreenState extends State<SosScreen> {
   }
 
   Future<void> _callNumber(String number) async {
-    await FlutterPhoneDirectCaller.callNumber(number);
+    try {
+      final placed = await FlutterPhoneDirectCaller.callNumber(number);
+      if (placed != true) _showCallFailedMessage();
+    } catch (_) {
+      _showCallFailedMessage();
+    }
+  }
+
+  void _showCallFailedMessage() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Couldn't place the call — try calling manually."),
+      ),
+    );
   }
 
   /// Grabs the current position (best-effort — this must never block or
@@ -102,15 +134,33 @@ class _SosScreenState extends State<SosScreen> {
           permission == LocationPermission.deniedForever) {
         return;
       }
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-      );
+
+      Position? position;
+      try {
+        // A precise fix can take a long time (or never arrive) indoors or
+        // with poor signal — exactly the conditions someone triggering an
+        // emergency alert might be in — so this doesn't wait indefinitely.
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 5),
+          ),
+        );
+      } catch (_) {
+        position = await Geolocator.getLastKnownPosition();
+      }
+      if (position == null) return;
+
       final mapsLink =
           'https://maps.google.com/?q=${position.latitude},${position.longitude}';
-      final smsUri = Uri(
-        scheme: 'sms',
-        path: number,
-        queryParameters: {'body': "I need help. My location: $mapsLink"},
+      final body = 'I need help. My location: $mapsLink';
+      // iOS's Messages app has a long-documented quirk where the sms: URL
+      // scheme needs "&" rather than "?" before the body parameter for the
+      // pre-filled text to actually show up; Android accepts either.
+      final separator = defaultTargetPlatform == TargetPlatform.iOS ? '&' : '?';
+      final smsUri = Uri.parse(
+        'sms:$number$separator'
+        'body=${Uri.encodeQueryComponent(body)}',
       );
       if (await canLaunchUrl(smsUri)) {
         await launchUrl(smsUri);
@@ -130,7 +180,7 @@ class _SosScreenState extends State<SosScreen> {
     }
 
     setState(() {
-      _isCancelled = true;
+      _outcome = _SosOutcome.triggered;
     });
   }
 
@@ -140,7 +190,8 @@ class _SosScreenState extends State<SosScreen> {
     });
 
     if (_isBuzzerOn) {
-      // Start playing the buzzer sound repeatedly
+      // Start playing the buzzer sound on a loop until toggled off.
+      await player.setReleaseMode(ReleaseMode.loop);
       player.play(AssetSource("sounds/sos.mp3"), mode: PlayerMode.mediaPlayer);
     } else {
       // Stop playing the buzzer sound
@@ -163,8 +214,14 @@ class _SosScreenState extends State<SosScreen> {
   }
 
   void _startFlashToggle() {
+    // A rapid on/off/on tap sequence could otherwise leave a previous timer
+    // running alongside this new one, with both racing to flip the same
+    // torch state.
+    _flashTimer?.cancel();
     // Start a timer to toggle the flashlight every 100 milliseconds
-    _flashTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) async {
+    _flashTimer = Timer.periodic(const Duration(milliseconds: 100), (
+      timer,
+    ) async {
       if (!_isFlashOn) {
         // If flashlight is turned off externally, cancel the timer
         timer.cancel();
@@ -197,26 +254,41 @@ class _SosScreenState extends State<SosScreen> {
   }
 
   Future<void> _loadEmergencyContacts() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String>? contacts = prefs.getStringList('emergencyContacts');
-    if (contacts != null) {
-      setState(() {
-        _emergencyContacts = contacts
-            .map((contact) => Map<String, String>.from(contact
-                .split(',')
-                .asMap()
-                .map((i, e) => MapEntry(i == 0 ? 'name' : 'phone', e))))
-            .toList();
-      });
+    final prefs = await SharedPreferences.getInstance();
+    final contacts = prefs.getStringList('emergencyContacts');
+    if (contacts == null) return;
+
+    final parsed = <Map<String, String>>[];
+    for (final raw in contacts) {
+      try {
+        final decoded = jsonDecode(raw) as Map<String, dynamic>;
+        parsed.add({
+          'name': decoded['name'] as String,
+          'phone': decoded['phone'] as String,
+        });
+      } catch (_) {
+        // Fall back to the old comma-joined format ("name,phone") so
+        // contacts saved before this screen switched to JSON storage still
+        // load once, rather than being silently dropped.
+        final parts = raw.split(',');
+        if (parts.length >= 2) {
+          parsed.add({
+            'name': parts.first,
+            'phone': parts.sublist(1).join(','),
+          });
+        }
+      }
     }
+    if (mounted) setState(() => _emergencyContacts = parsed);
   }
 
   Future<void> _saveEmergencyContacts() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String> contacts = _emergencyContacts
-        .map((contact) => '${contact['name']},${contact['phone']}')
-        .toList();
-    prefs.setStringList('emergencyContacts', contacts);
+    final prefs = await SharedPreferences.getInstance();
+    // JSON-encoded per contact rather than a bare "name,phone" join — a
+    // comma in a saved name (e.g. "Smith, John") used to silently corrupt
+    // the split on load.
+    final contacts = _emergencyContacts.map(jsonEncode).toList();
+    await prefs.setStringList('emergencyContacts', contacts);
   }
 
   void _showAddContactDialog() {
@@ -249,7 +321,7 @@ class _SosScreenState extends State<SosScreen> {
                 TextFormField(
                   controller: phoneController,
                   decoration: const InputDecoration(labelText: 'Phone'),
-                  keyboardType: const TextInputType.numberWithOptions(),
+                  keyboardType: TextInputType.phone,
                   validator: (value) {
                     final trimmed = value?.trim() ?? '';
                     if (trimmed.isEmpty) return 'Please enter a phone number';
@@ -321,8 +393,9 @@ class _SosScreenState extends State<SosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final remaining =
-        (_durationInSeconds - (_progress * _durationInSeconds)).floor();
+    final remaining = (_durationInSeconds - (_progress * _durationInSeconds))
+        .floor();
+    final counting = _outcome == _SosOutcome.counting;
 
     return Scaffold(
       body: SafeArea(
@@ -331,13 +404,19 @@ class _SosScreenState extends State<SosScreen> {
             Container(
               padding: const EdgeInsets.fromLTRB(4, 8, 16, 8),
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppTheme.borderMuted(context))),
+                border: Border(
+                  bottom: BorderSide(color: AppTheme.borderMuted(context)),
+                ),
               ),
               child: Row(
                 children: [
                   if (Navigator.canPop(context))
                     IconButton(
-                      icon: Icon(LucideIcons.arrowLeft, size: 20, color: AppTheme.textPrimary(context)),
+                      icon: Icon(
+                        LucideIcons.arrowLeft,
+                        size: 20,
+                        color: AppTheme.textPrimary(context),
+                      ),
                       onPressed: () => Navigator.pop(context),
                     )
                   else
@@ -350,13 +429,15 @@ class _SosScreenState extends State<SosScreen> {
                   const SizedBox(width: 8),
                   Text(
                     'Emergency SOS',
-                    style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
+                    style: AppTextStyles.appBarTitle(
+                      color: AppTheme.textPrimary(context),
+                    ),
                   ),
                 ],
               ),
             ),
             Expanded(
-              child: !_isCancelled
+              child: counting
                   ? Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -370,46 +451,71 @@ class _SosScreenState extends State<SosScreen> {
                                 const CircularProgressIndicator(
                                   value: 1,
                                   strokeWidth: 20,
-                                  valueColor: AlwaysStoppedAnimation<Color>(_sosRedTrack),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    _sosRedTrack,
+                                  ),
                                 ),
                                 CircularProgressIndicator(
                                   value: _progress,
                                   strokeWidth: 20,
-                                  valueColor: const AlwaysStoppedAnimation<Color>(_sosRed),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        _sosRed,
+                                      ),
                                   strokeCap: StrokeCap.round,
                                 ),
                                 Center(
                                   child: Text(
                                     '$remaining',
-                                    style: AppTextStyles.display(color: AppTheme.textPrimary(context))
-                                        .copyWith(fontSize: 40),
+                                    style: AppTextStyles.display(
+                                      color: AppTheme.textPrimary(context),
+                                    ).copyWith(fontSize: 40),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Text(
-                            'Calling your emergency contact in ${remaining}s',
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.caption(color: AppTheme.textMuted(context)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Text(
+                              _emergencyContacts.isEmpty
+                                  ? "No emergency contact added — add one below so SOS can call for help"
+                                  : 'Calling your emergency contact in ${remaining}s',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.caption(
+                                color: _emergencyContacts.isEmpty
+                                    ? _sosRed
+                                    : AppTheme.textMuted(context),
+                              ),
+                            ),
                           ),
                           Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: SlideAction(
-                              sliderButtonIcon: const Icon(LucideIcons.x, color: Colors.white),
+                              sliderButtonIcon: const Icon(
+                                LucideIcons.x,
+                                color: Colors.white,
+                              ),
                               height: 60,
-                              borderRadius: AppTheme.radiusMd,
+                              // Full pill shape (half the height) to match the
+                              // app's other primary interactive controls (chat
+                              // input, send button) rather than the softer
+                              // card-corner radius used for static containers.
+                              borderRadius: 30,
                               elevation: 0,
                               innerColor: _sosRed,
                               outerColor: _sosRedTrack,
-                              animationDuration: const Duration(milliseconds: 500),
+                              animationDuration: const Duration(
+                                milliseconds: 500,
+                              ),
                               text: 'Slide to Cancel',
-                              textStyle: AppTextStyles.bodyBold(color: _sosRed)
-                                  .copyWith(fontStyle: FontStyle.italic),
+                              textStyle: AppTextStyles.bodyBold(
+                                color: _sosRed,
+                              ).copyWith(fontStyle: FontStyle.italic),
                               onSubmit: () {
                                 setState(() {
-                                  _isCancelled = true;
+                                  _outcome = _SosOutcome.cancelled;
                                 });
                                 return null;
                               },
@@ -418,94 +524,196 @@ class _SosScreenState extends State<SosScreen> {
                         ],
                       ),
                     )
-                  : ReorderableListView(
-                      buildDefaultDragHandles: false,
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                      onReorderItem: (oldIndex, newIndex) {
-                        setState(() {
-                          final item = _emergencyContacts.removeAt(oldIndex);
-                          _emergencyContacts.insert(newIndex, item);
-                          _saveEmergencyContacts();
-                        });
-                      },
-                      children: _emergencyContacts
-                          .asMap()
-                          .entries
-                          .map(
-                            (entry) => Container(
-                              key: ValueKey(entry.key),
-                              margin: const EdgeInsets.only(bottom: 8),
-                              decoration: AppTheme.flatCard(context),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                              child: Row(
-                                children: [
-                                  ReorderableDragStartListener(
-                                    index: entry.key,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: Icon(
-                                        LucideIcons.gripVertical,
-                                        size: 18,
-                                        color: AppTheme.textMuted(context),
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Flexible(
-                                              child: Text(
-                                                entry.value['name']!,
-                                                style: AppTextStyles.bodyBold(
-                                                    color: AppTheme.textPrimary(context)),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            if (entry.key == 0) const SizedBox(width: 5),
-                                            if (entry.key == 0)
-                                              const Icon(
-                                                LucideIcons.star,
-                                                size: 16,
-                                                color: AppTheme.amber,
-                                              ), // First contact is auto-dialed on trigger
-                                          ],
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          entry.value['phone']!,
-                                          style: AppTextStyles.caption(color: AppTheme.textMuted(context)),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(LucideIcons.mapPin,
-                                        color: AppTheme.textMuted(context)),
-                                    tooltip: 'Text my location',
-                                    onPressed: () {
-                                      _shareLocationViaSms(entry.value['phone']!);
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: Icon(LucideIcons.phone, color: AppTheme.textMuted(context)),
-                                    onPressed: () {
-                                      _callNumber(entry.value['phone']!);
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: Icon(LucideIcons.trash2, color: AppTheme.textMuted(context)),
-                                    onPressed: () {
-                                      _showDeleteContactDialog(entry.key);
-                                    },
-                                  ),
-                                ],
-                              ),
+                  : Column(
+                      children: [
+                        if (_outcome == _SosOutcome.triggered &&
+                            _emergencyContacts.isNotEmpty)
+                          Container(
+                            width: double.infinity,
+                            color: _sosRedTrack,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
                             ),
-                          )
-                          .toList(),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  LucideIcons.phoneCall,
+                                  color: _sosRed,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Calling ${_emergencyContacts[0]['name']} and sharing your location.',
+                                    style: AppTextStyles.label(
+                                      color: _sosRed,
+                                      weight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        Expanded(
+                          child: _emergencyContacts.isEmpty
+                              ? _EmptyContactsView(
+                                  onAddContact: _showAddContactDialog,
+                                )
+                              : ReorderableListView(
+                                  buildDefaultDragHandles: false,
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    12,
+                                    16,
+                                    12,
+                                  ),
+                                  onReorderItem: (oldIndex, newIndex) {
+                                    setState(() {
+                                      final item = _emergencyContacts.removeAt(
+                                        oldIndex,
+                                      );
+                                      _emergencyContacts.insert(newIndex, item);
+                                      _saveEmergencyContacts();
+                                    });
+                                  },
+                                  children: _emergencyContacts
+                                      .asMap()
+                                      .entries
+                                      .map(
+                                        (entry) => Container(
+                                          // Keyed by identity (name+phone), not
+                                          // position — a position-based key
+                                          // means the framework can't correctly
+                                          // track which specific contact moved
+                                          // where during a reorder.
+                                          key: ValueKey(
+                                            '${entry.value['name']}|${entry.value['phone']}',
+                                          ),
+                                          margin: const EdgeInsets.only(
+                                            bottom: 8,
+                                          ),
+                                          decoration: AppTheme.flatCard(
+                                            context,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 8,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              ReorderableDragStartListener(
+                                                index: entry.key,
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        right: 8,
+                                                      ),
+                                                  child: Icon(
+                                                    LucideIcons.gripVertical,
+                                                    size: 18,
+                                                    color: AppTheme.textMuted(
+                                                      context,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Row(
+                                                      children: [
+                                                        Flexible(
+                                                          child: Text(
+                                                            entry
+                                                                .value['name']!,
+                                                            style: AppTextStyles.bodyBold(
+                                                              color:
+                                                                  AppTheme.textPrimary(
+                                                                    context,
+                                                                  ),
+                                                            ),
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                        ),
+                                                        if (entry.key == 0)
+                                                          const SizedBox(
+                                                            width: 5,
+                                                          ),
+                                                        if (entry.key == 0)
+                                                          const Icon(
+                                                            LucideIcons.star,
+                                                            size: 16,
+                                                            color:
+                                                                AppTheme.amber,
+                                                          ), // First contact is auto-dialed on trigger
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      entry.value['phone']!,
+                                                      style: AppTextStyles.caption(
+                                                        color:
+                                                            AppTheme.textMuted(
+                                                              context,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: Icon(
+                                                  LucideIcons.mapPin,
+                                                  color: AppTheme.textMuted(
+                                                    context,
+                                                  ),
+                                                ),
+                                                tooltip: 'Text my location',
+                                                onPressed: () {
+                                                  _shareLocationViaSms(
+                                                    entry.value['phone']!,
+                                                  );
+                                                },
+                                              ),
+                                              IconButton(
+                                                icon: Icon(
+                                                  LucideIcons.phone,
+                                                  color: AppTheme.textMuted(
+                                                    context,
+                                                  ),
+                                                ),
+                                                onPressed: () {
+                                                  _callNumber(
+                                                    entry.value['phone']!,
+                                                  );
+                                                },
+                                              ),
+                                              IconButton(
+                                                icon: Icon(
+                                                  LucideIcons.trash2,
+                                                  color: AppTheme.textMuted(
+                                                    context,
+                                                  ),
+                                                ),
+                                                onPressed: () {
+                                                  _showDeleteContactDialog(
+                                                    entry.key,
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                        ),
+                      ],
                     ),
             ),
           ],
@@ -515,7 +723,9 @@ class _SosScreenState extends State<SosScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: AppTheme.borderMuted(context))),
+            border: Border(
+              top: BorderSide(color: AppTheme.borderMuted(context)),
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -533,13 +743,77 @@ class _SosScreenState extends State<SosScreen> {
                 onTap: () => _onItemTapped(1),
               ),
               _SosActionButton(
-                icon: _isFlashOn ? LucideIcons.lightbulb : LucideIcons.lightbulb,
+                icon: _isFlashOn
+                    ? LucideIcons.lightbulb
+                    : LucideIcons.lightbulbOff,
                 label: 'Flashlight',
                 active: _isFlashOn,
                 onTap: () => _onItemTapped(2),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyContactsView extends StatelessWidget {
+  const _EmptyContactsView({required this.onAddContact});
+
+  final VoidCallback onAddContact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: _sosRedTrack,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(LucideIcons.userPlus, size: 28, color: _sosRed),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No emergency contacts yet',
+              style: AppTextStyles.bodyBold(
+                color: AppTheme.textPrimary(context),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Add a contact so SOS can call and text your location to '
+              'someone automatically the next time you need help.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.caption(color: AppTheme.textMuted(context)),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onAddContact,
+              icon: const Icon(LucideIcons.userPlus, size: 18),
+              label: const Text('Add emergency contact'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _sosRed,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

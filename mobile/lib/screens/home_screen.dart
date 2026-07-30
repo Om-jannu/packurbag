@@ -12,13 +12,17 @@ import '../providers/auth_provider.dart';
 import '../providers/repository_providers.dart';
 import '../providers/trip_providers.dart';
 import '../theme/app_theme.dart';
+import '../utils/sos_navigation.dart';
 import '../widgets/category_color.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/home_dashboard_shimmer.dart';
 import '../widgets/trip_calendar_card.dart';
 import '../widgets/trip_form_sheet.dart';
 
-final _weatherByCityProvider = FutureProvider.family<Weather, String>((ref, city) {
+final _weatherByCityProvider = FutureProvider.family<Weather, String>((
+  ref,
+  city,
+) {
   return ref.watch(weatherRepositoryProvider).fetchWeatherByCity(city);
 });
 
@@ -47,7 +51,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<Trip> _tripsOnDay(List<Trip> trips, DateTime day) {
     final d = DateTime(day.year, day.month, day.day);
     return trips.where((t) {
-      final start = DateTime(t.startDate.year, t.startDate.month, t.startDate.day);
+      final start = DateTime(
+        t.startDate.year,
+        t.startDate.month,
+        t.startDate.day,
+      );
       final end = DateTime(t.endDate.year, t.endDate.month, t.endDate.day);
       return !d.isBefore(start) && !d.isAfter(end);
     }).toList();
@@ -59,7 +67,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final entries = <({Trip trip, ItineraryItem item})>[];
     for (final trip in trips) {
       for (final item in trip.itinerary) {
-        if (!item.completed && !item.date.isBefore(now) && item.date.isBefore(weekFromNow)) {
+        if (!item.completed &&
+            !item.date.isBefore(now) &&
+            item.date.isBefore(weekFromNow)) {
           entries.add((trip: trip, item: item));
         }
       }
@@ -81,16 +91,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Container(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppTheme.borderMuted(context))),
+                border: Border(
+                  bottom: BorderSide(color: AppTheme.borderMuted(context)),
+                ),
               ),
               child: Row(
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(999),
-                    child: Image.asset('assets/packurbag-logo.png', width: 26, height: 26),
+                    child: Image.asset(
+                      'assets/packurbag-logo.png',
+                      width: 26,
+                      height: 26,
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  Text('Packurbag', style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context))),
+                  Text(
+                    'Packurbag',
+                    style: AppTextStyles.appBarTitle(
+                      color: AppTheme.textPrimary(context),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -104,7 +125,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         final nextTrip = _nextTrip(trips);
                         final upcomingItinerary = _upcomingItinerary(trips);
                         final ongoingCount = trips
-                            .where((t) => _tripsOnDay([t], DateTime.now()).isNotEmpty)
+                            .where(
+                              (t) =>
+                                  _tripsOnDay([t], DateTime.now()).isNotEmpty,
+                            )
                             .length;
 
                         return ListView(
@@ -114,9 +138,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               EmptyState(
                                 icon: LucideIcons.briefcase,
                                 title: 'No upcoming trips',
-                                message: 'Plan your next adventure to see it here.',
+                                message:
+                                    'Plan your next adventure to see it here.',
                                 action: FilledButton.icon(
-                                  onPressed: () => showTripFormSheet(context, userId: userId!),
+                                  onPressed: () => showTripFormSheet(
+                                    context,
+                                    userId: userId!,
+                                  ),
                                   icon: const Icon(LucideIcons.plus),
                                   label: const Text('Plan a trip'),
                                 ),
@@ -126,7 +154,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               const SizedBox(height: 12),
                               _WeatherCard(destination: nextTrip.destination),
                               const SizedBox(height: 12),
-                              _CurrencySnippetCard(targetCurrency: nextTrip.budgetCurrency),
+                              _CurrencySnippetCard(
+                                targetCurrency: nextTrip.budgetCurrency,
+                              ),
                             ],
                             const SizedBox(height: 20),
                             _QuickStatsRow(
@@ -137,7 +167,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             const SizedBox(height: 20),
                             Text(
                               'Trip calendar',
-                              style: AppTextStyles.sectionTitle(color: AppTheme.textPrimary(context)),
+                              style: AppTextStyles.sectionTitle(
+                                color: AppTheme.textPrimary(context),
+                              ),
                             ),
                             const SizedBox(height: 8),
                             TripCalendarCard(
@@ -148,35 +180,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 _selectedDay = day;
                                 _focusedDay = day;
                               }),
-                              onMonthChanged: (month) => setState(() => _focusedDay = month),
+                              onMonthChanged: (month) =>
+                                  setState(() => _focusedDay = month),
                             ),
                             if (upcomingItinerary.isNotEmpty) ...[
                               const SizedBox(height: 20),
                               Text(
                                 'Coming up this week',
-                                style: AppTextStyles.sectionTitle(color: AppTheme.textPrimary(context)),
+                                style: AppTextStyles.sectionTitle(
+                                  color: AppTheme.textPrimary(context),
+                                ),
                               ),
                               const SizedBox(height: 8),
                               Container(
                                 decoration: AppTheme.flatCard(context),
                                 clipBehavior: Clip.antiAlias,
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4,
+                                ),
                                 child: Material(
                                   color: Colors.transparent,
                                   child: Column(
                                     children: [
                                       for (final entry in upcomingItinerary)
                                         ListTile(
-                                          leading: Icon(LucideIcons.calendarClock,
-                                              color: parseCategoryColor(entry.trip.coverColor)),
-                                          title: Text(entry.item.text,
-                                              style: AppTextStyles.label(color: AppTheme.textPrimary(context))),
+                                          leading: Icon(
+                                            LucideIcons.calendarClock,
+                                            color: parseCategoryColor(
+                                              entry.trip.coverColor,
+                                            ),
+                                          ),
+                                          title: Text(
+                                            entry.item.text,
+                                            style: AppTextStyles.label(
+                                              color: AppTheme.textPrimary(
+                                                context,
+                                              ),
+                                            ),
+                                          ),
                                           subtitle: Text(
                                             '${entry.trip.title} · ${DateFormat('E, d MMM').format(entry.item.date)}',
-                                            style: AppTextStyles.micro(color: AppTheme.textMuted(context, opacity: 0.4)),
+                                            style: AppTextStyles.micro(
+                                              color: AppTheme.textMuted(
+                                                context,
+                                                opacity: 0.4,
+                                              ),
+                                            ),
                                           ),
-                                          onTap: () =>
-                                              context.push('/trips/detail', extra: entry.trip),
+                                          onTap: () => context.push(
+                                            '/trips/detail',
+                                            extra: entry.trip,
+                                          ),
                                         ),
                                     ],
                                   ),
@@ -186,7 +240,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             const SizedBox(height: 20),
                             Text(
                               'Quick actions',
-                              style: AppTextStyles.sectionTitle(color: AppTheme.textPrimary(context)),
+                              style: AppTextStyles.sectionTitle(
+                                color: AppTheme.textPrimary(context),
+                              ),
                             ),
                             const SizedBox(height: 8),
                             const _QuickActionsRow(),
@@ -211,7 +267,8 @@ class _CountdownCard extends StatelessWidget {
     final color = parseCategoryColor(trip.coverColor);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final isOngoing = !now.isBefore(trip.startDate) && !now.isAfter(trip.endDate);
+    final isOngoing =
+        !now.isBefore(trip.startDate) && !now.isAfter(trip.endDate);
     final daysUntil = trip.startDate.difference(today).inDays;
 
     return Material(
@@ -226,25 +283,35 @@ class _CountdownCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                (isOngoing ? "You're in ${trip.destination}!" : 'Next up').toUpperCase(),
+                (isOngoing ? "You're in ${trip.destination}!" : 'Next up')
+                    .toUpperCase(),
                 style: AppTextStyles.tag(color: color),
               ),
               const SizedBox(height: 6),
               Text(
                 trip.title,
-                style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
+                style: AppTextStyles.appBarTitle(
+                  color: AppTheme.textPrimary(context),
+                ),
               ),
               const SizedBox(height: 4),
               Row(
                 children: [
                   Icon(LucideIcons.mapPin, size: 15, color: color),
                   const SizedBox(width: 4),
-                  Text(trip.destination, style: AppTextStyles.label(color: AppTheme.textMuted(context, opacity: 0.7))),
+                  Text(
+                    trip.destination,
+                    style: AppTextStyles.label(
+                      color: AppTheme.textMuted(context, opacity: 0.7),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
               Text(
-                isOngoing ? 'Enjoy your trip!' : 'In $daysUntil day${daysUntil == 1 ? '' : 's'}',
+                isOngoing
+                    ? 'Enjoy your trip!'
+                    : 'In $daysUntil day${daysUntil == 1 ? '' : 's'}',
                 style: AppTextStyles.bodyBold(color: color),
               ),
             ],
@@ -277,7 +344,10 @@ class _WeatherCard extends ConsumerWidget {
                 Container(
                   width: 34,
                   height: 34,
-                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -287,13 +357,19 @@ class _WeatherCard extends ConsumerWidget {
                       Container(
                         width: 120,
                         height: 12,
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Container(
                         width: 80,
                         height: 10,
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                       ),
                     ],
                   ),
@@ -316,10 +392,18 @@ class _WeatherCard extends ConsumerWidget {
         ),
         data: (weather) => Row(
           children: [
-            Image.network(weather.iconUrl, width: 34, height: 34,
-                errorBuilder: (_, _, _) {
-              return Icon(LucideIcons.cloudSun, size: 26, color: AppTheme.amber);
-            }),
+            Image.network(
+              weather.iconUrl,
+              width: 34,
+              height: 34,
+              errorBuilder: (_, _, _) {
+                return Icon(
+                  LucideIcons.cloudSun,
+                  size: 26,
+                  color: AppTheme.amber,
+                );
+              },
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -327,11 +411,15 @@ class _WeatherCard extends ConsumerWidget {
                 children: [
                   Text(
                     '${weather.tempCelsius.round()}°C in ${weather.cityName}',
-                    style: AppTextStyles.label(color: AppTheme.textPrimary(context)),
+                    style: AppTextStyles.label(
+                      color: AppTheme.textPrimary(context),
+                    ),
                   ),
                   Text(
                     weather.description,
-                    style: AppTextStyles.micro(color: AppTheme.textMuted(context, opacity: 0.4)),
+                    style: AppTextStyles.micro(
+                      color: AppTheme.textMuted(context, opacity: 0.4),
+                    ),
                   ),
                 ],
               ),
@@ -364,7 +452,10 @@ class _CurrencySnippetCard extends ConsumerWidget {
             child: Container(
               width: 160,
               height: 14,
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+              ),
             ),
           );
         },
@@ -376,7 +467,9 @@ class _CurrencySnippetCard extends ConsumerWidget {
           if (!rates.containsKey('INR') || !rates.containsKey(targetCurrency)) {
             return const SizedBox.shrink();
           }
-          final converted = ref.read(currencyRepositoryProvider).convert(
+          final converted = ref
+              .read(currencyRepositoryProvider)
+              .convert(
                 amount: 1,
                 from: 'INR',
                 to: targetCurrency,
@@ -388,7 +481,9 @@ class _CurrencySnippetCard extends ConsumerWidget {
               const SizedBox(width: 10),
               Text(
                 '1 INR ≈ ${converted.toStringAsFixed(4)} $targetCurrency',
-                style: AppTextStyles.label(color: AppTheme.textPrimary(context)),
+                style: AppTextStyles.label(
+                  color: AppTheme.textPrimary(context),
+                ),
               ),
             ],
           );
@@ -445,7 +540,11 @@ class _QuickStatsRow extends StatelessWidget {
 }
 
 class _StatTile extends StatelessWidget {
-  const _StatTile({required this.icon, required this.label, required this.value});
+  const _StatTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   final IconData icon;
   final String label;
@@ -460,8 +559,18 @@ class _StatTile extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: AppTheme.accent(context)),
           const SizedBox(height: 6),
-          Text(value, style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context))),
-          Text(label, style: AppTextStyles.micro(color: AppTheme.textMuted(context, opacity: 0.4))),
+          Text(
+            value,
+            style: AppTextStyles.appBarTitle(
+              color: AppTheme.textPrimary(context),
+            ),
+          ),
+          Text(
+            label,
+            style: AppTextStyles.micro(
+              color: AppTheme.textMuted(context, opacity: 0.4),
+            ),
+          ),
         ],
       ),
     );
@@ -497,7 +606,7 @@ class _QuickActionsRow extends StatelessWidget {
           _QuickActionTile(
             icon: LucideIcons.triangleAlert,
             label: 'SOS',
-            onTap: () => context.push('/sos'),
+            onTap: () => navigateToSos(context),
           ),
         ],
       ),
@@ -506,7 +615,11 @@ class _QuickActionsRow extends StatelessWidget {
 }
 
 class _QuickActionTile extends StatelessWidget {
-  const _QuickActionTile({required this.icon, required this.label, required this.onTap});
+  const _QuickActionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
@@ -531,7 +644,12 @@ class _QuickActionTile extends StatelessWidget {
             child: Icon(icon, size: 19, color: AppTheme.accent(context)),
           ),
           const SizedBox(height: 4),
-          Text(label, style: AppTextStyles.micro(color: AppTheme.textMuted(context, opacity: 0.5))),
+          Text(
+            label,
+            style: AppTextStyles.micro(
+              color: AppTheme.textMuted(context, opacity: 0.5),
+            ),
+          ),
         ],
       ),
     );
