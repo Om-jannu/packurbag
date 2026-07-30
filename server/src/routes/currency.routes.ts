@@ -21,6 +21,15 @@ currencyRoutes.get("/rates", async (c) => {
       `${OPEN_EXCHANGE_RATES_BASE}/latest.json?base=USD&app_id=${env.openExchangeRatesAppId}`
     );
     const data = await response.json();
+    // fetch() only rejects on network-level failures (DNS, timeout) — an
+    // upstream 4xx/5xx with a valid JSON body (Open Exchange Rates returns
+    // {error:true, status, message, description} on auth/quota failures)
+    // still lands here and would otherwise get passed through as if it
+    // were a 200 success.
+    if (!response.ok) {
+      console.error("Open Exchange Rates returned an error:", data);
+      return c.json({ success: false, message: "Failed to fetch exchange rates" }, 502);
+    }
     return c.json(data);
   } catch (error) {
     console.error("Error fetching exchange rates:", error);
@@ -40,6 +49,10 @@ currencyRoutes.get("/currencies", async (c) => {
       `${OPEN_EXCHANGE_RATES_BASE}/currencies.json?app_id=${env.openExchangeRatesAppId}`
     );
     const data = await response.json();
+    if (!response.ok) {
+      console.error("Open Exchange Rates returned an error:", data);
+      return c.json({ success: false, message: "Failed to fetch currencies" }, 502);
+    }
     return c.json(data);
   } catch (error) {
     console.error("Error fetching currencies:", error);
