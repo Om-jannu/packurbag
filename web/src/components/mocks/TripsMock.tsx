@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Plus } from "lucide-react";
+import { MapPin, Plus, Image as ImageIcon, Luggage, CalendarClock } from "lucide-react";
 import PhoneNavBar, { type NavTab } from "./PhoneNavBar";
 import SpeedDialFab from "./SpeedDialFab";
 import TripDetailMock, { type TripDetailData } from "./TripDetailMock";
@@ -26,12 +26,12 @@ const initialTrips: TripDetailData[] = [
       { id: "p3", text: "Passport", category: "Documents", packed: false },
     ],
     expenses: [
-      { id: "e1", title: "Hotel", amount: 18000, currency: "INR", category: "Stay" },
-      { id: "e2", title: "Flights", amount: 14000, currency: "INR", category: "Transport" },
+      { id: "e1", title: "Hotel", amount: 18000, currency: "INR", category: "Stay", receiptCount: 1 },
+      { id: "e2", title: "Flights", amount: 14000, currency: "INR", category: "Transport", receiptCount: 2 },
     ],
     documents: [
-      { id: "d1", title: "Passport", type: "passport", hasPhoto: true },
-      { id: "d2", title: "Flight ticket", type: "ticket" },
+      { id: "d1", title: "Day 1", photoCount: 4 },
+      { id: "d2", title: "Day 2", photoCount: 6 },
     ],
   },
   {
@@ -48,7 +48,7 @@ const initialTrips: TripDetailData[] = [
     ],
     packing: [{ id: "p4", text: "Mosquito repellent", category: "Toiletries", packed: false }],
     expenses: [{ id: "e3", title: "Houseboat", amount: 5000, currency: "INR", category: "Stay" }],
-    documents: [{ id: "d3", title: "ID proof", type: "passport" }],
+    documents: [{ id: "d3", title: "Day 1", photoCount: 2 }],
   },
   {
     id: "tokyo",
@@ -61,7 +61,7 @@ const initialTrips: TripDetailData[] = [
     itinerary: [],
     packing: [],
     expenses: [{ id: "e4", title: "Visa fee", amount: 4500, currency: "INR", category: "Other" }],
-    documents: [{ id: "d4", title: "Visa", type: "visa" }],
+    documents: [{ id: "d4", title: "Visa docs", photoCount: 1 }],
   },
 ];
 
@@ -109,6 +109,8 @@ export default function TripsMock({ onNavigate }: TripsMockProps) {
           {initialTrips.map((trip) => {
             const spent = trip.expenses.reduce((sum, e) => sum + e.amount, 0);
             const isOverBudget = trip.budgetAmount != null && spent > trip.budgetAmount;
+            const totalPhotos = trip.documents.reduce((sum, d) => sum + d.photoCount, 0);
+            const packedCount = trip.packing.filter((p) => p.packed).length;
             return (
               <button
                 key={trip.id}
@@ -144,6 +146,45 @@ export default function TripsMock({ onNavigate }: TripsMockProps) {
                       </p>
                     </>
                   )}
+
+                  {totalPhotos > 0 && (
+                    <div className="mt-1.5 flex gap-1">
+                      {Array.from({ length: Math.min(totalPhotos, 6) }).map((_, i) => {
+                        const isOverflow = totalPhotos > 6 && i === 5;
+                        return (
+                          <span
+                            key={i}
+                            className={`relative h-3 w-3 shrink-0 rounded bg-gradient-to-br ${barClasses[trip.color]} to-black/20`}
+                          >
+                            {isOverflow && (
+                              <span className="absolute inset-0 flex items-center justify-center rounded bg-black/55 text-[5px] font-bold text-white">
+                                +{totalPhotos - 5}
+                              </span>
+                            )}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="mt-1.5 flex gap-1">
+                    <span
+                      className={`flex items-center gap-0.5 rounded px-1 py-0.5 text-[7px] font-bold ${badgeClasses[trip.color]}`}
+                    >
+                      <ImageIcon size={8} /> {trip.documents.length}
+                    </span>
+                    <span
+                      className={`flex items-center gap-0.5 rounded px-1 py-0.5 text-[7px] font-bold ${badgeClasses[trip.color]}`}
+                    >
+                      <Luggage size={8} />{" "}
+                      {trip.packing.length === 0 ? "—" : `${packedCount}/${trip.packing.length}`}
+                    </span>
+                    <span
+                      className={`flex items-center gap-0.5 rounded px-1 py-0.5 text-[7px] font-bold ${badgeClasses[trip.color]}`}
+                    >
+                      <CalendarClock size={8} /> {trip.itinerary.length}
+                    </span>
+                  </div>
                 </div>
                 <span className={`rounded-lg px-2 py-1 text-[8px] font-bold ${badgeClasses[trip.color]}`}>
                   {STATUS_LABELS[trip.id] ?? "Upcoming"}

@@ -7,12 +7,10 @@ import {
   Plus,
   MapPin,
   Lock,
-  Trash2,
-  BadgeCheck,
-  ScrollText,
-  Ticket,
-  ChevronRight,
-  type LucideIcon,
+  Image as ImageIcon,
+  Share2,
+  Download,
+  Receipt,
 } from "lucide-react";
 
 export interface ItineraryItemData {
@@ -37,13 +35,13 @@ export interface ExpenseData {
   amount: number;
   currency: string;
   category: string;
+  receiptCount?: number;
 }
 
 export interface DocumentData {
   id: string;
   title: string;
-  type: "passport" | "visa" | "ticket";
-  hasPhoto?: boolean;
+  photoCount: number;
 }
 
 export interface TripDetailData {
@@ -66,12 +64,6 @@ type Tab = (typeof TABS)[number];
 const PACKING_TEMPLATE_NAMES = ["Beach", "Hiking", "Business", "General"];
 
 const PRIORITY_COLORS = ["bg-slate-400", "bg-blue-400", "bg-amber-400", "bg-orange-400", "bg-red-500"];
-
-const DOCUMENT_ICONS: Record<DocumentData["type"], LucideIcon> = {
-  passport: BadgeCheck,
-  visa: ScrollText,
-  ticket: Ticket,
-};
 
 const colorClasses = {
   coral: { bg: "bg-coral", text: "text-coral", tint: "bg-coral/15", ring: "ring-coral" },
@@ -269,10 +261,44 @@ export default function TripDetailMock({
                 </p>
               </div>
 
+              {expenses.length > 0 && (
+                <div className="mt-2.5 flex gap-1.5">
+                  <button
+                    type="button"
+                    className="flex flex-1 items-center justify-center gap-1 rounded-full border border-black/10 py-1.5 text-[8px] font-bold text-teal-dark"
+                  >
+                    <Download size={10} /> Export CSV
+                  </button>
+                  <button
+                    type="button"
+                    className="flex flex-1 items-center justify-center gap-1 rounded-full border border-black/10 py-1.5 text-[8px] font-bold text-teal-dark"
+                  >
+                    <Share2 size={10} /> Share
+                  </button>
+                </div>
+              )}
+
               <div className="mt-2.5 pb-2">
                 {expenses.length === 0 && <EmptyRow text="No expenses logged yet" />}
                 {expenses.map((expense) => (
-                  <div key={expense.id} className="flex items-center gap-2 py-2">
+                  <div key={expense.id} className="flex items-center gap-2.5 py-2">
+                    <span
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                        expense.receiptCount
+                          ? `relative bg-gradient-to-br ${c.bg} to-black/20`
+                          : "bg-black/5"
+                      }`}
+                    >
+                      {expense.receiptCount ? (
+                        expense.receiptCount > 1 && (
+                          <span className="absolute -bottom-0.5 -right-0.5 rounded-full bg-black/60 px-1 text-[6px] font-bold text-white">
+                            {expense.receiptCount}
+                          </span>
+                        )
+                      ) : (
+                        <Receipt size={13} className="text-black/30" />
+                      )}
+                    </span>
                     <div className="flex-1">
                       <p className="font-semibold text-teal-dark">{expense.title}</p>
                       <p className="text-[8px] text-black/40">{expense.category}</p>
@@ -280,9 +306,6 @@ export default function TripDetailMock({
                     <span className="text-[9px] font-bold text-teal-dark">
                       {expense.amount.toFixed(0)} {expense.currency}
                     </span>
-                    <button type="button" className="text-black/20">
-                      <Trash2 size={11} />
-                    </button>
                   </div>
                 ))}
               </div>
@@ -295,32 +318,38 @@ export default function TripDetailMock({
                 <Lock size={10} />
                 Stored only on this device — never uploaded.
               </div>
-              <div className="mt-2 pb-2">
-                {documents.length === 0 && <EmptyRow text="No travel documents yet" />}
-                {documents.map((doc) => {
-                  const Icon = DOCUMENT_ICONS[doc.type];
-                  return (
-                    <div key={doc.id} className="flex items-center gap-2.5 rounded-xl px-1 py-2">
-                      {doc.hasPhoto ? (
-                        <span
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${c.bg} to-black/20`}
-                        >
-                          <Icon size={14} className="text-white" />
-                        </span>
-                      ) : (
-                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${c.tint}`}>
-                          <Icon size={14} className={c.text} />
-                        </span>
-                      )}
-                      <span className="flex-1 font-semibold text-teal-dark">{doc.title}</span>
-                      <ChevronRight size={13} className="text-black/25" />
-                      <button type="button" className="text-black/20">
-                        <Trash2 size={11} />
-                      </button>
+              {documents.length === 0 ? (
+                <EmptyRow text="No photos yet" />
+              ) : (
+                <div className="mt-2 grid grid-cols-2 gap-2 pb-2">
+                  {documents.map((doc) => (
+                    <div key={doc.id} className="overflow-hidden rounded-xl bg-black/[0.03]">
+                      <div
+                        className={`relative aspect-square ${
+                          doc.photoCount > 0 ? `bg-gradient-to-br ${c.bg} to-black/20` : "bg-black/5"
+                        }`}
+                      >
+                        {doc.photoCount === 0 && (
+                          <ImageIcon
+                            size={18}
+                            className="absolute inset-0 m-auto text-black/25"
+                          />
+                        )}
+                        {doc.photoCount > 1 && (
+                          <span className="absolute bottom-1 right-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[7px] font-bold text-white">
+                            {doc.photoCount}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 px-2 py-1.5">
+                        <span className="flex-1 truncate font-semibold text-teal-dark">{doc.title}</span>
+                        <Pencil size={10} className="shrink-0 text-black/30" />
+                        <Share2 size={10} className="shrink-0 text-black/30" />
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

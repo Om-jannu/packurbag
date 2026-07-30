@@ -6,13 +6,10 @@ import {
   MapPin,
   CloudSun,
   Briefcase,
-  Globe,
-  Bot,
-  TriangleAlert,
+  Receipt,
   CalendarClock,
   Luggage,
   Plane,
-  type LucideIcon,
 } from "lucide-react";
 import PhoneNavBar, { type NavTab } from "./PhoneNavBar";
 import SpeedDialFab from "./SpeedDialFab";
@@ -25,16 +22,19 @@ const DAYS_IN_MONTH = 30;
 const TRAILING_BLANKS = 3;
 const HIGHLIGHTED_DAYS = [12, 13, 14, 15];
 
-const quickActions: { icon: LucideIcon; label: string }[] = [
-  { icon: Briefcase, label: "Trips" },
-  { icon: Globe, label: "Translate" },
-  { icon: Bot, label: "Assistant" },
-  { icon: TriangleAlert, label: "SOS" },
-];
-
 const upcomingItinerary = [
   { text: "Visit temple", trip: "Bali Getaway", date: "Wed, 2 Aug", color: "text-coral" },
   { text: "Book train tickets", trip: "Kerala Backwaters", date: "Fri, 4 Aug", color: "text-amber" },
+];
+
+// Recent photo-journal shots pulled across every trip — same gradient
+// placeholder look used for photo tiles in the Documents grid.
+const recentPhotos = [
+  "bg-gradient-to-br from-coral to-black/20",
+  "bg-gradient-to-br from-amber to-black/20",
+  "bg-gradient-to-br from-teal to-black/20",
+  "bg-gradient-to-br from-coral to-black/20",
+  "bg-gradient-to-br from-amber to-black/20",
 ];
 
 interface HomeMockProps {
@@ -43,7 +43,6 @@ interface HomeMockProps {
 
 export default function HomeMock({ onNavigate }: HomeMockProps) {
   const [selectedDate, setSelectedDate] = useState(13);
-  const [activeAction, setActiveAction] = useState("Trips");
   const tripCount = 4;
 
   const dayHasTrip = HIGHLIGHTED_DAYS.includes(selectedDate);
@@ -60,7 +59,15 @@ export default function HomeMock({ onNavigate }: HomeMockProps) {
         <div className="h-full space-y-3 overflow-y-auto px-3 pb-20 pt-3">
           {/* countdown card */}
           <div className="rounded-2xl bg-coral/15 p-3">
-            <p className="text-[9px] font-semibold uppercase tracking-wide text-coral">Next up</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[9px] font-semibold uppercase tracking-wide text-coral">Next up</p>
+              <button
+                type="button"
+                className="flex items-center gap-1 rounded-full bg-coral/20 px-2 py-1 text-[8px] font-bold text-coral"
+              >
+                <Receipt size={9} /> Add budget
+              </button>
+            </div>
             <p className="mt-1 text-[13px] font-extrabold text-teal-dark">Bali Getaway</p>
             <div className="mt-1 flex items-center gap-1 text-[10px] text-teal-dark/70">
               <MapPin size={11} className="text-coral" />
@@ -164,35 +171,12 @@ export default function HomeMock({ onNavigate }: HomeMockProps) {
             </div>
           </div>
 
-          {/* quick actions */}
+          {/* recent photos */}
           <div>
-            <p className="mb-1.5 text-[10px] font-bold text-teal-dark">Quick actions</p>
-            <div className="flex justify-around rounded-2xl bg-black/[0.03] py-2">
-              {quickActions.map(({ icon: Icon, label }) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => {
-                    setActiveAction(label);
-                    if (label === "Trips") onNavigate?.("trips");
-                  }}
-                  className="flex flex-col items-center gap-1"
-                >
-                  <div
-                    className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
-                      activeAction === label ? "bg-teal text-white" : "bg-teal/10 text-teal"
-                    }`}
-                  >
-                    <Icon size={14} />
-                  </div>
-                  <span
-                    className={`text-[7px] transition-colors ${
-                      activeAction === label ? "font-bold text-teal-dark" : "text-black/50"
-                    }`}
-                  >
-                    {label}
-                  </span>
-                </button>
+            <p className="mb-1.5 text-[10px] font-bold text-teal-dark">Recent photos</p>
+            <div className="flex gap-1.5 overflow-x-hidden rounded-2xl bg-black/[0.03] p-2">
+              {recentPhotos.map((gradient, i) => (
+                <span key={i} className={`h-9 w-9 shrink-0 rounded-lg ${gradient}`} />
               ))}
             </div>
           </div>

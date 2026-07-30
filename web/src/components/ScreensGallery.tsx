@@ -19,7 +19,7 @@ const SCREENS: { title: string; description: string; mock: React.ReactNode }[] =
   { title: "Splash", description: "Launch screen, brand mark fade/scale in.", mock: <SplashMock /> },
   { title: "Login", description: "Email/password sign-in with show/hide toggle.", mock: <LoginMock /> },
   { title: "Register", description: "New account creation form.", mock: <RegisterMock /> },
-  { title: "Home", description: "Dashboard: countdown, weather, calendar, quick actions.", mock: <HomeMock /> },
+  { title: "Home", description: "Dashboard: countdown, weather, calendar, recent photos.", mock: <HomeMock /> },
   {
     title: "Trips",
     description: "Every trip, with a live countdown — tap one to open its itinerary, packing, budget, and documents.",
