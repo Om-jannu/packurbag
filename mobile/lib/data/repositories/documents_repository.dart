@@ -19,56 +19,57 @@ class DocumentsRepository {
     required String userId,
     required String tripId,
   }) async {
+    final documents = await fetchAllDocuments(userId: userId);
+    return documents.where((doc) => doc.tripId == tripId).toList();
+  }
+
+  Future<List<TravelDocument>> fetchAllDocuments({required String userId}) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_prefsKey(userId)) ?? [];
     return raw
         .map((entry) => TravelDocument.fromJson(
             jsonDecode(entry) as Map<String, dynamic>))
-        .where((doc) => doc.tripId == tripId)
         .toList();
   }
 
   Future<TravelDocument> addDocument({
     required String userId,
     required String tripId,
-    required TravelDocumentType type,
     required String title,
     String notes = '',
-    XFile? photo,
+    List<XFile> photos = const [],
   }) async {
-    final imagePath = photo == null ? null : await _persistImage(photo);
+    final imagePaths = await Future.wait(photos.map(_persistImage));
     final document = TravelDocument(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       tripId: tripId,
-      type: type,
       title: title,
       notes: notes,
-      imagePath: imagePath,
+      imagePaths: imagePaths,
     );
     await _appendAll(userId, [document]);
     return document;
   }
 
+  /// [existingPhotoPaths] are the already-persisted photos the user chose to
+  /// keep (already excludes anything they removed in the editor);
+  /// [newPhotos] are freshly picked and still need persisting.
   Future<void> updateDocument({
     required String userId,
     required String documentId,
-    required TravelDocumentType type,
     required String title,
     String notes = '',
-    XFile? newPhoto,
+    List<String> existingPhotoPaths = const [],
+    List<XFile> newPhotos = const [],
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getStringList(_prefsKey(userId)) ?? [];
-    final newImagePath = newPhoto == null ? null : await _persistImage(newPhoto);
+    final newPaths = await Future.wait(newPhotos.map(_persistImage));
+    final imagePaths = [...existingPhotoPaths, ...newPaths];
     final updated = raw.map((entry) {
       final doc = TravelDocument.fromJson(jsonDecode(entry) as Map<String, dynamic>);
       if (doc.id != documentId) return entry;
-      final edited = doc.copyWith(
-        type: type,
-        title: title,
-        notes: notes,
-        imagePath: newImagePath,
-      );
+      final edited = doc.copyWith(title: title, notes: notes, imagePaths: imagePaths);
       return jsonEncode(edited.toJson());
     }).toList();
     await prefs.setStringList(_prefsKey(userId), updated);

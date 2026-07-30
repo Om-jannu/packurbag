@@ -6,6 +6,7 @@ import '../data/repositories/auth_repository.dart';
 import '../data/repositories/currency_repository.dart';
 import '../data/repositories/discovery_repository.dart';
 import '../data/repositories/documents_repository.dart';
+import '../data/repositories/expense_receipts_repository.dart';
 import '../data/repositories/expense_repository.dart';
 import '../data/repositories/itinerary_repository.dart';
 import '../data/repositories/message_repository.dart';
@@ -53,6 +54,10 @@ final messageRepositoryProvider = Provider<MessageRepository>(
 
 final documentsRepositoryProvider = Provider<DocumentsRepository>(
   (ref) => DocumentsRepository(),
+);
+
+final expenseReceiptsRepositoryProvider = Provider<ExpenseReceiptsRepository>(
+  (ref) => ExpenseReceiptsRepository(),
 );
 
 final aiRepositoryProvider = Provider<AiRepository>(

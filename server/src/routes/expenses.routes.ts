@@ -30,7 +30,8 @@ expensesRoutes.post("/:tripId/expenses", async (c) => {
     }
     trip.expenses.push((await c.req.json<ExpenseBody>()) as never);
     await user!.save();
-    return c.json({ success: true, message: "Expense added" }, 201);
+    const created = trip.expenses[trip.expenses.length - 1];
+    return c.json({ success: true, message: "Expense added", data: created }, 201);
   } catch (error) {
     console.error(error);
     return c.json({ success: false, message: "Error adding expense" }, 500);

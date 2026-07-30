@@ -9,13 +9,16 @@ import '../data/repositories/weather_repository.dart';
 import '../models/itinerary_item.dart';
 import '../models/trip.dart';
 import '../providers/auth_provider.dart';
+import '../providers/documents_providers.dart';
 import '../providers/repository_providers.dart';
 import '../providers/trip_providers.dart';
 import '../theme/app_theme.dart';
-import '../utils/sos_navigation.dart';
+import '../widgets/attachment_thumbnail.dart';
 import '../widgets/category_color.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/expense_form_sheet.dart';
 import '../widgets/home_dashboard_shimmer.dart';
+import '../widgets/photo_viewer_page.dart';
 import '../widgets/trip_calendar_card.dart';
 import '../widgets/trip_form_sheet.dart';
 
@@ -150,7 +153,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                               )
                             else ...[
-                              _CountdownCard(trip: nextTrip),
+                              _CountdownCard(trip: nextTrip, userId: userId!),
                               const SizedBox(height: 12),
                               _WeatherCard(destination: nextTrip.destination),
                               const SizedBox(height: 12),
@@ -239,13 +242,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ],
                             const SizedBox(height: 20),
                             Text(
-                              'Quick actions',
+                              'Recent photos',
                               style: AppTextStyles.sectionTitle(
                                 color: AppTheme.textPrimary(context),
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const _QuickActionsRow(),
+                            _RecentPhotosStrip(userId: userId!),
                           ],
                         );
                       },
@@ -259,8 +262,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 }
 
 class _CountdownCard extends StatelessWidget {
-  const _CountdownCard({required this.trip});
+  const _CountdownCard({required this.trip, required this.userId});
   final Trip trip;
+  final String userId;
 
   @override
   Widget build(BuildContext context) {
@@ -282,10 +286,45 @@ class _CountdownCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                (isOngoing ? "You're in ${trip.destination}!" : 'Next up')
-                    .toUpperCase(),
-                style: AppTextStyles.tag(color: color),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      (isOngoing
+                              ? "You're in ${trip.destination}!"
+                              : 'Next up')
+                          .toUpperCase(),
+                      style: AppTextStyles.tag(color: color),
+                    ),
+                  ),
+                  Material(
+                    color: color.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(999),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(999),
+                      onTap: () => showExpenseFormSheet(
+                        context,
+                        userId: userId,
+                        tripId: trip.id,
+                        defaultCurrency: trip.budgetCurrency,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.receipt, size: 13, color: color),
+                            const SizedBox(width: 4),
+                            Text('Add budget', style: AppTextStyles.tag(color: color)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 6),
               Text(
@@ -577,81 +616,101 @@ class _StatTile extends StatelessWidget {
   }
 }
 
-class _QuickActionsRow extends StatelessWidget {
-  const _QuickActionsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: AppTheme.flatCard(context),
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _QuickActionTile(
-            icon: LucideIcons.briefcase,
-            label: 'Trips',
-            onTap: () => context.go('/trips'),
-          ),
-          _QuickActionTile(
-            icon: LucideIcons.globe,
-            label: 'Translate',
-            onTap: () => context.go('/translate'),
-          ),
-          _QuickActionTile(
-            icon: LucideIcons.bot,
-            label: 'Assistant',
-            onTap: () => context.push('/ai-chat'),
-          ),
-          _QuickActionTile(
-            icon: LucideIcons.triangleAlert,
-            label: 'SOS',
-            onTap: () => navigateToSos(context),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickActionTile extends StatelessWidget {
-  const _QuickActionTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
+/// A single photo drawn from a [TravelDocument], flattened across every
+/// trip so the strip can show the most recent shots regardless of which
+/// trip or entry they belong to — but tapping still opens a swipeable
+/// viewer scoped to that photo's own document (not the whole flattened list).
+class _RecentPhoto {
+  const _RecentPhoto({
+    required this.path,
+    required this.docTitle,
+    required this.docPaths,
+    required this.indexInDoc,
   });
 
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
+  final String path;
+  final String docTitle;
+  final List<String> docPaths;
+  final int indexInDoc;
+}
+
+class _RecentPhotosStrip extends ConsumerWidget {
+  const _RecentPhotosStrip({required this.userId});
+  final String userId;
+
+  static const _maxPhotos = 12;
 
   @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppTheme.accent(context).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final documentsAsync = ref.watch(allDocumentsProvider(userId));
+
+    return documentsAsync.when(
+      loading: () => const SizedBox(height: 72),
+      error: (error, _) => const SizedBox.shrink(),
+      data: (documents) {
+        final photos = <_RecentPhoto>[];
+        for (final doc in documents.reversed) {
+          for (var i = 0; i < doc.imagePaths.length; i++) {
+            photos.add(_RecentPhoto(
+              path: doc.imagePaths[i],
+              docTitle: doc.title,
+              docPaths: doc.imagePaths,
+              indexInDoc: i,
+            ));
+          }
+          if (photos.length >= _maxPhotos) break;
+        }
+
+        if (photos.isEmpty) {
+          return Container(
+            decoration: AppTheme.flatCard(context),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(LucideIcons.images, color: AppTheme.textMuted(context, opacity: 0.4)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Start a photo journal from a trip\'s Documents tab.',
+                    style: AppTextStyles.label(color: AppTheme.textMuted(context, opacity: 0.5)),
+                  ),
+                ),
+              ],
             ),
-            child: Icon(icon, size: 19, color: AppTheme.accent(context)),
+          );
+        }
+
+        return SizedBox(
+          height: 72,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: photos.length.clamp(0, _maxPhotos),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final photo = photos[index];
+              return GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => PhotoViewerPage(
+                      imagePaths: photo.docPaths,
+                      initialIndex: photo.indexInDoc,
+                      title: photo.docTitle,
+                    ),
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox(
+                    width: 72,
+                    height: 72,
+                    child: buildAttachmentThumbnail(context, photo.path, fit: BoxFit.cover),
+                  ),
+                ),
+              );
+            },
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: AppTextStyles.micro(
-              color: AppTheme.textMuted(context, opacity: 0.5),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

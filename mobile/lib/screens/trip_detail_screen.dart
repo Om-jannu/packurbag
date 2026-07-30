@@ -1,10 +1,12 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
+import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../data/app_exception.dart';
 import '../data/packing_templates.dart';
@@ -15,6 +17,7 @@ import '../models/travel_document.dart';
 import '../models/trip.dart';
 import '../providers/auth_provider.dart';
 import '../providers/documents_providers.dart';
+import '../providers/expense_receipts_providers.dart';
 import '../providers/repository_providers.dart';
 import '../providers/trip_providers.dart';
 import '../theme/app_theme.dart';
@@ -24,6 +27,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/expense_form_sheet.dart';
 import '../widgets/itinerary_item_form_sheet.dart';
 import '../widgets/list_row_shimmer.dart';
+import '../widgets/attachment_thumbnail.dart';
 import '../widgets/packing_item_form_sheet.dart';
 import '../widgets/photo_viewer_page.dart';
 import '../widgets/priority_badge.dart';
@@ -81,7 +85,8 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen>
     // Re-read the latest version of this trip so edits made elsewhere show
     // up without re-navigating.
     final tripsAsync = userId == null ? null : ref.watch(tripsProvider(userId));
-    final liveTrip = tripsAsync?.value?.firstWhere(
+    final liveTrip =
+        tripsAsync?.value?.firstWhere(
           (t) => t.id == widget.trip.id,
           orElse: () => widget.trip,
         ) ??
@@ -98,29 +103,42 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen>
               child: Row(
                 children: [
                   IconButton(
-                    icon: Icon(LucideIcons.arrowLeft, color: AppTheme.textPrimary(context)),
+                    icon: Icon(
+                      LucideIcons.arrowLeft,
+                      color: AppTheme.textPrimary(context),
+                    ),
                     onPressed: () => Navigator.of(context).maybePop(),
                   ),
                   Expanded(
                     child: Text(
                       liveTrip.title,
-                      style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
+                      style: AppTextStyles.appBarTitle(
+                        color: AppTheme.textPrimary(context),
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   if (userId != null)
                     IconButton(
-                      icon: Icon(LucideIcons.pencil, color: AppTheme.textPrimary(context)),
+                      icon: Icon(
+                        LucideIcons.pencil,
+                        color: AppTheme.textPrimary(context),
+                      ),
                       tooltip: 'Edit trip',
-                      onPressed: () =>
-                          showTripFormSheet(context, userId: userId, tripToEdit: liveTrip),
+                      onPressed: () => showTripFormSheet(
+                        context,
+                        userId: userId,
+                        tripToEdit: liveTrip,
+                      ),
                     ),
                 ],
               ),
             ),
             Container(
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppTheme.borderMuted(context))),
+                border: Border(
+                  bottom: BorderSide(color: AppTheme.borderMuted(context)),
+                ),
               ),
               child: TabBar(
                 controller: _tabController,
@@ -130,7 +148,9 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen>
                 labelColor: color,
                 unselectedLabelColor: AppTheme.textMuted(context, opacity: 0.4),
                 labelStyle: AppTextStyles.label(weight: FontWeight.w700),
-                unselectedLabelStyle: AppTextStyles.label(weight: FontWeight.w700),
+                unselectedLabelStyle: AppTextStyles.label(
+                  weight: FontWeight.w700,
+                ),
                 tabs: const [
                   Tab(text: 'Itinerary'),
                   Tab(text: 'Packing'),
@@ -145,10 +165,26 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen>
                   : TabBarView(
                       controller: _tabController,
                       children: [
-                        _ItineraryTab(userId: userId, trip: liveTrip, color: color),
-                        _PackingTab(userId: userId, trip: liveTrip, color: color),
-                        _BudgetTab(userId: userId, trip: liveTrip, color: color),
-                        _DocumentsTab(userId: userId, trip: liveTrip, color: color),
+                        _ItineraryTab(
+                          userId: userId,
+                          trip: liveTrip,
+                          color: color,
+                        ),
+                        _PackingTab(
+                          userId: userId,
+                          trip: liveTrip,
+                          color: color,
+                        ),
+                        _BudgetTab(
+                          userId: userId,
+                          trip: liveTrip,
+                          color: color,
+                        ),
+                        _DocumentsTab(
+                          userId: userId,
+                          trip: liveTrip,
+                          color: color,
+                        ),
                       ],
                     ),
             ),
@@ -194,15 +230,25 @@ class _DotToggle extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: shape,
-          borderRadius: shape == BoxShape.rectangle ? BorderRadius.circular(6) : null,
+          borderRadius: shape == BoxShape.rectangle
+              ? BorderRadius.circular(6)
+              : null,
           color: value ? color : Colors.transparent,
-          border: value ? null : Border.all(color: AppTheme.textMuted(context, opacity: 0.3), width: 2),
+          border: value
+              ? null
+              : Border.all(
+                  color: AppTheme.textMuted(context, opacity: 0.3),
+                  width: 2,
+                ),
         ),
         child: value
             ? Container(
                 width: 7,
                 height: 7,
-                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
               )
             : null,
       ),
@@ -211,15 +257,25 @@ class _DotToggle extends StatelessWidget {
 }
 
 class _ItineraryTab extends ConsumerWidget {
-  const _ItineraryTab({required this.userId, required this.trip, required this.color});
+  const _ItineraryTab({
+    required this.userId,
+    required this.trip,
+    required this.color,
+  });
 
   final String userId;
   final Trip trip;
   final Color color;
 
-  Future<void> _toggleCompleted(WidgetRef ref, ItineraryItem item, bool completed) async {
+  Future<void> _toggleCompleted(
+    WidgetRef ref,
+    ItineraryItem item,
+    bool completed,
+  ) async {
     try {
-      await ref.read(itineraryRepositoryProvider).setCompleted(
+      await ref
+          .read(itineraryRepositoryProvider)
+          .setCompleted(
             userId: userId,
             tripId: trip.id,
             itemId: item.id,
@@ -283,12 +339,17 @@ class _ItineraryTab extends ConsumerWidget {
                 ),
                 title: Text(
                   item.text,
-                  style: AppTextStyles.body(
-                    weight: FontWeight.w600,
-                    color: item.completed
-                        ? AppTheme.textMuted(context, opacity: 0.4)
-                        : AppTheme.textPrimary(context),
-                  ).copyWith(decoration: item.completed ? TextDecoration.lineThrough : null),
+                  style:
+                      AppTextStyles.body(
+                        weight: FontWeight.w600,
+                        color: item.completed
+                            ? AppTheme.textMuted(context, opacity: 0.4)
+                            : AppTheme.textPrimary(context),
+                      ).copyWith(
+                        decoration: item.completed
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
                 ),
                 subtitle: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -296,13 +357,17 @@ class _ItineraryTab extends ConsumerWidget {
                     PriorityBadge(priority: item.priority, compact: true),
                     if (item.location.isNotEmpty) ...[
                       const SizedBox(width: 8),
-                      Icon(LucideIcons.mapPin,
-                          size: 14,
-                          color: AppTheme.textMuted(context, opacity: 0.4)),
+                      Icon(
+                        LucideIcons.mapPin,
+                        size: 14,
+                        color: AppTheme.textMuted(context, opacity: 0.4),
+                      ),
                       const SizedBox(width: 2),
                       Text(
                         item.location,
-                        style: AppTextStyles.caption(color: AppTheme.textMuted(context, opacity: 0.4)),
+                        style: AppTextStyles.caption(
+                          color: AppTheme.textMuted(context, opacity: 0.4),
+                        ),
                       ),
                     ],
                   ],
@@ -316,14 +381,24 @@ class _ItineraryTab extends ConsumerWidget {
 }
 
 class _PackingTab extends ConsumerWidget {
-  const _PackingTab({required this.userId, required this.trip, required this.color});
+  const _PackingTab({
+    required this.userId,
+    required this.trip,
+    required this.color,
+  });
 
   final String userId;
   final Trip trip;
   final Color color;
 
-  Future<void> _applyTemplate(WidgetRef ref, BuildContext context, String templateName) async {
-    final existing = trip.packingItems.map((i) => i.text.trim().toLowerCase()).toSet();
+  Future<void> _applyTemplate(
+    WidgetRef ref,
+    BuildContext context,
+    String templateName,
+  ) async {
+    final existing = trip.packingItems
+        .map((i) => i.text.trim().toLowerCase())
+        .toSet();
     final newItems = packingTemplates[templateName]!
         .where((item) => !existing.contains(item.$1.trim().toLowerCase()))
         .toList();
@@ -338,23 +413,28 @@ class _PackingTab extends ConsumerWidget {
     }
 
     try {
-      await ref.read(packingRepositoryProvider).addItems(
-            userId: userId,
-            tripId: trip.id,
-            items: newItems,
-          );
+      await ref
+          .read(packingRepositoryProvider)
+          .addItems(userId: userId, tripId: trip.id, items: newItems);
       ref.invalidate(tripsProvider(userId));
     } on AppException catch (error) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.message)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
     }
   }
 
-  Future<void> _togglePacked(WidgetRef ref, PackingItem item, bool packed) async {
+  Future<void> _togglePacked(
+    WidgetRef ref,
+    PackingItem item,
+    bool packed,
+  ) async {
     try {
-      await ref.read(packingRepositoryProvider).setPacked(
+      await ref
+          .read(packingRepositoryProvider)
+          .setPacked(
             userId: userId,
             tripId: trip.id,
             itemId: item.id,
@@ -420,7 +500,9 @@ class _PackingTab extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   '$packedCount of ${trip.packingItems.length} packed',
-                  style: AppTextStyles.caption(color: AppTheme.textMuted(context, opacity: 0.5)),
+                  style: AppTextStyles.caption(
+                    color: AppTheme.textMuted(context, opacity: 0.5),
+                  ),
                 ),
               ],
             ],
@@ -459,16 +541,25 @@ class _PackingTab extends ConsumerWidget {
                             value: item.packed,
                             color: color,
                             shape: BoxShape.rectangle,
-                            onChanged: (value) => _togglePacked(ref, item, value),
+                            onChanged: (value) =>
+                                _togglePacked(ref, item, value),
                           ),
                           title: Text(
                             item.text,
-                            style: AppTextStyles.body(
-                              weight: FontWeight.w600,
-                              color: item.packed
-                                  ? AppTheme.textMuted(context, opacity: 0.4)
-                                  : AppTheme.textPrimary(context),
-                            ).copyWith(decoration: item.packed ? TextDecoration.lineThrough : null),
+                            style:
+                                AppTextStyles.body(
+                                  weight: FontWeight.w600,
+                                  color: item.packed
+                                      ? AppTheme.textMuted(
+                                          context,
+                                          opacity: 0.4,
+                                        )
+                                      : AppTheme.textPrimary(context),
+                                ).copyWith(
+                                  decoration: item.packed
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
                           ),
                         ),
                     ],
@@ -481,7 +572,11 @@ class _PackingTab extends ConsumerWidget {
 }
 
 class _BudgetTab extends ConsumerWidget {
-  const _BudgetTab({required this.userId, required this.trip, required this.color});
+  const _BudgetTab({
+    required this.userId,
+    required this.trip,
+    required this.color,
+  });
 
   final String userId;
   final Trip trip;
@@ -503,7 +598,11 @@ class _BudgetTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildBody(BuildContext context, WidgetRef ref, Map<String, double> rates) {
+  Widget _buildBody(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, double> rates,
+  ) {
     final currencyRepo = ref.read(currencyRepositoryProvider);
     double totalInBudgetCurrency = 0;
     for (final expense in trip.expenses) {
@@ -523,7 +622,10 @@ class _BudgetTab extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
         Container(
-          decoration: AppTheme.flatCard(context, color: color.withValues(alpha: 0.15)),
+          decoration: AppTheme.flatCard(
+            context,
+            color: color.withValues(alpha: 0.15),
+          ),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -538,7 +640,9 @@ class _BudgetTab extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 '${totalInBudgetCurrency.toStringAsFixed(2)} ${trip.budgetCurrency}',
-                style: AppTextStyles.appBarTitle(color: AppTheme.textPrimary(context)),
+                style: AppTextStyles.appBarTitle(
+                  color: AppTheme.textPrimary(context),
+                ),
               ),
               if (budget != null) ...[
                 const SizedBox(height: 8),
@@ -558,12 +662,37 @@ class _BudgetTab extends ConsumerWidget {
                   remaining != null && remaining < 0
                       ? '${(-remaining).toStringAsFixed(2)} ${trip.budgetCurrency} over budget'
                       : '${remaining?.toStringAsFixed(2)} ${trip.budgetCurrency} remaining of ${budget.toStringAsFixed(0)}',
-                  style: AppTextStyles.caption(color: AppTheme.textMuted(context, opacity: 0.5)),
+                  style: AppTextStyles.caption(
+                    color: AppTheme.textMuted(context, opacity: 0.5),
+                  ),
                 ),
               ],
             ],
           ),
         ),
+        if (trip.expenses.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _exportCsv,
+                  icon: const Icon(LucideIcons.download, size: 16),
+                  label: const Text('Export CSV'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () =>
+                      _shareSummary(totalInBudgetCurrency, remaining),
+                  icon: const Icon(LucideIcons.share2, size: 16),
+                  label: const Text('Share'),
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: 16),
         if (trip.expenses.isEmpty)
           const Padding(
@@ -575,8 +704,11 @@ class _BudgetTab extends ConsumerWidget {
             ),
           )
         else
-          for (final expense in [...trip.expenses]..sort((a, b) => b.date.compareTo(a.date)))
+          for (final expense in [
+            ...trip.expenses,
+          ]..sort((a, b) => b.date.compareTo(a.date)))
             _ExpenseTile(
+              userId: userId,
               expense: expense,
               onTap: () => showExpenseFormSheet(
                 context,
@@ -585,7 +717,9 @@ class _BudgetTab extends ConsumerWidget {
                 defaultCurrency: trip.budgetCurrency,
                 expenseToEdit: expense,
               ),
-              onDelete: () => ref.read(expenseRepositoryProvider).deleteExpense(
+              onDelete: () => ref
+                  .read(expenseRepositoryProvider)
+                  .deleteExpense(
                     userId: userId,
                     tripId: trip.id,
                     expenseId: expense.id,
@@ -594,20 +728,98 @@ class _BudgetTab extends ConsumerWidget {
       ],
     );
   }
+
+  Future<void> _exportCsv() async {
+    final rows = <List<dynamic>>[
+      ['Date', 'Title', 'Category', 'Amount', 'Currency'],
+      for (final expense in [
+        ...trip.expenses,
+      ]..sort((a, b) => a.date.compareTo(b.date)))
+        [
+          DateFormat('yyyy-MM-dd').format(expense.date),
+          expense.title,
+          expense.category,
+          expense.amount,
+          expense.currency,
+        ],
+    ];
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/${trip.title}_budget.csv');
+    await file.writeAsString(csv.encode(rows));
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path)],
+        text: 'Budget export for ${trip.title}',
+      ),
+    );
+  }
+
+  Future<void> _shareSummary(
+    double totalInBudgetCurrency,
+    double? remaining,
+  ) async {
+    final buffer = StringBuffer()
+      ..writeln(trip.title)
+      ..writeln(
+        'Spent: ${totalInBudgetCurrency.toStringAsFixed(2)} ${trip.budgetCurrency}',
+      );
+    if (trip.budgetAmount != null) {
+      buffer.writeln(
+        'Budget: ${trip.budgetAmount!.toStringAsFixed(2)} ${trip.budgetCurrency}',
+      );
+      buffer.writeln(
+        remaining != null && remaining < 0
+            ? 'Over budget by: ${(-remaining).toStringAsFixed(2)} ${trip.budgetCurrency}'
+            : 'Remaining: ${remaining?.toStringAsFixed(2)} ${trip.budgetCurrency}',
+      );
+    }
+    buffer.writeln();
+    for (final expense in [
+      ...trip.expenses,
+    ]..sort((a, b) => a.date.compareTo(b.date))) {
+      buffer.writeln(
+        '${DateFormat('d MMM').format(expense.date)} · ${expense.title} · '
+        '${expense.amount.toStringAsFixed(2)} ${expense.currency}',
+      );
+    }
+    await SharePlus.instance.share(ShareParams(text: buffer.toString()));
+  }
 }
 
 final _usdRatesProvider = FutureProvider<Map<String, double>>((ref) {
   return ref.watch(currencyRepositoryProvider).fetchUsdBaseRates();
 });
 
-class _ExpenseTile extends StatelessWidget {
-  const _ExpenseTile({required this.expense, required this.onTap, required this.onDelete});
+class _ExpenseTile extends ConsumerWidget {
+  const _ExpenseTile({
+    required this.userId,
+    required this.expense,
+    required this.onTap,
+    required this.onDelete,
+  });
+  final String userId;
   final Expense expense;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
+  void _openReceipt(BuildContext context, List<String> photos, int index) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PhotoViewerPage(
+          imagePaths: photos,
+          initialIndex: index,
+          title: expense.title,
+        ),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final receiptsAsync = ref.watch(
+      expenseReceiptsProvider((userId: userId, expenseId: expense.id)),
+    );
+    final photos = receiptsAsync.value ?? const <String>[];
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: AppTheme.flatCard(context, radius: AppTheme.radiusMd),
@@ -616,24 +828,88 @@ class _ExpenseTile extends StatelessWidget {
         color: Colors.transparent,
         child: ListTile(
           onTap: onTap,
-          leading: Icon(LucideIcons.receipt, color: AppTheme.textMuted(context, opacity: 0.4)),
+          leading: Container(
+            width: 52,
+            height: 52,
+            padding: photos.isEmpty ? EdgeInsets.zero : const EdgeInsets.all(3),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceMuted(context),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: photos.isEmpty
+                ? Icon(
+                    LucideIcons.receipt,
+                    color: AppTheme.textMuted(context, opacity: 0.4),
+                  )
+                : GestureDetector(
+                    onTap: () => _openReceipt(context, photos, 0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(7),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          buildAttachmentThumbnail(
+                            context,
+                            photos.first,
+                            fit: BoxFit.cover,
+                          ),
+                          if (photos.length > 1)
+                            Positioned(
+                              right: 2,
+                              bottom: 2,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.55),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  '${photos.length}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+          ),
           title: Text(
             expense.title,
-            style: AppTextStyles.body(weight: FontWeight.w600, color: AppTheme.textPrimary(context)),
+            style: AppTextStyles.body(
+              weight: FontWeight.w600,
+              color: AppTheme.textPrimary(context),
+            ),
           ),
           subtitle: Text(
             '${expense.category} · ${DateFormat('d MMM').format(expense.date)}',
-            style: AppTextStyles.caption(color: AppTheme.textMuted(context, opacity: 0.4)),
+            style: AppTextStyles.caption(
+              color: AppTheme.textMuted(context, opacity: 0.4),
+            ),
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 '${expense.amount.toStringAsFixed(2)} ${expense.currency}',
-                style: AppTextStyles.bodyBold(color: AppTheme.textPrimary(context)),
+                style: AppTextStyles.bodyBold(
+                  color: AppTheme.textPrimary(context),
+                ),
               ),
               IconButton(
-                icon: Icon(LucideIcons.trash2, size: 18, color: AppTheme.textMuted(context, opacity: 0.4)),
+                icon: Icon(
+                  LucideIcons.trash2,
+                  size: 18,
+                  color: AppTheme.textMuted(context, opacity: 0.4),
+                ),
                 onPressed: onDelete,
               ),
             ],
@@ -644,24 +920,12 @@ class _ExpenseTile extends StatelessWidget {
   }
 }
 
-const _documentTypeLabels = {
-  TravelDocumentType.passport: 'Passport',
-  TravelDocumentType.visa: 'Visa',
-  TravelDocumentType.ticket: 'Ticket',
-  TravelDocumentType.insurance: 'Insurance',
-  TravelDocumentType.other: 'Other',
-};
-
-const _documentTypeIcons = {
-  TravelDocumentType.passport: LucideIcons.badgeCheck,
-  TravelDocumentType.visa: LucideIcons.scrollText,
-  TravelDocumentType.ticket: LucideIcons.ticket,
-  TravelDocumentType.insurance: LucideIcons.shieldCheck,
-  TravelDocumentType.other: LucideIcons.fileText,
-};
-
 class _DocumentsTab extends ConsumerWidget {
-  const _DocumentsTab({required this.userId, required this.trip, required this.color});
+  const _DocumentsTab({
+    required this.userId,
+    required this.trip,
+    required this.color,
+  });
 
   final String userId;
   final Trip trip;
@@ -678,12 +942,18 @@ class _DocumentsTab extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Row(
             children: [
-              Icon(LucideIcons.lock, size: 14, color: AppTheme.textMuted(context, opacity: 0.4)),
+              Icon(
+                LucideIcons.lock,
+                size: 14,
+                color: AppTheme.textMuted(context, opacity: 0.4),
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   'Stored only on this device — never uploaded.',
-                  style: AppTextStyles.caption(color: AppTheme.textMuted(context, opacity: 0.4)),
+                  style: AppTextStyles.caption(
+                    color: AppTheme.textMuted(context, opacity: 0.4),
+                  ),
                 ),
               ),
             ],
@@ -696,87 +966,35 @@ class _DocumentsTab extends ConsumerWidget {
             data: (documents) {
               if (documents.isEmpty) {
                 return const EmptyState(
-                  icon: LucideIcons.folderOpen,
-                  title: 'No travel documents yet',
-                  message: 'Tap + to save a passport, visa, ticket, or insurance reference.',
+                  icon: LucideIcons.images,
+                  title: 'No photos yet',
+                  message:
+                      'Tap + to start a photo entry for a day of your trip.',
                 );
               }
-              return ListView.builder(
+              return GridView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.8,
+                ),
                 itemCount: documents.length,
                 itemBuilder: (context, index) {
                   final document = documents[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: AppTheme.flatCard(context, radius: AppTheme.radiusMd),
-                    clipBehavior: Clip.antiAlias,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: ListTile(
-                      onTap: () => showDocumentFormSheet(
-                        context,
-                        userId: userId,
-                        tripId: trip.id,
-                        documentToEdit: document,
-                      ),
-                      leading: document.imagePath != null && !kIsWeb
-                          ? GestureDetector(
-                              onTap: () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => PhotoViewerPage(
-                                    imagePath: document.imagePath!,
-                                    title: document.title,
-                                  ),
-                                ),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.file(
-                                  File(document.imagePath!),
-                                  width: 44,
-                                  height: 44,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            )
-                          : Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(_documentTypeIcons[document.type], color: color),
-                            ),
-                      title: Text(
-                        document.title,
-                        style: AppTextStyles.body(
-                          weight: FontWeight.w600,
-                          color: AppTheme.textPrimary(context),
-                        ),
-                      ),
-                      subtitle: Text(
-                        document.notes.isEmpty
-                            ? _documentTypeLabels[document.type]!
-                            : '${_documentTypeLabels[document.type]} · ${document.notes}',
-                        style: AppTextStyles.caption(color: AppTheme.textMuted(context, opacity: 0.4)),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(LucideIcons.trash2,
-                                size: 18, color: AppTheme.textMuted(context, opacity: 0.4)),
-                            onPressed: () => ref
-                                .read(documentsRepositoryProvider)
-                                .deleteDocument(userId: userId, documentId: document.id)
-                                .then((_) => ref.invalidate(documentsProvider(ids))),
-                          ),
-                          Icon(LucideIcons.chevronRight, color: AppTheme.textMuted(context, opacity: 0.3)),
-                        ],
-                      ),
-                      ),
+                  return _DocumentCard(
+                    document: document,
+                    onEdit: () => showDocumentFormSheet(
+                      context,
+                      userId: userId,
+                      tripId: trip.id,
+                      documentToEdit: document,
                     ),
+                    onDelete: () => ref
+                        .read(documentsRepositoryProvider)
+                        .deleteDocument(userId: userId, documentId: document.id)
+                        .then((_) => ref.invalidate(documentsProvider(ids))),
                   );
                 },
               );
@@ -784,6 +1002,180 @@ class _DocumentsTab extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _DocumentCard extends StatelessWidget {
+  const _DocumentCard({
+    required this.document,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final TravelDocument document;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  void _openViewer(BuildContext context, int index) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PhotoViewerPage(
+          imagePaths: document.imagePaths,
+          initialIndex: index,
+          title: document.title,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _share() {
+    return SharePlus.instance.share(
+      ShareParams(
+        files: document.imagePaths.map(XFile.new).toList(),
+        text: document.title,
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete entry?'),
+        content: Text('"${document.title}" and its photos will be deleted.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              'Delete',
+              style: TextStyle(
+                color: Theme.of(dialogContext).colorScheme.error,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) onDelete();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPhotos = document.imagePaths.isNotEmpty;
+    return Container(
+      decoration: AppTheme.flatCard(context, radius: AppTheme.radiusMd),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: hasPhotos ? () => _openViewer(context, 0) : onEdit,
+          onLongPress: () => _confirmDelete(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: hasPhotos
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          buildAttachmentThumbnail(
+                            context,
+                            document.imagePaths.first,
+                            fit: BoxFit.cover,
+                          ),
+                          if (document.imagePaths.length > 1)
+                            Positioned(
+                              right: 6,
+                              bottom: 6,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.55),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      LucideIcons.images,
+                                      size: 11,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      '${document.imagePaths.length}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      )
+                    : Container(
+                        color: AppTheme.surfaceMuted(context),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          LucideIcons.images,
+                          size: 28,
+                          color: AppTheme.textMuted(context, opacity: 0.3),
+                        ),
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 4, 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: onEdit,
+                        child: Text(
+                          document.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.bodyBold(
+                            color: AppTheme.textPrimary(context),
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        LucideIcons.pencil,
+                        size: 16,
+                        color: AppTheme.textMuted(context, opacity: 0.4),
+                      ),
+                      tooltip: 'Edit',
+                      onPressed: onEdit,
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        LucideIcons.share2,
+                        size: 16,
+                        color: AppTheme.textMuted(context, opacity: 0.4),
+                      ),
+                      tooltip: 'Share',
+                      onPressed: hasPhotos ? _share : null,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
